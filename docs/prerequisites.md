@@ -4,6 +4,8 @@
 
 **Ubuntu/Debian**
 
+versionは4.6.0
+
 ```
 sudo apt update
 sudo apt install libopencv-dev python3-opencv
