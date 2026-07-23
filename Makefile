@@ -1,7 +1,7 @@
 .PHONY: run
 
 TARGET = main
-ARGS ?=
+ARGS ?= testimages/chips.png
 
 $(TARGET): $(TARGET).cpp
 	g++ -std=c++17 -Wall -Wextra -pedantic -o $(TARGET) $(TARGET).cpp `pkg-config --cflags --libs opencv4`
