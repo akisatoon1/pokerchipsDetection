@@ -19,10 +19,10 @@ const int minChipThicknessPx = 4;
 const int maxChipThicknessPx = 200;
 
 // ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
-const double kMinDistanceRatio = 0.6;
+const double minDistanceRatio = 0.6;
 
 // ピークの顕著さ(prominence)のしきい値. 信号の標準偏差に対する比.
-const double kProminenceRatio = 0.3;
+const double minProminenceRatio = 0.3;
 
 // ---- 入力 ----------------------------------------------------------------
 
@@ -169,11 +169,12 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal)
     return double(bestLag);
 }
 
-// ---- 4. ピーク検出 -------------------------------------------------------
-
-// あるピークの顕著さ(prominence). ピークから左右に下っていき,
-// より高い峰にぶつかるまでの間の最も低い谷との高低差を返す.
-// 単なるしきい値と違い, 大きな山の肩にできた小さな凹凸を排除できる.
+// この関数はピーク検出のために使われる.
+// 顕著さがの処理が必要かどうかは確かめていないので不明.
+// 自身の点より高い点(峰)がでてくるまで進んで, その間の最小値(谷)を左右に対して2回求める.
+// 自身の点と谷の差を顕著さとしている.
+// 山のような周りの高さが高いとこでちょっとしたノイズでできた極大値をピークとして扱わないようにするため
+// だと考えられる.
 double computeProminence(const std::vector<double> &signal, int peak)
 {
     int n = int(signal.size());
@@ -198,8 +199,7 @@ double computeProminence(const std::vector<double> &signal, int peak)
     return peakValue - std::max(leftMin, rightMin);
 }
 
-// 極大点のうち, 顕著さが十分で, かつ互いに minDistance 以上離れたものを返す.
-// 値の大きい順に採用していくので, 近接した候補では強い方が残る.
+// チップの境界にピークが来ると考えられるから.
 std::vector<int> findPeaks(const std::vector<double> &signal,
                            int minDistance, double minProminence)
 {
@@ -239,6 +239,7 @@ std::vector<int> findPeaks(const std::vector<double> &signal,
     return peaks;
 }
 
+// 信号の標準偏差を計算する. ピークの顕著さのしきい値を決めるために使う.
 double standardDeviation(const std::vector<double> &v)
 {
     if (v.empty())
@@ -343,8 +344,8 @@ void countChips(const std::string &filepath)
         return;
     }
 
-    int minDistance = std::max(1, int(period.value() * kMinDistanceRatio));
-    double minProminence = standardDeviation(signal) * kProminenceRatio;
+    int minDistance = std::max(1, int(period.value() * minDistanceRatio));
+    double minProminence = standardDeviation(signal) * minProminenceRatio;
     std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
 
     // 数え方1: 検出した合わせ目の「間隔」から数える (推奨).
