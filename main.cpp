@@ -304,8 +304,6 @@ cv::Mat renderDebugView(const cv::Mat &roi, const std::vector<double> &signal,
     return combined;
 }
 
-// ---- 本体 ---------------------------------------------------------------
-
 void countChips(const std::string &filepath)
 {
     cv::Mat img = cv::imread(filepath);
@@ -348,52 +346,16 @@ void countChips(const std::string &filepath)
     double minProminence = standardDeviation(signal) * kMinProminenceRatio;
     std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
 
-    // 数え方1: 検出した合わせ目の「間隔」から数える (推奨).
-    //
-    // 合わせ目はチップとチップの境界にできるので, 最初のピークから最後のピークまでの
-    // 区間にはちょうど (peaks-1) 枚ぶんのチップが挟まっている. さらにその上下には
-    // 端のチップが1枚ずつあるので, 合計 (peaks-1) + 2 = peaks + 1 枚.
-    //
-    // 重要なのは, この数え方が ROI の上端・下端の位置に依存しないこと.
-    // ROI を多少大きめに囲んでも, 使うのは検出されたピークの位置だけなので
-    // 余白のぶんだけ過大に数える, ということが起きない.
-    //
-    // ただし注意点があり, スタックの最上面・最下面の「縁」も背景との境界として
-    // 強い勾配を作るため, 合わせ目と区別がつかずピークとして検出されてしまう.
-    // これを合わせ目として数えると端のチップを二重に数えることになる.
-    //
-    // 見分け方: 内側の合わせ目は必ず両隣とチップ1枚ぶん(周期)の間隔で並ぶ.
-    // 一方スタックの縁は, その外側にもう合わせ目が無いので「外側に周期ぶんの
-    // 余白があるか」で判定できる. 端のピークの外側の余白が半周期に満たなければ,
-    // それはチップの中身ではなくスタックの縁とみなして除外する.
-    int countByPeaks = 0;
-    if (peaks.size() >= 2)
+    if (peaks.size() < 2)
     {
-        double p = period.value();
-        int first = peaks.front();
-        int last = peaks.back();
-
-        // 端のピークの外側に, チップ1枚ぶんの実体が残っているか.
-        bool topIsEdge = double(first) < p * 0.5;
-        bool bottomIsEdge = double(roi.rows - 1 - last) < p * 0.5;
-
-        // 合わせ目とみなせるピークの数.
-        int seams = int(peaks.size()) - (topIsEdge ? 1 : 0) - (bottomIsEdge ? 1 : 0);
-
-        // 内側の合わせ目 n 個 -> チップ n+1 枚.
-        countByPeaks = seams + 1;
-
-        double spacing = double(last - first) / double(peaks.size() - 1);
-        std::cout << "peak spacing = " << spacing << " px "
-                  << "(period = " << p << " px)" << std::endl;
-        std::cout << "edge peak excluded: top = " << (topIsEdge ? "yes" : "no")
-                  << ", bottom = " << (bottomIsEdge ? "yes" : "no") << std::endl;
+        std::cerr << "Error: Not enough peaks detected." << std::endl;
+        return;
     }
+    int countByPeaks = peaks.size() - 1;
 
     std::cout << "profile length = " << signal.size() << " px" << std::endl;
     std::cout << "detected seams = " << peaks.size() << std::endl;
-    std::cout << "count by peaks  = " << countByPeaks << std::endl;
-    std::cout << "chip count = " << countByPeaks << std::endl;
+    std::cout << "chip count by peaks  = " << countByPeaks << std::endl;
 
     cv::Mat debug = renderDebugView(roi, signal, peaks);
     cv::imshow("Profile", debug);
