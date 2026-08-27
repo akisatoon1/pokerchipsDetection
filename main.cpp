@@ -15,14 +15,14 @@
 const double kSmoothSigma = 2.0;
 
 // 自己相関で探索するチップ1枚あたりの高さの範囲(ピクセル).
-const int minChipThicknessPx = 4;
-const int maxChipThicknessPx = 200;
+const int kMinChipThicknessPx = 4;
+const int kMaxChipThicknessPx = 200;
 
 // ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
-const double minDistanceRatio = 0.6;
+const double kMinDistanceRatio = 0.6;
 
 // ピークの顕著さ(prominence)のしきい値. 信号の標準偏差に対する比.
-const double minProminenceRatio = 0.3;
+const double kMinProminenceRatio = 0.3;
 
 // ---- 入力 ----------------------------------------------------------------
 
@@ -119,8 +119,8 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal)
     // ラグの上限を設定する. チップの高さが推定したい周期なので, ラグの上限はチップの最大高さよりは小さくする.
     // ラグの上限がチップの最小高さより小さい場合は周期推定ができないので, 失敗する.
     int n = int(signal.size());
-    int maxLag = std::min(maxChipThicknessPx, n / 2);
-    if (maxLag < minChipThicknessPx)
+    int maxLag = std::min(kMaxChipThicknessPx, n / 2);
+    if (maxLag < kMinChipThicknessPx)
         return std::nullopt;
 
     // 相関係数を計算するために各要素から平均を引く必要があるらしい.
@@ -140,7 +140,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal)
     // もっとも相関の高いラグを見つける.
     // 周期の倍数のラグのときに相関が大きくなるため, この方法では不十分である可能性があるが,
     // 今はうまくいってそうなのでこの方法で行う.
-    for (int lag = minChipThicknessPx; lag <= maxLag; ++lag)
+    for (int lag = kMinChipThicknessPx; lag <= maxLag; ++lag)
     {
         double dot = 0.0, normA = 0.0, normB = 0.0;
         for (int i = 0; i + lag < n; ++i)
@@ -344,8 +344,8 @@ void countChips(const std::string &filepath)
         return;
     }
 
-    int minDistance = std::max(1, int(period.value() * minDistanceRatio));
-    double minProminence = standardDeviation(signal) * minProminenceRatio;
+    int minDistance = std::max(1, int(period.value() * kMinDistanceRatio));
+    double minProminence = standardDeviation(signal) * kMinProminenceRatio;
     std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
 
     // 数え方1: 検出した合わせ目の「間隔」から数える (推奨).
