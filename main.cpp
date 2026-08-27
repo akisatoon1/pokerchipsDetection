@@ -15,8 +15,8 @@
 const double kSmoothSigma = 2.0;
 
 // 自己相関で探索するチップ1枚あたりの高さの範囲(ピクセル).
-const int kMinPeriod = 4;
-const int kMaxPeriod = 200;
+const int minChipThicknessPx = 4;
+const int maxChipThicknessPx = 200;
 
 // ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
 const double kMinDistanceRatio = 0.6;
@@ -54,26 +54,23 @@ cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win, int maxSide
     return roi & cv::Rect(0, 0, img.cols, img.rows);
 }
 
-// ---- 1. 射影: 2次元画像を1次元プロファイルへ -----------------------------
-
-// ROIの各行について横方向のSobel縦勾配の絶対値を平均し, 高さ方向の1次元信号を作る.
-// 生の輝度ではなくSobel勾配を使うのは, チップ表面の模様や全体的な明るさの変化に
-// 影響されず「明るさが急変する場所 = 合わせ目そのもの」を拾うため.
-// 戻り値は合わせ目で山になる信号 (谷ではなく山であることに注意).
-std::vector<double> computeGradientProfile(const cv::Mat &roi)
+// グレースケール化して縦方向の微分の大きさを計算し, 各行を平均して1次元のデータに変換する.
+// チップは縦に積まれていて, チップの境界は溝があって暗いので,
+// チップ境界を縦に微分すると絶対値が大きくなると考えられるから.
+std::vector<double> convertToBrightnessDiff(const cv::Mat &roi)
 {
     cv::Mat gray;
     cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
 
-    // 横方向に軽くぼかして, チップ表面の模様(赤白の柄)を均す.
+    // 横方向にぼかす. 意味があるかどうかは不明.
     cv::GaussianBlur(gray, gray, cv::Size(0, 0), 3.0, 0.5);
 
-    // y方向の1次微分. 合わせ目は水平な暗い線なので縦勾配が大きくなる.
+    // 縦にのみ微分する.
     cv::Mat sobelY;
     cv::Sobel(gray, sobelY, CV_32F, 0, 1, 3);
     sobelY = cv::abs(sobelY);
 
-    // 各行を横方向に平均して1次元に潰す(integral projection).
+    // 各行を横方向に平均して1次元に潰す.
     cv::Mat rowMean;
     cv::reduce(sobelY, rowMean, 1, cv::REDUCE_AVG, CV_32F);
 
@@ -84,8 +81,8 @@ std::vector<double> computeGradientProfile(const cv::Mat &roi)
     return profile;
 }
 
-// ---- 2. 前処理: 平滑化とトレンド除去 -------------------------------------
-
+// この関数は[明るさの差が要素であるベクトル]の平滑化とトレンド除去に使われる.
+// [明るさの差が要素であるベクトル]の平滑化に意味があるかどうかは不明.
 std::vector<double> smoothProfile(const std::vector<double> &profile, double sigma)
 {
     cv::Mat src(int(profile.size()), 1, CV_64F);
@@ -102,8 +99,7 @@ std::vector<double> smoothProfile(const std::vector<double> &profile, double sig
     return out;
 }
 
-// 大きなσでぼかした信号を「ゆるやかな明るさの傾き」とみなして差し引く.
-// これで照明ムラや上下の明暗差を消し, 周期成分だけを残す.
+// トレンド除去をすると信号の周期推定が行いやすくなるため.
 std::vector<double> removeTrend(const std::vector<double> &profile, double sigma)
 {
     std::vector<double> trend = smoothProfile(profile, sigma);
@@ -115,17 +111,20 @@ std::vector<double> removeTrend(const std::vector<double> &profile, double sigma
     return out;
 }
 
-// ---- 3. 自己相関による基本周期(チップ1枚の高さ)の推定 -------------------
-
-// ラグをずらしながら相関を取り, 最も相関の高いラグを周期とする.
-// 影が薄くて合わせ目を数個見逃しても, この大域的な周期で補正が効く.
+// 信号の周期を推定して正しいピークを見つけられるようにするため.
+// 周期が分かれば大まかにピークの位置が分かり, チップの境界ではないピークの誤検出を減らせるかもしれない.
 std::optional<double> estimatePeriod(const std::vector<double> &signal)
 {
+    // ラグが大きすぎると自己相関を計算する範囲が狭くなり, 自己相関の信頼性が低くなるため,
+    // ラグの上限を設定する. チップの高さが推定したい周期なので, ラグの上限はチップの最大高さよりは小さくする.
+    // ラグの上限がチップの最小高さより小さい場合は周期推定ができないので, 失敗する.
     int n = int(signal.size());
-    int maxLag = std::min(kMaxPeriod, n / 2);
-    if (maxLag < kMinPeriod)
+    int maxLag = std::min(maxChipThicknessPx, n / 2);
+    if (maxLag < minChipThicknessPx)
         return std::nullopt;
 
+    // 相関係数を計算するために各要素から平均を引く必要があるらしい.
+    // それが本当かどうかは知らない.
     double mean = 0.0;
     for (double v : signal)
         mean += v;
@@ -138,7 +137,10 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal)
     double bestScore = -1.0;
     int bestLag = -1;
 
-    for (int lag = kMinPeriod; lag <= maxLag; ++lag)
+    // もっとも相関の高いラグを見つける.
+    // 周期の倍数のラグのときに相関が大きくなるため, この方法では不十分である可能性があるが,
+    // 今はうまくいってそうなのでこの方法で行う.
+    for (int lag = minChipThicknessPx; lag <= maxLag; ++lag)
     {
         double dot = 0.0, normA = 0.0, normB = 0.0;
         for (int i = 0; i + lag < n; ++i)
@@ -324,7 +326,7 @@ void countChips(const std::string &filepath)
 
     // 射影 -> 平滑化 -> トレンド除去.
     // 合わせ目で山になる信号が得られる.
-    std::vector<double> raw = computeGradientProfile(roi);
+    std::vector<double> raw = convertToBrightnessDiff(roi);
     std::vector<double> signal = smoothProfile(raw, kSmoothSigma);
 
     // トレンド除去のσは周期より十分大きく取りたいが, 周期はまだ未知なので
