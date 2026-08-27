@@ -387,16 +387,9 @@ void countChips(const std::string &filepath)
                   << ", bottom = " << (bottomIsEdge ? "yes" : "no") << std::endl;
     }
 
-    // 数え方2: スタック全体の高さを周期で割る.
-    // 谷を数個見逃しても大域的な周期で補正が効くので, 合わせ目が薄い場合に強い.
-    // ただし ROI にスタック以外の余白が入るとその分だけ過大になるため,
-    // ROI はスタックの上端・下端にできるだけ密着させて囲むこと.
-    int countByPeriod = int(std::lround(roi.rows / period.value()));
-
     std::cout << "profile length = " << signal.size() << " px" << std::endl;
     std::cout << "detected seams = " << peaks.size() << std::endl;
     std::cout << "count by peaks  = " << countByPeaks << std::endl;
-    std::cout << "count by period = " << countByPeriod << std::endl;
     std::cout << "chip count = " << countByPeaks << std::endl;
 
     cv::Mat debug = renderDebugView(roi, signal, peaks);
