@@ -35,8 +35,7 @@ cv::Mat renderDebugView(const cv::Mat &roi, const std::vector<double> &signal,
 
   // 画面に収まるよう縮小.
   double s = std::min(1.0, 900.0 / combined.rows);
-  if (s < 1.0)
-    cv::resize(combined, combined, cv::Size(), s, s, cv::INTER_AREA);
+  if (s < 1.0) cv::resize(combined, combined, cv::Size(), s, s, cv::INTER_AREA);
 
   return combined;
 }
