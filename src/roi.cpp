@@ -1,5 +1,8 @@
 #include "roi.hpp"
 
+#include <cstdio>
+#include <string>
+
 // 画像を画面に収まるサイズに縮小して表示し, ユーザに矩形を選ばせる.
 // 返す矩形は元画像の座標系. 選択されなかった場合は空の矩形.
 cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
@@ -19,9 +22,36 @@ cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
   return roi & cv::Rect(0, 0, img.cols, img.rows);
 }
 
-cv::Rect selectRoiWithYOLO() {
-  // TODO: YOLOの推論を使うロジックを書く.
-  return cv::Rect(0, 0, 640, 480);
+cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
+  // imagePathの内容は大丈夫か?
+  // pythonスクリプトのパスはべた書きにしない.
+  // 仮想環境の実行は?
+  std::string cmd = "python pyscript/getroi.py " + imagePath;
+
+  // TODO: エラーを返さないと.
+  FILE *pipe = popen(cmd.c_str(), "r");
+  if (pipe == nullptr) {
+    return cv::Rect();
+  }
+
+  // "ROI x1 y1 x2 y2" の行を探す. それ以外の行はログなので読み飛ばす.
+  // TODO: 入力のチェックも必要.
+  double x1, y1, x2, y2;
+  fscanf(pipe, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2);
+
+  // 終了コードを見るため, 出力を読み切ってから閉じる.
+  int status = pclose(pipe);
+  // TODO: エラー返すなどしたほうがいいかも?
+  if (status != 0) {
+    return cv::Rect();
+  }
+
+  // 検出領域を削らないよう外側に丸める.
+  int left = cvFloor(x1);
+  int top = cvFloor(y1);
+  int right = cvCeil(x2);
+  int bottom = cvCeil(y2);
+  return cv::Rect(left, top, right - left, bottom - top);
 }
 
 std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
@@ -31,5 +61,6 @@ std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
 
   if (outRect != nullptr) *outRect = region;
 
+  // TODO: クランプしたほうがいいかも?
   return img(region);
 }
