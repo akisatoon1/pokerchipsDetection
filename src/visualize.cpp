@@ -16,7 +16,7 @@ cv::Mat renderDebugView(const cv::Mat &roi, const std::vector<double> &signal,
   double range = std::max(hi - lo, 1e-9);
 
   // 信号を折れ線で描く. 縦がROIの高さ, 横が信号の値.
-  for (int y = 1; y < h && y < int(signal.size()); ++y) {
+  for (int y = 1; y < h && y < static_cast<int>(signal.size()); ++y) {
     int x0 = cvRound((signal[y - 1] - lo) / range * (graphWidth - 1));
     int x1 = cvRound((signal[y] - lo) / range * (graphWidth - 1));
     cv::line(graph, cv::Point(x0, y - 1), cv::Point(x1, y),
