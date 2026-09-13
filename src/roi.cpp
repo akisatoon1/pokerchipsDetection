@@ -1,6 +1,7 @@
 #include "roi.hpp"
 
 #include <cstdio>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -44,19 +45,19 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
   // TODO: 4つの値が出てこず中途半端に読み取った場合は?
   double x1, y1, x2, y2;
   while (fscanf(pipe, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2) == 4) {
-    // 終了コードを見るため, 出力を読み切ってから閉じる.
-    int status = pclose(pipe);
-    // TODO: エラー返すなどしたほうがいいかも?
-    if (status != 0) {
-      return cv::Rect();
-    }
-
-    // 検出領域を削らないよう外側に丸める.
+    // 検出領域が狭いよりは広い方がいいので, 検出領域を削らないよう外側に丸める.
     int left = cvFloor(x1);
     int top = cvFloor(y1);
     int right = cvCeil(x2);
     int bottom = cvCeil(y2);
     rois.push_back(cv::Rect(left, top, right - left, bottom - top));
+  }
+
+  // pythonスクリプトの実行がエラーを返す可能性があるので, statusを確認する.
+  int status = pclose(pipe);
+  if (status != 0) {
+    throw std::runtime_error("Cmd: '" + cmd + "' finished with status " +
+                             std::to_string(status));
   }
 
   // TODO: 今はスタックが一つだけの時に対応
