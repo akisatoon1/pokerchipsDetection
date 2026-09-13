@@ -2,7 +2,8 @@
 
 cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
                          int maxSide) {
-  double s = std::min(1.0, double(maxSide) / std::max(img.cols, img.rows));
+  double s = std::min(
+      1.0, static_cast<double>(maxSide) / std::max(img.cols, img.rows));
 
   cv::Mat disp;
   cv::resize(img, disp, cv::Size(), s, s, cv::INTER_AREA);

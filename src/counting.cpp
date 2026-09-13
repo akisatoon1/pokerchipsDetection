@@ -50,16 +50,18 @@ std::vector<double> convertToBrightnessDiff(const cv::Mat &roi) {
 // [明るさの差が要素であるベクトル]の平滑化に意味があるかどうかは不明.
 std::vector<double> smoothProfile(const std::vector<double> &profile,
                                   double sigma) {
-  cv::Mat src(int(profile.size()), 1, CV_64F);
-  for (size_t i = 0; i < profile.size(); ++i)
-    src.at<double>(int(i), 0) = profile[i];
+  cv::Mat src(static_cast<int>(profile.size()), 1, CV_64F);
+  for (size_t i = 0; i < profile.size(); ++i) {
+    src.at<double>(static_cast<int>(i), 0) = profile[i];
+  }
 
   cv::Mat dst;
   cv::GaussianBlur(src, dst, cv::Size(1, 0), 0, sigma);
 
   std::vector<double> out(profile.size());
-  for (size_t i = 0; i < profile.size(); ++i)
-    out[i] = dst.at<double>(int(i), 0);
+  for (size_t i = 0; i < profile.size(); ++i) {
+    out[i] = dst.at<double>(static_cast<int>(i), 0);
+  }
 
   return out;
 }
@@ -85,7 +87,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
   // ラグの上限はチップの最大高さよりは小さくする.
   // ラグの上限がチップの最小高さより小さい場合は周期推定ができないので,
   // 失敗する.
-  int n = int(signal.size());
+  int n = static_cast<int>(signal.size());
   int maxLag = std::min(kMaxChipThicknessPx, n / 2);
   if (maxLag < kMinChipThicknessPx) return std::nullopt;
 
@@ -123,7 +125,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
 
   if (bestLag < 0 || bestScore <= 0.0) return std::nullopt;
 
-  return double(bestLag);
+  return static_cast<double>(bestLag);
 }
 
 // この関数はピーク検出のために使われる.
@@ -134,7 +136,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
 // 山のような周りの高さが高いとこでちょっとしたノイズでできた極大値をピークとして扱わないようにするため
 // だと考えられる.
 double computeProminence(const std::vector<double> &signal, int peak) {
-  int n = int(signal.size());
+  int n = static_cast<int>(signal.size());
   double peakValue = signal[peak];
 
   double leftMin = peakValue;
@@ -155,13 +157,14 @@ double computeProminence(const std::vector<double> &signal, int peak) {
 // チップの境界にピークが来ると考えられるから.
 std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
                            double minProminence) {
-  int n = int(signal.size());
+  int n = static_cast<int>(signal.size());
 
   std::vector<int> candidates;
   for (int i = 1; i < n - 1; ++i) {
     if (signal[i] >= signal[i - 1] && signal[i] > signal[i + 1]) {
-      if (computeProminence(signal, i) >= minProminence)
+      if (computeProminence(signal, i) >= minProminence) {
         candidates.push_back(i);
+      }
     }
   }
 
@@ -190,12 +193,12 @@ double standardDeviation(const std::vector<double> &v) {
 
   double mean = 0.0;
   for (double x : v) mean += x;
-  mean /= double(v.size());
+  mean /= static_cast<double>(v.size());
 
   double var = 0.0;
   for (double x : v) var += (x - mean) * (x - mean);
 
-  return std::sqrt(var / double(v.size()));
+  return std::sqrt(var / static_cast<double>(v.size()));
 }
 
 }  // namespace
@@ -209,20 +212,22 @@ std::optional<CountResult> countChips(const cv::Mat &roi) {
   // トレンド除去のσは周期より十分大きく取りたいが, 周期はまだ未知なので
   // 一度粗く推定してから決める.
   std::optional<double> roughPeriod = estimatePeriod(signal);
-  if (roughPeriod.has_value())
+  if (roughPeriod.has_value()) {
     signal = removeTrend(signal, roughPeriod.value() * 2.0);
+  }
 
   std::optional<double> period = estimatePeriod(signal);
   if (!period.has_value()) return std::nullopt;
 
-  int minDistance = std::max(1, int(period.value() * kMinDistanceRatio));
+  int minDistance =
+      std::max(1, static_cast<int>(period.value() * kMinDistanceRatio));
   double minProminence = standardDeviation(signal) * kMinProminenceRatio;
   std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
 
   if (peaks.size() < 2) return std::nullopt;
 
   CountResult result;
-  result.count = int(peaks.size()) - 1;
+  result.count = static_cast<int>(peaks.size()) - 1;
   result.signal = signal;
   result.peaks = peaks;
   result.period = period.value();
