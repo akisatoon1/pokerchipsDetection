@@ -1,11 +1,5 @@
-// selectRoiWithYOLO を単体で動かして結果を目視で確認するためのプログラム.
-//
-// 使い方:
-//   make test-roi ARGS=testimages/yoko/stack/IMG_5582.jpg
-//
-// 注意: roi.cpp はpythonをべた書きしているため, ultralyticsが入っていない
-// システムのpythonでは検出に失敗する. 手元で .venv/bin/python に
-// 書き換えてから実行すること.
+// selectRoiWithYOLOをテストするコード.
+// サブプロセスでpythonプログラムを正しく呼び出せているかを確認するため.
 
 #include <iostream>
 
