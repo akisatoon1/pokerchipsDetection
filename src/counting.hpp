@@ -9,10 +9,10 @@
 #include <vector>
 
 struct CountResult {
-  int count;                  // チップ枚数 (peaks.size() - 1)
-  std::vector<double> signal; // トレンド除去後のプロファイル
-  std::vector<int> peaks;     // 検出した合わせ目の位置
-  double period;              // 推定周期 (px)
+  int count;                   // チップ枚数 (peaks.size() - 1)
+  std::vector<double> signal;  // トレンド除去後のプロファイル
+  std::vector<int> peaks;      // 検出した合わせ目の位置
+  double period;               // 推定周期 (px)
 };
 
 // 切り出し済みのスタック画像からチップ枚数を数える.

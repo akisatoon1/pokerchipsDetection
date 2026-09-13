@@ -41,8 +41,7 @@ std::vector<double> convertToBrightnessDiff(const cv::Mat &roi) {
   cv::reduce(sobelY, rowMean, 1, cv::REDUCE_AVG, CV_32F);
 
   std::vector<double> profile(rowMean.rows);
-  for (int i = 0; i < rowMean.rows; ++i)
-    profile[i] = rowMean.at<float>(i, 0);
+  for (int i = 0; i < rowMean.rows; ++i) profile[i] = rowMean.at<float>(i, 0);
 
   return profile;
 }
@@ -71,8 +70,7 @@ std::vector<double> removeTrend(const std::vector<double> &profile,
   std::vector<double> trend = smoothProfile(profile, sigma);
 
   std::vector<double> out(profile.size());
-  for (size_t i = 0; i < profile.size(); ++i)
-    out[i] = profile[i] - trend[i];
+  for (size_t i = 0; i < profile.size(); ++i) out[i] = profile[i] - trend[i];
 
   return out;
 }
@@ -89,19 +87,16 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
   // 失敗する.
   int n = int(signal.size());
   int maxLag = std::min(kMaxChipThicknessPx, n / 2);
-  if (maxLag < kMinChipThicknessPx)
-    return std::nullopt;
+  if (maxLag < kMinChipThicknessPx) return std::nullopt;
 
   // 相関係数を計算するために各要素から平均を引く必要があるらしい.
   // それが本当かどうかは知らない.
   double mean = 0.0;
-  for (double v : signal)
-    mean += v;
+  for (double v : signal) mean += v;
   mean /= n;
 
   std::vector<double> centered(n);
-  for (int i = 0; i < n; ++i)
-    centered[i] = signal[i] - mean;
+  for (int i = 0; i < n; ++i) centered[i] = signal[i] - mean;
 
   double bestScore = -1.0;
   int bestLag = -1;
@@ -117,8 +112,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
       normA += centered[i] * centered[i];
       normB += centered[i + lag] * centered[i + lag];
     }
-    if (normA <= 0.0 || normB <= 0.0)
-      continue;
+    if (normA <= 0.0 || normB <= 0.0) continue;
 
     double score = dot / std::sqrt(normA * normB);
     if (score > bestScore) {
@@ -127,8 +121,7 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
     }
   }
 
-  if (bestLag < 0 || bestScore <= 0.0)
-    return std::nullopt;
+  if (bestLag < 0 || bestScore <= 0.0) return std::nullopt;
 
   return double(bestLag);
 }
@@ -146,15 +139,13 @@ double computeProminence(const std::vector<double> &signal, int peak) {
 
   double leftMin = peakValue;
   for (int i = peak - 1; i >= 0; --i) {
-    if (signal[i] > peakValue)
-      break;
+    if (signal[i] > peakValue) break;
     leftMin = std::min(leftMin, signal[i]);
   }
 
   double rightMin = peakValue;
   for (int i = peak + 1; i < n; ++i) {
-    if (signal[i] > peakValue)
-      break;
+    if (signal[i] > peakValue) break;
     rightMin = std::min(rightMin, signal[i]);
   }
 
@@ -186,8 +177,7 @@ std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
         break;
       }
     }
-    if (!tooClose)
-      peaks.push_back(c);
+    if (!tooClose) peaks.push_back(c);
   }
 
   std::sort(peaks.begin(), peaks.end());
@@ -196,22 +186,19 @@ std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
 
 // 信号の標準偏差を計算する. ピークの顕著さのしきい値を決めるために使う.
 double standardDeviation(const std::vector<double> &v) {
-  if (v.empty())
-    return 0.0;
+  if (v.empty()) return 0.0;
 
   double mean = 0.0;
-  for (double x : v)
-    mean += x;
+  for (double x : v) mean += x;
   mean /= double(v.size());
 
   double var = 0.0;
-  for (double x : v)
-    var += (x - mean) * (x - mean);
+  for (double x : v) var += (x - mean) * (x - mean);
 
   return std::sqrt(var / double(v.size()));
 }
 
-} // namespace
+}  // namespace
 
 std::optional<CountResult> countChips(const cv::Mat &roi) {
   // 射影 -> 平滑化 -> トレンド除去.
@@ -226,15 +213,13 @@ std::optional<CountResult> countChips(const cv::Mat &roi) {
     signal = removeTrend(signal, roughPeriod.value() * 2.0);
 
   std::optional<double> period = estimatePeriod(signal);
-  if (!period.has_value())
-    return std::nullopt;
+  if (!period.has_value()) return std::nullopt;
 
   int minDistance = std::max(1, int(period.value() * kMinDistanceRatio));
   double minProminence = standardDeviation(signal) * kMinProminenceRatio;
   std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
 
-  if (peaks.size() < 2)
-    return std::nullopt;
+  if (peaks.size() < 2) return std::nullopt;
 
   CountResult result;
   result.count = int(peaks.size()) - 1;

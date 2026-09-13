@@ -22,8 +22,7 @@ std::optional<std::string> getFilepathFromArgs(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   std::optional<std::string> filepath = getFilepathFromArgs(argc, argv);
-  if (!filepath.has_value())
-    return 1;
+  if (!filepath.has_value()) return 1;
 
   cv::Mat img = cv::imread(filepath.value());
   if (img.empty()) {

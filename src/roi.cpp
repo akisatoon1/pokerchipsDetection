@@ -9,8 +9,7 @@ cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
 
   cv::Rect r = cv::selectROI(win, disp, false, false);
   cv::destroyWindow(win);
-  if (r.width <= 0 || r.height <= 0)
-    return cv::Rect();
+  if (r.width <= 0 || r.height <= 0) return cv::Rect();
 
   cv::Rect roi(cvRound(r.x / s), cvRound(r.y / s), cvRound(r.width / s),
                cvRound(r.height / s));
@@ -20,11 +19,9 @@ cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
 std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
                                           cv::Rect *outRect) {
   cv::Rect region = selectRoiScaled(img, "Select ROI");
-  if (region.empty())
-    return std::nullopt;
+  if (region.empty()) return std::nullopt;
 
-  if (outRect != nullptr)
-    *outRect = region;
+  if (outRect != nullptr) *outRect = region;
 
   return img(region);
 }
