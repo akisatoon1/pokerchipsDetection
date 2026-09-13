@@ -1,7 +1,9 @@
 #include "roi.hpp"
 
+// 画像を画面に収まるサイズに縮小して表示し, ユーザに矩形を選ばせる.
+// 返す矩形は元画像の座標系. 選択されなかった場合は空の矩形.
 cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
-                         int maxSide) {
+                         int maxSide = 900) {
   double s = std::min(
       1.0, static_cast<double>(maxSide) / std::max(img.cols, img.rows));
 
