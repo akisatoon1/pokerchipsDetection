@@ -11,7 +11,7 @@ COMPILE_DB = $(OBJDIR)/compile_commands.json
 SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp
 HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp
 OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
-DEPS = $(OBJS:.o=.d) $(OBJDIR)/test_roi.d
+DEPS = $(OBJS:.o=.d) $(OBJDIR)/test_selectRoiWithYOLO.d
 
 CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -MMD -MP `pkg-config --cflags opencv4`
 LDLIBS = `pkg-config --libs opencv4`
@@ -39,11 +39,11 @@ run: $(TARGET)
 # test
 #
 
-$(OBJDIR)/test_roi: $(TESTDIR)/test_roi.cpp $(OBJDIR)/roi.o | $(OBJDIR)
-	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_roi.cpp $(OBJDIR)/roi.o -o $@ $(LDLIBS)
+$(OBJDIR)/test_selectRoiWithYOLO: $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o | $(OBJDIR)
+	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o -o $@ $(LDLIBS)
 
-test-roi: $(OBJDIR)/test_roi
-	./$(OBJDIR)/test_roi
+test-selectRoiWithYOLO: $(OBJDIR)/test_selectRoiWithYOLO
+	./$(OBJDIR)/test_selectRoiWithYOLO
 
 #
 # コードスタイルとフォーマットについて
