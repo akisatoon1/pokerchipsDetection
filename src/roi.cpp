@@ -2,8 +2,8 @@
 
 // 画像を画面に収まるサイズに縮小して表示し, ユーザに矩形を選ばせる.
 // 返す矩形は元画像の座標系. 選択されなかった場合は空の矩形.
-cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
-                         int maxSide = 900) {
+cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
+                           int maxSide = 900) {
   double s = std::min(
       1.0, static_cast<double>(maxSide) / std::max(img.cols, img.rows));
 
@@ -19,9 +19,14 @@ cv::Rect selectRoiScaled(const cv::Mat &img, const std::string &win,
   return roi & cv::Rect(0, 0, img.cols, img.rows);
 }
 
+cv::Rect selectRoiWithYOLO() {
+  // TODO: YOLOの推論を使うロジックを書く.
+  return cv::Rect(0, 0, 640, 480);
+}
+
 std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
                                           cv::Rect *outRect) {
-  cv::Rect region = selectRoiScaled(img, "Select ROI");
+  cv::Rect region = selectRoiWithUser(img, "Select ROI");
   if (region.empty()) return std::nullopt;
 
   if (outRect != nullptr) *outRect = region;
