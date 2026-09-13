@@ -1,6 +1,7 @@
 #include "roi.hpp"
 
 #include <cstdio>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -25,16 +26,16 @@ cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
 }
 
 cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
-  // imagePathの内容は大丈夫か?
-  // pythonスクリプトのパスはべた書きにしない.
-  // 仮想環境の実行は?
-  std::string cmd = "python pyscript/getroi.py " + imagePath;
+  if (!std::filesystem::exists(imagePath)) {
+    throw std::invalid_argument("File not found: " + imagePath);
+  }
 
-  // TODO: エラーを返さないと.
-  // TODO: python側のエラーはどうする?
+  // TODO: コマンドはべた書きにしない. 環境変数で与える.
+  std::string cmd = ".venv/bin/python pyscript/getroi.py " + imagePath;
+
   FILE *pipe = popen(cmd.c_str(), "r");
   if (pipe == nullptr) {
-    return cv::Rect();
+    throw std::runtime_error("Failed to run command: " + cmd);
   }
 
   std::vector<cv::Rect> rois;
