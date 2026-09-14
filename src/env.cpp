@@ -4,21 +4,19 @@
 
 std::string PYTHON_BIN_PATH;
 std::string PYTHON_SCRIPT_PATH;
+std::string USER_OR_YOLO;
+
+std::string getEnvVar(const std::string& varName) {
+  const char* value = std::getenv(varName.c_str());
+  if (value == nullptr) {
+    throw std::runtime_error("Environment variable " + varName +
+                             " is not set.");
+  }
+  return std::string(value);
+}
 
 void loadEnvs() {
-  const char* python_bin_path = std::getenv("PYTHON_BIN_PATH");
-  if (python_bin_path != nullptr) {
-    PYTHON_BIN_PATH = python_bin_path;
-  } else {
-    throw std::runtime_error(
-        "Environment variable PYTHON_BIN_PATH is not set.");
-  }
-
-  const char* python_script_path = std::getenv("PYTHON_SCRIPT_PATH");
-  if (python_script_path != nullptr) {
-    PYTHON_SCRIPT_PATH = python_script_path;
-  } else {
-    throw std::runtime_error(
-        "Environment variable PYTHON_SCRIPT_PATH is not set.");
-  }
+  PYTHON_BIN_PATH = getEnvVar("PYTHON_BIN_PATH");
+  PYTHON_SCRIPT_PATH = getEnvVar("PYTHON_SCRIPT_PATH");
+  USER_OR_YOLO = getEnvVar("USER_OR_YOLO");
 }
