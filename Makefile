@@ -7,6 +7,7 @@ TESTDIR = test
 OBJDIR = build
 TARGET = $(OBJDIR)/main
 COMPILE_DB = $(OBJDIR)/compile_commands.json
+ENV_SH = ./env.sh
 
 SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp $(SRCDIR)/env.cpp
 HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp $(SRCDIR)/env.hpp
@@ -33,7 +34,7 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 run: $(TARGET)
-	./$(TARGET) $(ARGS)
+	. $(ENV_SH) && ./$(TARGET) $(ARGS)
 
 #
 # test
@@ -43,7 +44,7 @@ $(OBJDIR)/test_selectRoiWithYOLO: $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR
 	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o $(OBJDIR)/env.o -o $@ $(LDLIBS)
 
 test-selectRoiWithYOLO: $(OBJDIR)/test_selectRoiWithYOLO
-	./$(OBJDIR)/test_selectRoiWithYOLO
+	. $(ENV_SH) && ./$(OBJDIR)/test_selectRoiWithYOLO
 
 #
 # コードスタイルとフォーマットについて
