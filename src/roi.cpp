@@ -84,8 +84,18 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
 }
 
 std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
+                                          const std::string &imagePath,
                                           cv::Rect *outRect) {
-  cv::Rect region = selectRoiWithUser(img, "Select ROI");
+  cv::Rect region;
+  if (USER_OR_YOLO == "yolo") {
+    region = selectRoiWithYOLO(imagePath);
+  } else if (USER_OR_YOLO == "user") {
+    region = selectRoiWithUser(img, "Select ROI");
+  } else {
+    throw std::invalid_argument("Invalid value for USER_OR_YOLO: " +
+                                USER_OR_YOLO);
+  }
+
   if (region.empty()) return std::nullopt;
 
   // regionが画像の範囲外に出てしまうときにクランプする.
