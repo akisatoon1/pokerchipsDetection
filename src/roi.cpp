@@ -88,8 +88,11 @@ std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
   cv::Rect region = selectRoiWithUser(img, "Select ROI");
   if (region.empty()) return std::nullopt;
 
+  // regionが画像の範囲外に出てしまうときにクランプする.
+  cv::Rect imageBounds(0, 0, img.cols, img.rows);
+  region = region & imageBounds;
+
   if (outRect != nullptr) *outRect = region;
 
-  // TODO: クランプしたほうがいいかも?
   return img(region);
 }
