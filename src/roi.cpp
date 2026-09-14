@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "env.hpp"
+
 // 画像を画面に収まるサイズに縮小して表示し, ユーザに矩形を選ばせる.
 // 返す矩形は元画像の座標系. 選択されなかった場合は空の矩形.
 cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
@@ -30,8 +32,8 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
     throw std::invalid_argument("File not found: " + imagePath);
   }
 
-  // TODO: コマンドはべた書きにしない. 環境変数で与える.
-  std::string cmd = ".venv/bin/python pyscript/getroi.py " + imagePath;
+  std::string cmd =
+      PYTHON_BIN_PATH + " " + PYTHON_SCRIPT_PATH + " " + imagePath;
 
   FILE *pipe = popen(cmd.c_str(), "r");
   if (pipe == nullptr) {
@@ -40,10 +42,10 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
 
   std::vector<cv::Rect> rois;
 
-  // "ROI x1 y1 x2 y2" の行を探す.
-  // それ以外の行はログなので読み飛ばす.
   // TODO: 入力のチェックも必要.
   // TODO: 4つの値が出てこず中途半端に読み取った場合は?
+  // pythonスクリプトは'x y x y'を複数行(0または1行もあり得る) 出力する.
+  // それらを読み取る目的.
   double x1, y1, x2, y2;
   while (fscanf(pipe, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2) == 4) {
     // 検出領域が狭いよりは広い方がいいので, 検出領域を削らないよう外側に丸める.
