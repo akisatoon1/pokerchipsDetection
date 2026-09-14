@@ -69,13 +69,13 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
   }
 
   // pythonスクリプトの実行がエラーを返す可能性があるので, statusを確認する.
+  std::vector<cv::Rect> rois = parseCmdOutput(pipe);
   int status = pclose(pipe);
   if (status != 0) {
     throw std::runtime_error("Cmd: '" + cmd + "' finished with status " +
                              std::to_string(status));
   }
 
-  std::vector<cv::Rect> rois = parseCmdOutput(pipe);
   // TODO: 今はスタックが一つだけの時に対応
   if (rois.size() == 0) {
     return cv::Rect();
