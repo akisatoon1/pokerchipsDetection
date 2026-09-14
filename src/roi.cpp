@@ -27,25 +27,23 @@ cv::Rect selectRoiWithUser(const cv::Mat &img, const std::string &win,
   return roi & cv::Rect(0, 0, img.cols, img.rows);
 }
 
-cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
+std::string constructCmd(const std::string &imagePath) {
   if (!std::filesystem::exists(imagePath)) {
     throw std::invalid_argument("File not found: " + imagePath);
   }
 
-  std::string cmd =
-      PYTHON_BIN_PATH + " " + PYTHON_SCRIPT_PATH + " " + imagePath;
+  return PYTHON_BIN_PATH + " " + PYTHON_SCRIPT_PATH + " " + imagePath;
+}
 
-  FILE *pipe = popen(cmd.c_str(), "r");
-  if (pipe == nullptr) {
-    throw std::runtime_error("Failed to run command: " + cmd);
-  }
+std::vector<cv::Rect> parseCmdOutput(FILE *pipe) {
+  // TODO:
+  // 4つの値が出てこず中途半端に読み取った場合などの入力のチェックも必要だが後回し.
+  // 理由は, linux環境での実行はただのテストであり,
+  // 実際はスマホ環境で動かすから.
 
-  std::vector<cv::Rect> rois;
-
-  // TODO: 入力のチェックも必要.
-  // TODO: 4つの値が出てこず中途半端に読み取った場合は?
   // pythonスクリプトは'x y x y'を複数行(0または1行もあり得る) 出力する.
   // それらを読み取る目的.
+  std::vector<cv::Rect> rois;
   double x1, y1, x2, y2;
   while (fscanf(pipe, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2) == 4) {
     // 検出領域が狭いよりは広い方がいいので, 検出領域を削らないよう外側に丸める.
@@ -55,6 +53,20 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
     int bottom = cvCeil(y2);
     rois.push_back(cv::Rect(left, top, right - left, bottom - top));
   }
+  return rois;
+}
+
+cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
+  if (!std::filesystem::exists(imagePath)) {
+    throw std::invalid_argument("File not found: " + imagePath);
+  }
+
+  std::string cmd = constructCmd(imagePath);
+
+  FILE *pipe = popen(cmd.c_str(), "r");
+  if (pipe == nullptr) {
+    throw std::runtime_error("Failed to run command: " + cmd);
+  }
 
   // pythonスクリプトの実行がエラーを返す可能性があるので, statusを確認する.
   int status = pclose(pipe);
@@ -63,6 +75,7 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath) {
                              std::to_string(status));
   }
 
+  std::vector<cv::Rect> rois = parseCmdOutput(pipe);
   // TODO: 今はスタックが一つだけの時に対応
   if (rois.size() == 0) {
     return cv::Rect();
