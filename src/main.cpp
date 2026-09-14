@@ -33,7 +33,8 @@ int main(int argc, char *argv[]) {
   }
 
   cv::Rect regionOfChipStack;
-  std::optional<cv::Mat> roi = cropSelectedRegion(img, &regionOfChipStack);
+  std::optional<cv::Mat> roi =
+      cropSelectedRegion(img, filepath.value(), &regionOfChipStack);
   if (!roi.has_value()) {
     std::cerr << "Error: ROI was not selected." << std::endl;
     return 1;

@@ -16,4 +16,5 @@ cv::Rect selectRoiWithYOLO(const std::string &imagePath);
 // 選択されなかった場合は nullopt.
 // outRect が非nullなら, 選択された矩形を書き込む.
 std::optional<cv::Mat> cropSelectedRegion(const cv::Mat &img,
+                                          const std::string &imagePath,
                                           cv::Rect *outRect = nullptr);
