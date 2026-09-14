@@ -8,6 +8,7 @@
 #include <string>
 
 #include "counting.hpp"
+#include "env.hpp"
 #include "roi.hpp"
 #include "visualize.hpp"
 
@@ -21,6 +22,7 @@ std::optional<std::string> getFilepathFromArgs(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+  loadEnvs();
   std::optional<std::string> filepath = getFilepathFromArgs(argc, argv);
   if (!filepath.has_value()) return 1;
 
