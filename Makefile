@@ -8,8 +8,8 @@ OBJDIR = build
 TARGET = $(OBJDIR)/main
 COMPILE_DB = $(OBJDIR)/compile_commands.json
 
-SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp
-HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp
+SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp $(SRCDIR)/env.cpp
+HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp $(SRCDIR)/env.hpp
 OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 DEPS = $(OBJS:.o=.d) $(OBJDIR)/test_selectRoiWithYOLO.d
 
@@ -39,8 +39,8 @@ run: $(TARGET)
 # test
 #
 
-$(OBJDIR)/test_selectRoiWithYOLO: $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o | $(OBJDIR)
-	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o -o $@ $(LDLIBS)
+$(OBJDIR)/test_selectRoiWithYOLO: $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o $(OBJDIR)/env.o | $(OBJDIR)
+	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o $(OBJDIR)/env.o -o $@ $(LDLIBS)
 
 test-selectRoiWithYOLO: $(OBJDIR)/test_selectRoiWithYOLO
 	./$(OBJDIR)/test_selectRoiWithYOLO

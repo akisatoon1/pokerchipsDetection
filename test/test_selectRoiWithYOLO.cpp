@@ -3,9 +3,12 @@
 
 #include <iostream>
 
+#include "env.hpp"
 #include "roi.hpp"
 
 int main() {
+  loadEnvs();
+
   cv::Rect roi = selectRoiWithYOLO("testimages/yoko/stack/IMG_5587.jpg");
   if (roi.empty()) {
     std::cerr << "Error: YOLO did not detect a region." << std::endl;
