@@ -9,8 +9,8 @@ TARGET = $(OBJDIR)/main
 COMPILE_DB = $(OBJDIR)/compile_commands.json
 ENV_SH = ./env.sh
 
-SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp $(SRCDIR)/env.cpp
-HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp $(SRCDIR)/env.hpp
+SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp $(SRCDIR)/env.cpp $(SRCDIR)/color.cpp
+HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp $(SRCDIR)/env.hpp $(SRCDIR)/color.hpp
 OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 DEPS = $(OBJS:.o=.d) $(OBJDIR)/test_selectRoiWithYOLO.d
 
