@@ -6,7 +6,9 @@
 #include <opencv2/opencv.hpp>
 #include <optional>
 #include <string>
+#include <vector>
 
+#include "color.hpp"
 #include "counting.hpp"
 #include "env.hpp"
 #include "roi.hpp"
@@ -55,7 +57,16 @@ int main(int argc, char *argv[]) {
   std::cout << "detected seams = " << result->peaks.size() << std::endl;
   std::cout << "chip count by peaks  = " << result->count << std::endl;
 
-  cv::Mat debug = renderDebugView(roi.value(), result->signal, result->peaks);
+  std::vector<ChipColor> colors =
+      classifyChipColors(roi.value(), result.value());
+  std::cout << "chip colors (top -> bottom) =";
+  for (size_t i = 0; i < colors.size(); ++i) {
+    std::cout << (i == 0 ? " " : ", ") << chipColorName(colors[i]);
+  }
+  std::cout << std::endl;
+
+  cv::Mat debug =
+      renderDebugView(roi.value(), result->signal, result->peaks, colors);
   cv::imshow("Profile", debug);
   std::cout << "Press any key on the window to exit." << std::endl;
   cv::waitKey(0);
