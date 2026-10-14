@@ -1,6 +1,7 @@
-#include "color.hpp"
+#include "pokerchip/color.hpp"
 
 #include <array>
+#include <opencv2/imgproc.hpp>
 #include <optional>
 
 namespace {

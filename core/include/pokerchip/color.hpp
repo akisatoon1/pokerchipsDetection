@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <string>
 #include <vector>
 
-#include "counting.hpp"
+#include "pokerchip/counting.hpp"
 
 enum class ChipColor {
   kRed,

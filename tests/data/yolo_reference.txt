@@ -1,0 +1,27 @@
+testimages/yoko/single/IMG_5594.jpg
+testimages/yoko/single/IMG_5595.jpg
+testimages/yoko/single/IMG_5596.jpg
+testimages/yoko/stack/multicolor_jpg/IMG_5719.jpg
+testimages/yoko/stack/multicolor_jpg/IMG_5720.jpg 983.88 1258.92 1956.08 1582.83 0.9059
+testimages/yoko/stack/multicolor_jpg/IMG_5721.jpg 1088.21 1145.37 2207.84 1483.64 0.9368
+testimages/yoko/stack/multicolor_jpg/IMG_5722.jpg 1160.48 1296.68 2113.94 1616.87 0.9675
+testimages/yoko/stack/multicolor_jpg/IMG_5723.jpg 1069.24 955.89 2039.37 1452.26 0.9663
+testimages/yoko/stack/multicolor_jpg/IMG_5724.jpg 1032.94 1104.48 2137.30 1651.71 0.9546
+testimages/yoko/stack/multicolor_jpg/IMG_5725.jpg 1055.74 921.69 2035.39 1939.24 0.9848
+testimages/yoko/stack/multicolor_jpg/IMG_5727.jpg 994.01 1033.79 2037.70 2018.01 0.9849
+testimages/yoko/stack/multicolor_jpg/IMG_5728.jpg 1026.83 1111.95 2014.94 2039.43 0.9823
+testimages/yoko/stack/multicolor_jpg/IMG_5729.jpg 1069.91 1068.18 1955.77 2384.66 0.9892
+testimages/yoko/stack/multicolor_jpg/IMG_5730.jpg 1043.06 757.36 1869.47 2225.98 0.9827
+testimages/yoko/stack/multicolor_jpg/IMG_5731.jpg 1001.11 805.11 2032.94 2418.45 0.9873
+testimages/yoko/stack/multicolor_jpg/IMG_5732.jpg 981.69 823.18 1789.24 2182.98 0.9871
+testimages/yoko/stack/singlecolor/IMG_5582.jpg 1202.56 1053.76 1767.54 1814.82 0.9803
+testimages/yoko/stack/singlecolor/IMG_5583.jpg 1121.12 1186.93 1808.67 2084.56 0.9835
+testimages/yoko/stack/singlecolor/IMG_5584.jpg 1118.91 918.84 1793.84 1795.32 0.9838
+testimages/yoko/stack/singlecolor/IMG_5586.jpg 1065.88 1164.97 1952.29 1985.86 0.9775
+testimages/yoko/stack/singlecolor/IMG_5587.jpg 1089.00 1246.75 2004.25 2076.25 0.9691
+testimages/yoko/stack/singlecolor/IMG_5588.jpg 1072.65 1291.51 1906.03 2061.42 0.9794
+testimages/yoko/stack/singlecolor/IMG_5589.jpg 1042.23 1316.96 1938.72 2123.95 0.9735
+testimages/yoko/stack/singlecolor/IMG_5590.jpg 1102.57 1080.55 2032.15 1370.10 0.9582
+testimages/yoko/stack/singlecolor/IMG_5591.jpg 1024.62 1387.13 2090.65 1714.90 0.8640
+testimages/yoko/stack/singlecolor/IMG_5592.jpg 915.37 1228.51 2009.23 1554.59 0.6906
+testimages/yoko/stack/singlecolor/IMG_5593.jpg

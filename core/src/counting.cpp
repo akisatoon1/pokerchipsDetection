@@ -1,4 +1,9 @@
-#include "counting.hpp"
+#include "pokerchip/counting.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <opencv2/imgproc.hpp>
 
 namespace {
 
