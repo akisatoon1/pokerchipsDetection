@@ -1,75 +1,68 @@
-.PHONY: run clean tidy tidy-fix format format-check check test-roi
+# CMake のラッパー. よく使う操作を短く呼べるようにする.
+# ビルドの本体は CMakeLists.txt (Linux) と android/ (Android).
 
-ARGS ?= testimages/chips.png
+.PHONY: all build run test opencv model android-deps android-native tidy tidy-fix format format-check check clean
 
-SRCDIR = src
-TESTDIR = test
-OBJDIR = build
-TARGET = $(OBJDIR)/main
-COMPILE_DB = $(OBJDIR)/compile_commands.json
-ENV_SH = ./env.sh
+ARGS ?= testimages/yoko/stack/singlecolor/IMG_5587.jpg
+PT ?= best.pt
 
-SRCS = $(SRCDIR)/main.cpp $(SRCDIR)/roi.cpp $(SRCDIR)/counting.cpp $(SRCDIR)/visualize.cpp $(SRCDIR)/env.cpp $(SRCDIR)/color.cpp
-HDRS = $(SRCDIR)/roi.hpp $(SRCDIR)/counting.hpp $(SRCDIR)/visualize.hpp $(SRCDIR)/env.hpp $(SRCDIR)/color.hpp
-OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
-DEPS = $(OBJS:.o=.d) $(OBJDIR)/test_selectRoiWithYOLO.d
+BUILDDIR = build
+TARGET = $(BUILDDIR)/pokerchip
 
-CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -MMD -MP `pkg-config --cflags opencv4`
-LDLIBS = `pkg-config --libs opencv4`
+SRCS = $(wildcard core/src/*.cpp cli/*.cpp)
+HDRS = $(wildcard core/include/pokerchip/*.hpp cli/*.hpp)
+JNI_SRCS = $(wildcard android/app/src/main/cpp/*.cpp)
+TEST_SRCS = $(wildcard tests/*.cpp)
 
-# src配下のみを対象にする. OpenCVなどのシステムヘッダの指摘は出さない.
-TIDYFLAGS = -p $(OBJDIR) --header-filter='^$(SRCDIR)/'
+# core と cli のみを対象にする. OpenCV などのヘッダの指摘は出さない.
+TIDYFLAGS = -p $(BUILDDIR) --header-filter='^$(CURDIR)/(core|cli)/'
 
-#
-# build
-#
+all: build
 
-$(TARGET): $(OBJS)
-	g++ $(OBJS) -o $@ $(LDLIBS)
+$(BUILDDIR)/CMakeCache.txt:
+	cmake -S . -B $(BUILDDIR)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
-	g++ $(CXXFLAGS) -c $< -o $@
+build: $(BUILDDIR)/CMakeCache.txt
+	cmake --build $(BUILDDIR) -j
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+run: build
+	./$(TARGET) $(ARGS)
 
-run: $(TARGET)
-	. $(ENV_SH) && ./$(TARGET) $(ARGS)
+test: build
+	ctest --test-dir $(BUILDDIR) --output-on-failure
 
-#
-# test
-#
+# 環境構築
+opencv:
+	scripts/build_opencv.sh
 
-$(OBJDIR)/test_selectRoiWithYOLO: $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o $(OBJDIR)/env.o | $(OBJDIR)
-	g++ $(CXXFLAGS) -I$(SRCDIR) $(TESTDIR)/test_selectRoiWithYOLO.cpp $(OBJDIR)/roi.o $(OBJDIR)/env.o -o $@ $(LDLIBS)
+model:
+	scripts/export_model.sh $(PT)
 
-test-selectRoiWithYOLO: $(OBJDIR)/test_selectRoiWithYOLO
-	. $(ENV_SH) && ./$(OBJDIR)/test_selectRoiWithYOLO
+android-deps:
+	scripts/fetch_android_deps.sh
+
+# core + JNI が Android 向けにビルドできるかを確かめる (Android Studio 不要).
+android-native:
+	scripts/check_android_native.sh
 
 #
 # コードスタイルとフォーマットについて
 #
 
-# clang-tidyが参照するコンパイルデータベース. ソースの増減を追えるようMakefileにも依存させる.
-$(COMPILE_DB): $(SRCS) Makefile | $(OBJDIR)
-	bear --output $@ -- $(MAKE) --always-make $(TARGET)
-
-tidy: $(COMPILE_DB)
+tidy: build
 	clang-tidy $(TIDYFLAGS) --warnings-as-errors='*' $(SRCS)
 
-tidy-fix: $(COMPILE_DB)
+tidy-fix: build
 	clang-tidy $(TIDYFLAGS) --fix $(SRCS)
 	$(MAKE) format
 
 format:
-	clang-format -i $(SRCS) $(HDRS)
+	clang-format -i $(SRCS) $(HDRS) $(TEST_SRCS) $(JNI_SRCS)
 
 format-check:
-	clang-format --dry-run --Werror $(SRCS) $(HDRS)
+	clang-format --dry-run --Werror $(SRCS) $(HDRS) $(TEST_SRCS) $(JNI_SRCS)
 
 check: format-check tidy
 
 clean:
-	rm -rf $(OBJDIR)
-
--include $(DEPS)
+	rm -rf $(BUILDDIR)

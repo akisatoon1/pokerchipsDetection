@@ -1,4 +1,7 @@
-#include "visualize.hpp"
+#include "pokerchip/visualize.hpp"
+
+#include <algorithm>
+#include <opencv2/imgproc.hpp>
 
 cv::Mat renderDebugView(const cv::Mat &roi, const std::vector<double> &signal,
                         const std::vector<int> &peaks,
