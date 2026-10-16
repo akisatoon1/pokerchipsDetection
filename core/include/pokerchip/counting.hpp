@@ -8,13 +8,27 @@
 #include <optional>
 #include <vector>
 
+/**
+ * @brief チップ枚数のカウント結果と, その途中結果.
+ */
 struct CountResult {
-  int count;                   // チップ枚数 (peaks.size() - 1)
-  std::vector<double> signal;  // トレンド除去後のプロファイル
-  std::vector<int> peaks;      // 検出した合わせ目の位置
-  double period;               // 推定周期 (px)
+  //! チップ枚数 (peaks.size() - 1)
+  int count;
+
+  //! トレンド除去後のプロファイル
+  std::vector<double> signal;
+
+  //! 検出した合わせ目の位置
+  std::vector<int> peaks;
+
+  //! 推定周期 (px)
+  double period;
 };
 
-// 切り出し済みのスタック画像からチップ枚数を数える.
-// 周期の推定に失敗した場合や, ピークが足りない場合は nullopt.
+/**
+ * @brief 切り出し済みのスタック画像からチップ枚数を数える.
+ * @param roi スタック領域の画像 (BGR).
+ * @return カウント結果. 周期の推定に失敗した場合や,
+ *         ピークが足りない場合は nullopt.
+ */
 std::optional<CountResult> countChips(const cv::Mat &roi);

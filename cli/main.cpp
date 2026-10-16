@@ -16,15 +16,33 @@
 
 namespace {
 
+/**
+ * @brief コマンドライン引数の解析結果.
+ */
 struct Options {
+  //! 解析する画像のパス.
   std::string imagePath;
-  std::string roiMode = "yolo";  // "yolo" or "user"
-  std::optional<cv::Rect> rect;  // 指定されたら検出も手動選択もしない.
+
+  //! ROIの選び方. "yolo" or "user"
+  std::string roiMode = "yolo";
+
+  //! 数値で指定されたROI. 指定されたら検出も手動選択もしない.
+  std::optional<cv::Rect> rect;
+
+  //! ONNX モデルのパス.
   std::string modelPath = "models/chip_detector.onnx";
-  std::string outPath;  // 空なら画面に表示する.
+
+  //! デバッグ画像を保存するパス. 空なら画面に表示する.
+  std::string outPath;
+
+  //! 結果を JSON でも出力するか.
   bool json = false;
 };
 
+/**
+ * @brief 使い方を標準エラー出力に書く.
+ * @param prog プログラム名 (argv[0]).
+ */
 void printUsage(const char *prog) {
   std::cerr
       << "Usage: " << prog
@@ -37,7 +55,11 @@ void printUsage(const char *prog) {
       << "  --json   結果をJSONでも出力する" << std::endl;
 }
 
-// "x,y,w,h" を矩形にする.
+/**
+ * @brief "x,y,w,h" を矩形にする.
+ * @param s "x,y,w,h" 形式の文字列.
+ * @return 矩形. 形式が違う場合や, 矩形が空の場合は nullopt.
+ */
 std::optional<cv::Rect> parseRect(const std::string &s) {
   cv::Rect r;
   char c1 = 0, c2 = 0, c3 = 0;
@@ -49,6 +71,13 @@ std::optional<cv::Rect> parseRect(const std::string &s) {
   return r;
 }
 
+/**
+ * @brief コマンドライン引数を解析する.
+ * @param argc 引数の数.
+ * @param argv 引数.
+ * @return 解析結果. 不明なオプションがある場合や,
+ *         画像のパスがない場合は nullopt.
+ */
 std::optional<Options> parseArgs(int argc, char *argv[]) {
   Options opt;
   for (int i = 1; i < argc; ++i) {
@@ -77,6 +106,11 @@ std::optional<Options> parseArgs(int argc, char *argv[]) {
   return opt;
 }
 
+/**
+ * @brief 1つのスタックの解析結果を標準出力に書く.
+ * @param index スタックの番号.
+ * @param s スタックの解析結果.
+ */
 void printStack(size_t index, const StackResult &s) {
   std::cout << "[stack " << index << "] ROI: " << s.box
             << ", score = " << s.score << std::endl;
@@ -99,7 +133,16 @@ void printStack(size_t index, const StackResult &s) {
   std::cout << std::endl;
 }
 
-// デバッグ画像を保存するか画面に出す. スタックが複数あるときは番号を付ける.
+/**
+ * @brief デバッグ画像を保存するか画面に出す.
+ *
+ * スタックが複数あるときは保存するファイル名に番号を付ける.
+ * カウントに失敗したスタックは描かない.
+ * @param img 元画像 (BGR).
+ * @param result 解析結果.
+ * @param outPath 保存するパス. 空なら画面に表示する.
+ * @throws cv::Exception GUIなしでビルドしたOpenCVで画面に表示しようとした場合.
+ */
 void showDebugViews(const cv::Mat &img, const AnalysisResult &result,
                     const std::string &outPath) {
   std::vector<cv::Mat> views;
@@ -134,6 +177,12 @@ void showDebugViews(const cv::Mat &img, const AnalysisResult &result,
 
 }  // namespace
 
+/**
+ * @brief 画像を解析し, スタックごとの枚数と色を出力する.
+ * @param argc 引数の数.
+ * @param argv 引数. 使い方は printUsage を参照.
+ * @return 成功なら 0, 失敗なら 1.
+ */
 int main(int argc, char *argv[]) {
   std::optional<Options> opt = parseArgs(argc, argv);
   if (!opt.has_value()) {
