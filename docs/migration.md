@@ -48,24 +48,10 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
   | opencv-python | 5.0.0.93 |
 
   (Python は 3.12.3. 固定したのは上の直接の依存と結果に影響しうるものだけで, それ以外の依存は固定していない)
-- [ ] **移行元での結果を保存して持っていく.** 移行先で同じ結果が出るかを比べるため.
+- [ ] **`best.pt` (重みファイル) を移行先へ送る.** git 管理外で, 移行元から持っていくのはこれだけ.
   ```
-  mkdir -p /tmp/baseline
-  for f in testimages/yoko/stack/*/*.jpg testimages/yoko/single/*.jpg; do
-    echo "$f $(./build/pokerchip --json --out /tmp/baseline/debug.png "$f" 2>&1 | grep -E '^\{|^Error')"
-  done > /tmp/baseline/results.txt
+  scp best.pt <移行先>:~/
   ```
-  (`--out` を付けるので, 移行元の GUI なしの OpenCV でも動く. 1 行に「画像のパス + JSON かエラー」が並ぶ.
-  `testimages/yoko` の 27 枚のうち, スタックが検出されない 5 枚は `Error: ROI was not selected.` になる)
-- [ ] **git 管理外のファイルを移行先へ送る** (下の表の「持っていく」).
-  ```
-  scp best.pt /tmp/baseline/results.txt <移行先>:~/
-  ```
-- [ ] (任意) **Claude Code の設定を送る.**
-  - `~/.claude/CLAUDE.md`: 全プロジェクト共通の指示 (日本語で応答する, など)
-  - `~/.claude/projects/<リポジトリの絶対パスの / を - にした名前>/memory/`: このプロジェクトのメモリ.
-    ディレクトリ名はリポジトリの絶対パスから作られるので, 移行先でも
-    `~/workspace/pokerchip` に clone すれば同じ名前のまま使える.
 
 ### 持っていくもの / 持っていかないもの
 
@@ -73,11 +59,11 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 |---|---|---|
 | git 管理下のすべて (コード, docs, testimages, `tests/data/`) | git で持っていく | |
 | `best.pt` | **scp で送る** | git 管理外. 移行先の `make model` で ONNX を作り直すのに使う |
-| 移行元での結果 (`results.txt`) | scp で送る | 移行後の比較用 |
 | `models/` (ONNX) | 持っていかない | `best.pt` から `make model` で作り直す. 作り直した ONNX でテストが通ることも確認になる |
 | `.venv/` (約 6GB) | 持っていかない | マシン固有. 移行先で作り直す |
 | `third_party/` (約 4.5GB) | 持っていかない | マシン固有のビルド結果とダウンロード物. 移行先で `make opencv` / `make android-deps` |
 | `build/`, `build-android/` | 持っていかない | ビルド結果 |
+| Claude Code の設定 (`~/.claude/`) | 持っていかない | 移行先で設定し直す |
 
 ## 2. 移行先のマシンで確認すること
 
@@ -91,7 +77,7 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 [setup.md](setup.md) の手順をそのまま行う. 移行で特に気をつける点:
 
-- clone 先は `~/workspace/pokerchip` にする (Claude Code のメモリやドキュメントのパスと合わせるため).
+- clone 先は `~/workspace/pokerchip` にする (ドキュメントのパスと合わせるため).
 - `libgtk-3-dev` は **`make opencv` より前に** 入れる. 今回の移行の目的の1つが GUI を使えるようにすることなので.
 - `best.pt` はリポジトリのルートに置いてから `make model PT=best.pt`.
 
@@ -102,13 +88,14 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 - [ ] 1. `make test` が全件 (6 件) 通る
 - [ ] 2. `make check` で指摘がない
-- [ ] 3. 移行元と結果が一致する
+- [ ] 3. testimages で CLI が動く. 結果は 7 で Android と比べるのに使うので保存しておく
   ```
   for f in testimages/yoko/stack/*/*.jpg testimages/yoko/single/*.jpg; do
     echo "$f $(./build/pokerchip --json --out /tmp/debug.png "$f" 2>&1 | grep -E '^\{|^Error')"
-  done > /tmp/results.txt
-  diff ~/results.txt /tmp/results.txt && echo SAME
+  done > ~/results.txt
   ```
+  (1 行に「画像のパス + JSON かエラー」が並ぶ. 27 枚のうち, 移行元でスタックが検出されなかった
+  5 枚は `Error: ROI was not selected.` になる)
 - [ ] 4. `make android-native` が通る (core + JNI の NDK ビルド)
 - [ ] 5. GUI が使える: `./build/pokerchip --roi user testimages/yoko/stack/singlecolor/IMG_5587.jpg`
   で ROI を選ぶ画面が出て, 結果の画像が表示される

@@ -146,3 +146,10 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   `make_yolo_reference.py` の参照結果に影響しうる.
 - それ以外の推移的な依存は固定していない. 完全に再現したくなったら `pip freeze` の結果を別ファイルに残す.
 - `pip install --dry-run -r pyscript/requirements.txt` で, 今の `.venv` から何も変わらないことを確認した.
+
+## 2026-10-16: 移行の手順の見直し
+
+- 移行元から持っていくのは `best.pt` だけにした. [migration.md](migration.md) から,
+  移行元での結果 (`results.txt`) の保存と送付, Claude Code の設定の送付の項目を消した.
+- そのため移行後の確認の 3 は「移行元と結果が一致する」から「testimages で CLI が動く」に変えた.
+  ここで保存した結果は, 7 で Android の結果と比べるのに使う.
