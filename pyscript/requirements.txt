@@ -1,4 +1,12 @@
-ultralytics
-onnx
-onnxslim
-onnxruntime
+# バージョンを固定する. ultralytics などが変わると ONNX の書き出し方や
+# 参照結果が変わり, 検出器のテストの基準と合わなくなる恐れがある.
+# 直接使うもの
+ultralytics==8.4.150
+onnx==1.23.2
+onnxslim==0.1.98
+onnxruntime==1.31.0
+# 結果に影響しうる依存 (ultralytics 経由で入るもの)
+torch==2.14.0
+torchvision==0.29.0
+numpy==2.5.3
+opencv-python==5.0.0.93

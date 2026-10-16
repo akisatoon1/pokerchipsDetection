@@ -29,12 +29,12 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 ## 1. 移行元でやること
 
-- [ ] **作業中の変更をすべてコミットして push する.**
+- [☑] **作業中の変更をすべてコミットして push する.**
   移行先へは git (GitHub の `akisatoon1/pokerchipsDetection`) で持っていく.
   push 前に `git status` で取りこぼしがないことを確認する.
-- [ ] **`pyscript/requirements.txt` のバージョンを固定する.**
-  今はバージョン指定がない. ultralytics のバージョンが変わると ONNX の書き出し方が変わり,
-  検出器のテストの基準と合わなくなる恐れがある. 今動いている組み合わせ:
+- [x] **`pyscript/requirements.txt` のバージョンを固定する.** (2026-10-16 に対応済み)
+  ultralytics のバージョンが変わると ONNX の書き出し方が変わり,
+  検出器のテストの基準と合わなくなる恐れがあるため. 固定したのは移行元で動いている組み合わせ:
 
   | パッケージ | バージョン |
   |---|---|
@@ -45,8 +45,9 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
   | onnxslim | 0.1.98 |
   | onnxruntime | 1.31.0 |
   | numpy | 2.5.3 |
+  | opencv-python | 5.0.0.93 |
 
-  (Python は 3.12.3)
+  (Python は 3.12.3. 固定したのは上の直接の依存と結果に影響しうるものだけで, それ以外の依存は固定していない)
 - [ ] **移行元での結果を保存して持っていく.** 移行先で同じ結果が出るかを比べるため.
   ```
   mkdir -p /tmp/baseline

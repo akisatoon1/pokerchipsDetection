@@ -136,3 +136,13 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   - `android/gradle/wrapper/gradle-wrapper.jar` は Gradle 公式の sha256 と一致した.
   - コミットの作者のメールアドレスは, push 済みのコミットと同じもの.
 - 未対応のまま残したもの: 履歴の HEIC (約 30MB) の扱い, 検出結果の基準とモデルの対応の記録.
+
+## 2026-10-16: Python パッケージのバージョン固定
+
+- `pyscript/requirements.txt` のバージョンを固定した ([migration.md](migration.md) の「移行元でやること」の項目).
+  移行元の `.venv` で動いている組み合わせ (ultralytics 8.4.150, torch 2.14.0, torchvision 0.29.0,
+  onnx 1.23.2, onnxslim 0.1.98, onnxruntime 1.31.0, numpy 2.5.3) にした.
+- 一覧になかった `opencv-python` (5.0.0.93) も固定した. ultralytics の前処理 (letterbox など) が使うため,
+  `make_yolo_reference.py` の参照結果に影響しうる.
+- それ以外の推移的な依存は固定していない. 完全に再現したくなったら `pip freeze` の結果を別ファイルに残す.
+- `pip install --dry-run -r pyscript/requirements.txt` で, 今の `.venv` から何も変わらないことを確認した.
