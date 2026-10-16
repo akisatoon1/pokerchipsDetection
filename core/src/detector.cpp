@@ -7,23 +7,40 @@
 
 namespace {
 
-// ultralytics の letterbox と同じ余白の色.
+//! ultralytics の letterbox と同じ余白の色.
 const cv::Scalar kPadColor(114, 114, 114);
 
-// end2end 形式の出力 [1, N, 6] の最後の次元の大きさ.
+//! end2end 形式の出力 [1, N, 6] の最後の次元の大きさ.
 const int kEnd2EndFields = 6;
 
-// 元画像をアスペクト比を保ったまま正方形に収め, 余白を埋めた画像.
-// 推論結果を元画像の座標に戻すため, 縮小率と余白の量も持つ.
+/**
+ * @brief 元画像をアスペクト比を保ったまま正方形に収め, 余白を埋めた画像.
+ *
+ * 推論結果を元画像の座標に戻すため, 縮小率と余白の量も持つ.
+ */
 struct Letterbox {
+  //! 余白を埋めた正方形の画像 (BGR).
   cv::Mat image;
+
+  //! 元画像に掛けた縮小率.
   double scale;
+
+  //! 左の余白 (px).
   int padLeft;
+
+  //! 上の余白 (px).
   int padTop;
 };
 
-// ultralytics の LetterBox(auto=False, center=True) と同じ計算をする.
-// 前処理が違うと検出結果がずれるため, 丸め方まで合わせている.
+/**
+ * @brief 画像をアスペクト比を保ったまま正方形に収め, 余白を埋める.
+ *
+ * ultralytics の LetterBox(auto=False, center=True) と同じ計算をする.
+ * 前処理が違うと検出結果がずれるため, 丸め方まで合わせている.
+ * @param bgr 元画像 (BGR).
+ * @param size 正方形の一辺 (px).
+ * @return 余白を埋めた画像と, 座標を戻すための縮小率と余白の量.
+ */
 Letterbox letterbox(const cv::Mat &bgr, int size) {
   double scale = std::min(static_cast<double>(size) / bgr.rows,
                           static_cast<double>(size) / bgr.cols);
@@ -53,7 +70,13 @@ Letterbox letterbox(const cv::Mat &bgr, int size) {
   return lb;
 }
 
-// letterbox 後の座標を元画像の座標に戻し, 画像の範囲に収める.
+/**
+ * @brief letterbox 後の座標を元画像の座標に戻し, 画像の範囲に収める.
+ * @param box letterbox 後の画像の座標系の矩形.
+ * @param lb 推論に使った letterbox.
+ * @param imageSize 元画像の大きさ.
+ * @return 元画像の座標系の矩形.
+ */
 cv::Rect2f toOriginal(const cv::Rect2d &box, const Letterbox &lb,
                       const cv::Size &imageSize) {
   auto mapX = [&](double x) {
@@ -73,14 +96,30 @@ cv::Rect2f toOriginal(const cv::Rect2d &box, const Letterbox &lb,
           mapY(box.y + box.height) - top};
 }
 
-// NMS 前の検出候補. 座標は letterbox 後の画像の座標系.
+/**
+ * @brief NMS 前の検出候補. 座標は letterbox 後の画像の座標系.
+ *
+ * 3つの配列は同じ長さで, 同じ添字が同じ候補を表す.
+ */
 struct Candidates {
+  //! 候補の矩形.
   std::vector<cv::Rect2d> boxes;
+
+  //! 候補のスコア.
   std::vector<float> scores;
+
+  //! 候補のクラス番号.
   std::vector<int> classIds;
 };
 
-// end2end 形式 [1, N, 6]. 各行は (x1, y1, x2, y2, score, class).
+/**
+ * @brief end2end 形式の出力から検出候補を取り出す.
+ *
+ * end2end 形式 [1, N, 6]. 各行は (x1, y1, x2, y2, score, class).
+ * @param out ネットワークの出力.
+ * @param scoreThreshold これ未満のスコアの候補は捨てる.
+ * @return 検出候補.
+ */
 Candidates parseEnd2End(const cv::Mat &out, float scoreThreshold) {
   int n = out.size[1];
   const auto *data = out.ptr<float>();
@@ -96,8 +135,16 @@ Candidates parseEnd2End(const cv::Mat &out, float scoreThreshold) {
   return c;
 }
 
-// NMS 前の生出力 [1, 4+nc, A]. 各列が1つのアンカーで,
-// 先頭4行が (cx, cy, w, h), 残りがクラスごとのスコア.
+/**
+ * @brief NMS 前の生出力から検出候補を取り出す.
+ *
+ * NMS 前の生出力 [1, 4+nc, A]. 各列が1つのアンカーで,
+ * 先頭4行が (cx, cy, w, h), 残りがクラスごとのスコア.
+ * 各アンカーは最もスコアの高いクラスの候補とする.
+ * @param out ネットワークの出力.
+ * @param scoreThreshold これ未満のスコアの候補は捨てる.
+ * @return 検出候補.
+ */
 Candidates parseRaw(const cv::Mat &out, float scoreThreshold) {
   int channels = out.size[1];
   int anchors = out.size[2];
@@ -144,6 +191,10 @@ YoloDetector::YoloDetector(const std::vector<uchar> &modelData,
   setupNet();
 }
 
+/**
+ * @brief 読み込んだネットワークを確かめ, 推論の計算経路を設定する.
+ * @throws std::runtime_error モデルが空の場合.
+ */
 void YoloDetector::setupNet() {
   if (net_.empty()) throw std::runtime_error("Failed to load ONNX model.");
 

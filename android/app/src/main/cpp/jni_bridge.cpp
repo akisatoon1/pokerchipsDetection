@@ -15,17 +15,34 @@
 
 namespace {
 
+/**
+ * @brief Java 側に RuntimeException を投げる.
+ *
+ * 例外は native から戻った時点で Java 側に伝わる.
+ * @param env JNI の環境.
+ * @param message 例外のメッセージ.
+ */
 void throwJava(JNIEnv *env, const char *message) {
   jclass cls = env->FindClass("java/lang/RuntimeException");
   if (cls != nullptr) env->ThrowNew(cls, message);
 }
 
+/**
+ * @brief Kotlin 側が持つハンドルを検出器のポインタに戻す.
+ * @param handle nativeCreate が返したハンドル.
+ * @return 検出器のポインタ.
+ */
 YoloDetector *fromHandle(jlong handle) {
   return reinterpret_cast<YoloDetector *>(handle);  // NOLINT
 }
 
-// ARGB_8888 の Bitmap を BGR の cv::Mat にコピーする.
-// 戻り値が空なら Java の例外を投げ済み.
+/**
+ * @brief ARGB_8888 の Bitmap を BGR の cv::Mat にコピーする.
+ * @param env JNI の環境.
+ * @param bitmap ARGB_8888 の Bitmap.
+ * @return BGR の画像. 空なら Java の例外を投げ済み.
+ * @throws cv::Exception 色の変換に失敗した場合.
+ */
 cv::Mat bitmapToBgr(JNIEnv *env, jobject bitmap) {
   AndroidBitmapInfo info;
   if (AndroidBitmap_getInfo(env, bitmap, &info) !=
@@ -59,7 +76,14 @@ cv::Mat bitmapToBgr(JNIEnv *env, jobject bitmap) {
 
 extern "C" {
 
-// ONNX モデルのバイト列から検出器を作り, ハンドルを返す.
+/**
+ * @brief ONNX モデルのバイト列から検出器を作り, ハンドルを返す.
+ *
+ * 失敗した場合は Java の RuntimeException を投げる.
+ * @param env JNI の環境.
+ * @param model ONNX ファイルの中身.
+ * @return 検出器のハンドル. nativeRelease で解放する. 失敗時は 0.
+ */
 JNIEXPORT jlong JNICALL Java_com_pokerchip_app_PokerChipNative_nativeCreate(
     JNIEnv *env, jobject /*thiz*/, jbyteArray model) {
   try {
@@ -75,7 +99,15 @@ JNIEXPORT jlong JNICALL Java_com_pokerchip_app_PokerChipNative_nativeCreate(
   }
 }
 
-// 画像を解析し, 結果を JSON 文字列で返す (形式は core の toJson).
+/**
+ * @brief 画像を解析し, 結果を JSON 文字列で返す (形式は core の toJson).
+ *
+ * 失敗した場合は Java の RuntimeException を投げる.
+ * @param env JNI の環境.
+ * @param handle nativeCreate が返したハンドル.
+ * @param bitmap 解析する画像 (ARGB_8888).
+ * @return 解析結果の JSON. 失敗時は null.
+ */
 JNIEXPORT jstring JNICALL Java_com_pokerchip_app_PokerChipNative_nativeAnalyze(
     JNIEnv *env, jobject /*thiz*/, jlong handle, jobject bitmap) {
   try {
@@ -90,6 +122,10 @@ JNIEXPORT jstring JNICALL Java_com_pokerchip_app_PokerChipNative_nativeAnalyze(
   }
 }
 
+/**
+ * @brief nativeCreate で作った検出器を解放する.
+ * @param handle nativeCreate が返したハンドル.
+ */
 JNIEXPORT void JNICALL Java_com_pokerchip_app_PokerChipNative_nativeRelease(
     JNIEnv * /*env*/, jobject /*thiz*/, jlong handle) {
   delete fromHandle(handle);

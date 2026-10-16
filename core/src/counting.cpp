@@ -9,26 +9,37 @@ namespace {
 
 // ---- パラメータ ----------------------------------------------------------
 
-// プロファイルの平滑化に使うガウシアンの標準偏差(ピクセル).
-// 小さすぎるとノイズを拾い, 大きすぎると合わせ目が潰れる.
+/**
+ * @brief プロファイルの平滑化に使うガウシアンの標準偏差(ピクセル).
+ *
+ * 小さすぎるとノイズを拾い, 大きすぎると合わせ目が潰れる.
+ */
 const double kSmoothSigma = 2.0;
 
-// 自己相関で探索するチップ1枚あたりの高さの範囲(ピクセル).
+//! 自己相関で探索するチップ1枚あたりの高さの下限(ピクセル).
 const int kMinChipThicknessPx = 4;
+
+//! 自己相関で探索するチップ1枚あたりの高さの上限(ピクセル).
 const int kMaxChipThicknessPx = 200;
 
-// ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
+//! ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
 const double kMinDistanceRatio = 0.6;
 
-// ピークの顕著さ(prominence)のしきい値. 信号の標準偏差に対する比.
+//! ピークの顕著さ(prominence)のしきい値. 信号の標準偏差に対する比.
 const double kMinProminenceRatio = 0.3;
 
 // ---- 内部処理 ------------------------------------------------------------
 
-// グレースケール化して縦方向の微分の大きさを計算し,
-// 各行を平均して1次元のデータに変換する. チップは縦に積まれていて,
-// チップの境界は溝があって暗いので,
-// チップ境界を縦に微分すると絶対値が大きくなると考えられるから.
+/**
+ * @brief 縦方向の輝度変化の大きさを, 行ごとの1次元のデータにする.
+ *
+ * グレースケール化して縦方向の微分の大きさを計算し,
+ * 各行を平均して1次元のデータに変換する. チップは縦に積まれていて,
+ * チップの境界は溝があって暗いので,
+ * チップ境界を縦に微分すると絶対値が大きくなると考えられるから.
+ * @param roi スタック領域の画像 (BGR).
+ * @return 各行の縦方向の微分の絶対値の平均. 長さは roi の行数.
+ */
 std::vector<double> convertToBrightnessDiff(const cv::Mat &roi) {
   cv::Mat gray;
   cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
@@ -51,8 +62,15 @@ std::vector<double> convertToBrightnessDiff(const cv::Mat &roi) {
   return profile;
 }
 
-// この関数は[明るさの差が要素であるベクトル]の平滑化とトレンド除去に使われる.
-// [明るさの差が要素であるベクトル]の平滑化に意味があるかどうかは不明.
+/**
+ * @brief 1次元のデータをガウシアンで平滑化する.
+ *
+ * この関数は[明るさの差が要素であるベクトル]の平滑化とトレンド除去に使われる.
+ * [明るさの差が要素であるベクトル]の平滑化に意味があるかどうかは不明.
+ * @param profile 平滑化するデータ.
+ * @param sigma ガウシアンの標準偏差 (要素数).
+ * @return 平滑化したデータ. 長さは profile と同じ.
+ */
 std::vector<double> smoothProfile(const std::vector<double> &profile,
                                   double sigma) {
   cv::Mat src(static_cast<int>(profile.size()), 1, CV_64F);
@@ -71,7 +89,14 @@ std::vector<double> smoothProfile(const std::vector<double> &profile,
   return out;
 }
 
-// トレンド除去をすると信号の周期推定が行いやすくなるため.
+/**
+ * @brief データから緩やかな変化 (トレンド) を取り除く.
+ *
+ * トレンド除去をすると信号の周期推定が行いやすくなるため.
+ * @param profile トレンドを除くデータ.
+ * @param sigma トレンドを求める平滑化の標準偏差 (要素数).
+ * @return profile から平滑化したものを引いたデータ. 長さは profile と同じ.
+ */
 std::vector<double> removeTrend(const std::vector<double> &profile,
                                 double sigma) {
   std::vector<double> trend = smoothProfile(profile, sigma);
@@ -82,9 +107,16 @@ std::vector<double> removeTrend(const std::vector<double> &profile,
   return out;
 }
 
-// 信号の周期を推定して正しいピークを見つけられるようにするため.
-// 周期が分かれば大まかにピークの位置が分かり,
-// チップの境界ではないピークの誤検出を減らせるかもしれない.
+/**
+ * @brief 自己相関が最も高いラグを信号の周期として推定する.
+ *
+ * 信号の周期を推定して正しいピークを見つけられるようにするため.
+ * 周期が分かれば大まかにピークの位置が分かり,
+ * チップの境界ではないピークの誤検出を減らせるかもしれない.
+ * @param signal 周期を推定する信号.
+ * @return 推定した周期 (要素数). 信号が短すぎる場合や,
+ *         正の相関を持つラグがない場合は nullopt.
+ */
 std::optional<double> estimatePeriod(const std::vector<double> &signal) {
   // ラグが大きすぎると自己相関を計算する範囲が狭くなり,
   // 自己相関の信頼性が低くなるため, ラグの上限を設定する.
@@ -133,13 +165,20 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
   return static_cast<double>(bestLag);
 }
 
-// この関数はピーク検出のために使われる.
-// 顕著さがの処理が必要かどうかは確かめていないので不明.
-// 自身の点より高い点(峰)がでてくるまで進んで,
-// その間の最小値(谷)を左右に対して2回求める.
-// 自身の点と谷の差を顕著さとしている.
-// 山のような周りの高さが高いとこでちょっとしたノイズでできた極大値をピークとして扱わないようにするため
-// だと考えられる.
+/**
+ * @brief ピークの顕著さ (prominence) を計算する.
+ *
+ * この関数はピーク検出のために使われる.
+ * 顕著さがの処理が必要かどうかは確かめていないので不明.
+ * 自身の点より高い点(峰)がでてくるまで進んで,
+ * その間の最小値(谷)を左右に対して2回求める.
+ * 自身の点と谷の差を顕著さとしている.
+ * 山のような周りの高さが高いとこでちょっとしたノイズでできた極大値をピークとして扱わないようにするため
+ * だと考えられる.
+ * @param signal 信号.
+ * @param peak 顕著さを求める点の位置.
+ * @return 顕著さ. 0 以上.
+ */
 double computeProminence(const std::vector<double> &signal, int peak) {
   int n = static_cast<int>(signal.size());
   double peakValue = signal[peak];
@@ -159,7 +198,16 @@ double computeProminence(const std::vector<double> &signal, int peak) {
   return peakValue - std::max(leftMin, rightMin);
 }
 
-// チップの境界にピークが来ると考えられるから.
+/**
+ * @brief 信号の極大値のうち, 条件を満たすものをピークとして返す.
+ *
+ * チップの境界にピークが来ると考えられるから.
+ * 高いピークから順に採用し, 採用済みのピークに近すぎるものは捨てる.
+ * @param signal 信号.
+ * @param minDistance ピーク同士の最小間隔 (要素数).
+ * @param minProminence ピークとみなす顕著さの下限.
+ * @return ピークの位置. 昇順に並ぶ. 信号の両端はピークにならない.
+ */
 std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
                            double minProminence) {
   int n = static_cast<int>(signal.size());
@@ -192,7 +240,13 @@ std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
   return peaks;
 }
 
-// 信号の標準偏差を計算する. ピークの顕著さのしきい値を決めるために使う.
+/**
+ * @brief 信号の標準偏差を計算する.
+ *
+ * ピークの顕著さのしきい値を決めるために使う.
+ * @param v 信号.
+ * @return 母標準偏差. v が空なら 0.
+ */
 double standardDeviation(const std::vector<double> &v) {
   if (v.empty()) return 0.0;
 

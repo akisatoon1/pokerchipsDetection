@@ -9,39 +9,73 @@ namespace {
 // ---- パラメータ ----------------------------------------------------------
 // OpenCVのHSVは H: 0-179, S: 0-255, V: 0-255.
 
-// V がこれ未満なら黒.
+//! V がこれ未満なら黒.
 const int kBlackMaxV = 50;
 
-// S がこれ未満で, V が kBlackMaxV 以上 kGrayMaxV 未満なら灰.
-// V が kGrayMaxV 以上の低彩度画素は白っぽいので無視する.
+//! S がこれ未満で, V が kBlackMaxV 以上 kGrayMaxV 未満なら灰.
 const int kGrayMaxS = 50;
+
+/**
+ * @brief 灰とみなす V の上限.
+ *
+ * V が kGrayMaxV 以上の低彩度画素は白っぽいので無視する.
+ */
 const int kGrayMaxV = 200;
 
-// 有彩色の色相の範囲. [min, max) で判定する.
-// 赤は色相環の両端にまたがるので2つに分ける.
-// 紫のチップはマゼンタ寄りで H が 170 付近まで分布するため,
-// 赤と紫の境界は 172 にしている (testimages/yoko/stack で確認).
+/**
+ * @brief 赤 (色相環の 0 側) の H の上限.
+ *
+ * 有彩色の色相の範囲は [min, max) で判定する.
+ * 赤は色相環の両端にまたがるので2つに分ける.
+ * 紫のチップはマゼンタ寄りで H が 170 付近まで分布するため,
+ * 赤と紫の境界は 172 にしている (testimages/yoko/stack で確認).
+ */
 const int kRedLowMaxH = 10;
+
+//! 赤 (色相環の 180 側) の H の下限.
 const int kRedHighMinH = 172;
+
+//! 黄の H の下限.
 const int kYellowMinH = 20;
+
+//! 黄の H の上限.
 const int kYellowMaxH = 35;
+
+//! 緑の H の下限.
 const int kGreenMinH = 30;
+
+//! 緑の H の上限.
 const int kGreenMaxH = 90;
+
+//! 青の H の下限.
 const int kBlueMinH = 90;
+
+//! 青の H の上限.
 const int kBlueMaxH = 130;
+
+//! 紫の H の下限.
 const int kPurpleMinH = 130;
+
+//! 紫の H の上限.
 const int kPurpleMaxH = 172;
 
-// 区間の上下端をこの割合だけ削る.
-// 合わせ目の影(暗部)が黒としてカウントされるのを避けるため.
+/**
+ * @brief 区間の上下端をこの割合だけ削る.
+ *
+ * 合わせ目の影(暗部)が黒としてカウントされるのを避けるため.
+ */
 const double kSeamMarginRatio = 0.15;
 
-// kUnknown を除いたクラス数. カウント用の配列の大きさに使う.
+//! kUnknown を除いたクラス数. カウント用の配列の大きさに使う.
 const int kNumColorClasses = static_cast<int>(ChipColor::kUnknown);
 
 // ---- 内部処理 ------------------------------------------------------------
 
-// 1画素を色クラスに分類する. どこにも属さない場合は nullopt.
+/**
+ * @brief 1画素を色クラスに分類する.
+ * @param hsv 画素の値 (OpenCV の HSV).
+ * @return 色クラス. どこにも属さない場合は nullopt.
+ */
 std::optional<ChipColor> classifyPixel(const cv::Vec3b &hsv) {
   int h = hsv[0];
   int s = hsv[1];
@@ -62,7 +96,11 @@ std::optional<ChipColor> classifyPixel(const cv::Vec3b &hsv) {
   return std::nullopt;
 }
 
-// 区間内の全画素を分類し, 最も画素数の多いクラスを返す.
+/**
+ * @brief 区間内の全画素を分類し, 最も画素数の多いクラスを返す.
+ * @param segmentBgr チップ1枚分の区間の画像 (BGR).
+ * @return 最も画素数の多いクラス. どのクラスの画素もなければ kUnknown.
+ */
 ChipColor classifySegment(const cv::Mat &segmentBgr) {
   cv::Mat hsv;
   cv::cvtColor(segmentBgr, hsv, cv::COLOR_BGR2HSV);
