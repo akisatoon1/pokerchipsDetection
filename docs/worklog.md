@@ -1,7 +1,7 @@
 # 作業記録
 
 大まかな記録. 設計の結論は [architecture.md](architecture.md), 環境構築の手順は
-[setup.md](setup.md) にまとめている.
+[setup.md](setup.md), Linux マシンでの使い方は [usage.md](usage.md) にまとめている.
 
 ## 2026-10-12: Android アプリ化の土台づくり
 
@@ -153,3 +153,12 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   移行元での結果 (`results.txt`) の保存と送付, Claude Code の設定の送付の項目を消した.
 - そのため移行後の確認の 3 は「移行元と結果が一致する」から「testimages で CLI が動く」に変えた.
   ここで保存した結果は, 7 で Android の結果と比べるのに使う.
+
+## 2026-10-16: Linux マシンでの使い方のドキュメント
+
+- `docs/usage.md` を作った. 環境構築の後の Linux マシンでの使い方 (ビルド, CLI の実行, 出力の見方,
+  デバッグ画像, testimages をまとめて解析する方法, テスト, モデルを更新したとき, 整形と検査, make のターゲット) を書いた.
+  環境構築は [setup.md](setup.md) を参照する形にした.
+- `docs/setup.md` にあった「モデルを更新したとき」「CLI の使い方」「make のターゲット一覧」は usage.md に移した.
+- 書いたコマンド (`--json --out`, `--rect`, `ctest -R`) は実際に動かして, 出力の例と合っていることを確認した.
+  `--roi user` は GUI なしの OpenCV のため確認できていない (キー操作は OpenCV の `selectROI` の説明に従った).

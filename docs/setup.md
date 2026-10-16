@@ -2,6 +2,7 @@
 
 新しいマシンでこのプロジェクトを使えるようにするまでの手順.
 Linux で実験・テストをする部分 (1〜6) と, Android アプリをビルドする部分 (7〜9) がある.
+セットアップが済んだ後の Linux マシンでの使い方 (ビルド, CLI の実行, テスト) は [usage.md](usage.md),
 設計の理由は [architecture.md](architecture.md) を参照.
 
 想定する環境は **Ubuntu 24.04** (作業記録の環境と同じ). 他のバージョンでも大きくは変わらないが,
@@ -91,47 +92,7 @@ make run ARGS="--out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg"
 
 最後のコマンドで `chip count by peaks  = 4` と黄色 4 枚が出て, `debug.png` が保存されれば OK.
 
-### モデルを更新したとき
-
-検出器のテストは「ultralytics で同じ ONNX を推論した結果」を基準にしている.
-モデルを更新したら基準を作り直し, テストが通ることを確かめてからコミットする.
-
-```
-make model PT=path/to/new/best.pt
-.venv/bin/python pyscript/make_yolo_reference.py models/chip_detector.onnx
-make test
-```
-
-### CLI の使い方
-
-```
-./build/pokerchip [オプション] <画像のパス>
-```
-
-| オプション | 意味 |
-|---|---|
-| `--roi yolo` (既定) | YOLO でスタックを検出する |
-| `--roi user` | 画面で ROI を手動選択する (GUI 必須) |
-| `--rect X,Y,W,H` | ROI を数値で指定する. 同じ ROI で実験を繰り返すとき用 |
-| `--model PATH` | ONNX のパス (既定 `models/chip_detector.onnx`) |
-| `--out PATH` | デバッグ画像をファイルに保存する. 省略時は画面に表示 (GUI 必須) |
-| `--json` | 結果を JSON でも出力する (Android と同じ形式) |
-
-### make のターゲット一覧
-
-| ターゲット | 内容 |
-|---|---|
-| `make build` | CMake の設定とビルド |
-| `make test` | テスト (ctest) |
-| `make run ARGS="..."` | CLI を実行 |
-| `make format` / `make format-check` | clang-format で整形 / 整形の確認 |
-| `make tidy` / `make tidy-fix` | clang-tidy で検査 / 自動修正 |
-| `make check` | `format-check` と `tidy` |
-| `make opencv` | OpenCV のビルド |
-| `make model PT=...` | `.pt` を ONNX に変換 |
-| `make android-deps` | OpenCV Android SDK と NDK の取得 |
-| `make android-native` | core + JNI を NDK でビルドできるかの確認 |
-| `make clean` | `build/` を削除 |
+ビルド, CLI のオプションや出力の見方, テスト, モデルを更新したときの手順などは [usage.md](usage.md) を参照.
 
 ## 7. Android 用の外部ファイルを取得する
 
@@ -205,7 +166,7 @@ Android Studio を使わない場合は `android/local.properties` に `sdk.dir=
 | `OpenCV error: ... The function is not implemented` (imshow など) | OpenCV が GUI なしでビルドされている. `libgtk-3-dev` を入れて `make opencv` をやり直す. それまでは `--out` / `--rect` を使う |
 | CMake で `Could not find a configuration file for package "OpenCV" that exactly matches requested version "4.14.0"` | `make opencv` (Linux) または `make android-deps` (Android) をしていない. または別のバージョンの OpenCV を掴んでいる |
 | `make test` で検出器のテストがスキップされる | `models/chip_detector.onnx` がない. 6 を行う |
-| `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. 「モデルを更新したとき」を参照 |
+| `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. [usage.md](usage.md) の「モデルを更新したとき」を参照 |
 | Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
 | Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
 | アプリで解析すると `chip_detector.onnx` が開けないというエラーになる | assets にモデルがない. `make model PT=...` をやり直す (`android/app/src/main/` がある状態で実行すると assets にもコピーされる) |
