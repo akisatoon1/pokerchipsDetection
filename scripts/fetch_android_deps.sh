@@ -8,7 +8,7 @@
 set -euo pipefail
 
 OPENCV_VERSION="${OPENCV_VERSION:-4.14.0}"
-NDK_VERSION="${NDK_VERSION:-r27c}"
+NDK_VERSION="${NDK_VERSION:-r30}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 THIRD_PARTY="$ROOT/third_party"
