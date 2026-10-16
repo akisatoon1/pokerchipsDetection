@@ -162,3 +162,27 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `docs/setup.md` にあった「モデルを更新したとき」「CLI の使い方」「make のターゲット一覧」は usage.md に移した.
 - 書いたコマンド (`--json --out`, `--rect`, `ctest -R`) は実際に動かして, 出力の例と合っていることを確認した.
   `--roi user` は GUI なしの OpenCV のため確認できていない (キー操作は OpenCV の `selectROI` の説明に従った).
+
+## 2026-10-17: Android アプリを Android 16 以上向けに作り直す
+
+まだ一度もビルドしていなかったので, 古い Android との互換は捨てて作り直した.
+
+- minSdk 36 (Android 16), compileSdk / targetSdk 37 (Android 17). このマシンの SDK とエミュレータが API 37 のため.
+- ツールチェーンを最新の安定版にした: Gradle 9.8.1, AGP 9.4.1 (Kotlin 内蔵なので `org.jetbrains.kotlin.android` は外した),
+  Compose BOM 2026.09.00, NDK r30 (`30.0.16248370`), CMake 3.31.6. 版は `android/gradle/libs.versions.toml` にまとめた.
+- NDK r28 以降は 16KB ページ整列が既定. `libpokerchip_jni.so` の LOAD の Align が 0x4000 になっていることを確認した.
+  `scripts/fetch_android_deps.sh`, `scripts/check_android_native.sh` も r30 / android-36 に揃えた.
+- Kotlin:
+  - 画像の読み込みを `ImageDecoder` にした. EXIF の向きを自動で反映するので `ExifInterface` と回転処理を消した.
+    JNI で画素を読むため `ALLOCATOR_SOFTWARE` にし, ARGB_8888 以外 (HDR など) は変換する.
+  - `MainViewModel` の状態を `StateFlow` にし, 画面側は `collectAsStateWithLifecycle` で読む.
+  - `enableEdgeToEdge()` と Material You の色 (`dynamicLightColorScheme` など) を使う. 画面は `ui/` に分けた.
+  - JNI の名前 (`PokerChipNative`) と C++ 側は変えていない.
+- 確認: `make android-native`, `./gradlew assembleDebug` と `lintDebug` が通る (lint はアイコン未設定の警告 1 件のみ).
+  API 37 のエミュレータで `testimages/upper.jpg` をギャラリーから選び, CLI と同じ枠・枚数 (15, 3, 31)・色になった.
+  撮影 (カメラアプリ経由) はまだ確かめていない.
+- コミットは「ツールチェーンの更新」「画像の読み込みを ImageDecoder に」「状態と画面の作り直し」「ドキュメント」に分けた.
+  途中のコミットでもビルドが通るように, 最初のコミットでは ExifInterface の依存を残し, 次のコミットで外した
+  (各コミットで `:app:compileDebugKotlin` が通ることを確認した).
+- このマシンには git の user.name / user.email が設定されていないため, 今回のコミットは `git -c` で
+  過去のコミットと同じ作者 (akisatoon) を指定した.
