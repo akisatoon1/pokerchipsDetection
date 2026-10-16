@@ -102,7 +102,7 @@ make android-deps    # = scripts/fetch_android_deps.sh
 
 - OpenCV Android SDK 4.14.0 を `third_party/opencv-4.14.0-android-sdk/` に取得する.
   アプリのビルド (`android/app/src/main/cpp/CMakeLists.txt`) がここを参照するので **必須**.
-- NDK r27c を `third_party/android-ndk-r27c/` に取得する. これは `make android-native`
+- NDK r30 を `third_party/android-ndk-r30/` に取得する. これは `make android-native`
   (Android Studio なしでの確認) 用. 不要なら `scripts/fetch_android_deps.sh --no-ndk`.
 
 ## 8. Android Studio を入れる
@@ -113,9 +113,13 @@ make android-deps    # = scripts/fetch_android_deps.sh
 2. 初回起動のウィザードで標準の SDK を入れる.
 3. **SDK Manager** (Settings > Languages & Frameworks > Android SDK) で以下を入れる.
    バージョンは `android/app/build.gradle.kts` の指定と合わせる.
-   - SDK Platforms: Android 15 (API 35)
-   - SDK Tools: NDK (Side by side) `27.2.12479018` ("Show Package Details" で版を選ぶ)
-   - SDK Tools: CMake `3.22.1`
+   アプリは Android 16 (API 36) 以上が対象で, Android 17 (API 37) の SDK でビルドする.
+   - SDK Platforms: Android 17 (API 37)
+   - SDK Tools: NDK (Side by side) `30.0.16248370` ("Show Package Details" で版を選ぶ)
+   - SDK Tools: CMake `3.31.6`
+
+   NDK と CMake は, SDK のライセンスに同意済み (`~/Android/Sdk/licenses/` がある) なら,
+   初回の Gradle のビルドで自動で入る.
 4. エミュレータを使う場合, KVM を使えるようにする.
    ```
    sudo adduser $USER kvm     # 反映には再ログインが必要
@@ -136,17 +140,19 @@ make android-deps    # = scripts/fetch_android_deps.sh
    - `third_party/opencv-4.14.0-android-sdk/` がある
 2. Android Studio で **`android/` ディレクトリ** を開く (リポジトリのルートではない).
    Gradle の同期が走り, `android/local.properties` (SDK の場所) が自動で作られる.
-3. 実機かエミュレータ (x86_64 のシステムイメージ) を選んで Run.
+3. 実機かエミュレータ (Android 16 以上, x86_64 のシステムイメージ) を選んで Run.
 
 コマンドラインでビルドする場合:
 
 ```
 cd android
+export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入っている JDK. 場所は入れ方で変わる
 ./gradlew assembleDebug          # app/build/outputs/apk/debug/app-debug.apk ができる
 ./gradlew installDebug           # 繋いだ端末にインストール
 ```
 
 Android Studio を使わない場合は `android/local.properties` に `sdk.dir=/path/to/Android/Sdk` を書く.
+Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
 
 ### Linux と同じ結果になるかの確認
 

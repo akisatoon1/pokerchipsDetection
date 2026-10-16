@@ -96,12 +96,12 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
   ```
   (1 行に「画像のパス + JSON かエラー」が並ぶ. 27 枚のうち, 移行元でスタックが検出されなかった
   5 枚は `Error: ROI was not selected.` になる)
-- [ ] 4. `make android-native` が通る (core + JNI の NDK ビルド)
+- [x] 4. `make android-native` が通る (core + JNI の NDK ビルド)
 - [ ] 5. GUI が使える: `./build/pokerchip --roi user testimages/yoko/stack/singlecolor/IMG_5587.jpg`
   で ROI を選ぶ画面が出て, 結果の画像が表示される
-- [ ] 6. `cd android && ./gradlew assembleDebug` が通る.
-  **Kotlin 側は一度もビルドしていないので, ここで修正が必要になる見込み.**
-- [ ] 7. エミュレータか実機でアプリが動き, testimages の画像で 3 と同じ枠・枚数・色が出る
+- [x] 6. `cd android && ./gradlew assembleDebug` が通る.
+  (2026-10-17 に Android 16 以上向けに作り直してから通した. [worklog.md](worklog.md) を参照)
+- [x] 7. エミュレータか実機でアプリが動き, testimages の画像で 3 と同じ枠・枚数・色が出る
   (手順は [setup.md](setup.md) の「Linux と同じ結果になるかの確認」)
 - [ ] 8. 実機での解析時間を測る (参考: 移行元の Linux で CLI 全体が約 0.7 秒)
 
@@ -109,7 +109,7 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 - [ ] [worklog.md](worklog.md) に移行の記録 (確認結果, 直したところ) を書く
 - [ ] (任意) `scripts/check_android_native.sh` を, Android Studio が入れた NDK
-  (`~/Android/Sdk/ndk/27.2.12479018`) も使えるようにする. 今は `third_party/` の NDK を
+  (`~/Android/Sdk/ndk/30.0.16248370`) も使えるようにする. 今は `third_party/` の NDK を
   使うので, NDK を2つダウンロードすることになっている
 - [ ] 移行元の WSL 環境は, 移行先で 4 の確認が終わるまで消さずに残しておく.
   消す場合は `.venv/` と `third_party/` だけで約 10GB 空く
