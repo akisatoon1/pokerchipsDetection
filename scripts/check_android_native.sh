@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-NDK_VERSION="${NDK_VERSION:-r27c}"
+NDK_VERSION="${NDK_VERSION:-r30}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NDK_DIR="$ROOT/third_party/android-ndk-$NDK_VERSION"
 ABIS=("$@")
@@ -18,7 +18,7 @@ for abi in "${ABIS[@]}"; do
   cmake -S "$ROOT/android/app/src/main/cpp" -B "$build_dir" \
     -DCMAKE_TOOLCHAIN_FILE="$NDK_DIR/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI="$abi" \
-    -DANDROID_PLATFORM=android-24 \
+    -DANDROID_PLATFORM=android-36 \
     -DANDROID_STL=c++_shared \
     -DCMAKE_BUILD_TYPE=Release > /dev/null
   cmake --build "$build_dir" -j"$(nproc)"
