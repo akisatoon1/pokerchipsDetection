@@ -21,7 +21,7 @@ pokerchip/
 │   │   ├── pipeline.hpp    # analyzeImage: 画像 → 検出 → 計数 → 色判定
 │   │   ├── detector.hpp    # YoloDetector: cv::dnn で ONNX を推論
 │   │   ├── counting.hpp    # 輝度プロファイル法による枚数カウント
-│   │   ├── color.hpp       # HSV による色判定
+│   │   ├── color.hpp       # 白い縞で照明を補正し, Lab の基準色で色判定
 │   │   └── visualize.hpp   # デバッグ用の可視化画像の生成
 │   └── src/
 ├── cli/                    # Linux 専用の殻 (引数, 画像読込, 画面表示, 手動ROI選択)
@@ -29,7 +29,7 @@ pokerchip/
 ├── android/                # Android アプリ (Kotlin + Jetpack Compose + JNI)
 │   └── app/src/main/cpp/   # JNI の殻. core を add_subdirectory してビルド
 ├── models/                 # ONNX モデル置き場 (git 管理外)
-├── pyscript/               # Python 側の補助 (ultralytics での推論・比較用)
+├── pyscript/               # Python 側の補助 (ultralytics での推論・比較, 色の基準色の計算)
 ├── scripts/                # 環境構築・モデル取得のスクリプト
 └── third_party/            # ソースビルドした OpenCV (git 管理外)
 ```
@@ -61,7 +61,7 @@ YoloDetector::detect      … スタックの矩形を検出 (複数可). letter
 countChips(roi)           … 縦方向の輝度変化を1次元信号にし, 合わせ目の周期とピークから枚数を求める
   │
   ▼
-classifyChipColors(roi)   … ピーク間の区間ごとに HSV で色を判定
+classifyChipColors(roi)   … 白い縞で照明を補正し, ピーク間の区間ごとに Lab の基準色で色を判定
   │
   ▼
 AnalysisResult { stacks: [ { box, score, count, colors } ... ] }   … 左のスタックから順
@@ -172,6 +172,18 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 | `java/.../ImageLoader.kt` | Uri → Bitmap (EXIF の回転を補正) |
 | `java/.../MainViewModel.kt` | 画像の読込と解析, 状態の保持 |
 | `java/.../MainActivity.kt` | 画面 (撮影 / ギャラリー, 枠と枚数の表示, 色の内訳) |
+
+### 9. 色の基準色は正解付きの画像から C++ の処理で求める
+
+- 色判定は, チップの白い縞で照明を補正したあと, 各画素を Lab で最も近い基準色に分類して多数決をとる.
+  基準色は `core/src/color.cpp` の定数表 (`kReferences`) として持つので, Android にもそのまま反映される.
+- 基準色は今のチップセットから求めた値で, チップセットが変われば作り直す.
+  作り直しは `pyscript/make_color_references.py` で行う. CLI の `--lab` で core にチップごとの代表色を出させ,
+  `answers.txt` の正解の色ごとに中央値をとる.
+- 代表色を Python で計算し直さず C++ に出させるのは, 判定と同じ補正がかかった値で基準色を作るため.
+  補正を 2 か所で実装すると, 細かな違い (中央値や分位点の取り方) で基準色と判定がずれる.
+- `tests/test_color.cpp` が `answers.txt` での正答率を確かめる. 基準色を同じ画像から作っているので,
+  この正答率は初見の画像での性能より高く出る.
 
 ## 今後の課題
 

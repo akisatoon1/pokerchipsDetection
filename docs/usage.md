@@ -39,6 +39,7 @@ make run ARGS="[オプション] <画像のパス>"     # ビルドしてから�
 | `--model PATH` | ONNX のパス (既定 `models/chip_detector.onnx`) |
 | `--out PATH` | デバッグ画像をファイルに保存する. 省略時は画面に表示する (GUI 必須) |
 | `--json` | 結果を JSON でも出力する (Android と同じ形式) |
+| `--lab` | チップごとの代表色 (照明を補正したあとの Lab) も出力する. 色の基準色を作り直すときと, 色の誤りを調べるとき用 |
 
 GUI なしでビルドした OpenCV では, `--out` を付けずに実行したり `--roi user` を使ったりするとエラーになる.
 
@@ -79,6 +80,7 @@ Saved debug view: debug.png
 | `detected seams` | 見つかったチップの境目の数 |
 | `chip count by peaks` | 枚数 (境目と境目の間の数) |
 | `chip colors` | 上のチップから順の色. `red`, `blue`, `yellow`, `black`, `gray`, `purple`, `green` のいずれか |
+| `chip lab` | `--lab` を付けたときだけ出る. 上のチップから順の代表色 `(L, a, b)` |
 
 `--json` を付けたときの JSON の各項目:
 
@@ -126,7 +128,7 @@ adb pull /sdcard/Pictures/PokerChip/. testimages/android/
 make test          # ビルドしてから ctest を実行する
 ```
 
-テストは 6 件 (`tests/test_pipeline.cpp`, `tests/test_detector.cpp`).
+テストは 9 件 (`tests/test_pipeline.cpp`, `tests/test_detector.cpp`, `tests/test_color.cpp`).
 1 件だけ動かすときは ctest の `-R` で名前を指定する.
 
 ```
@@ -134,8 +136,24 @@ ctest --test-dir build -N                        # テストの一覧
 ctest --test-dir build -R YoloDetector --output-on-failure
 ```
 
-- `models/chip_detector.onnx` がないと, 検出器のテスト (`YoloDetector.*`) はスキップされる.
+- `models/chip_detector.onnx` がないと, 検出器のテスト (`YoloDetector.*`) と
+  複数色スタックの正答率のテスト (`ClassifyChipColors.MatchesAnswersOfMulticolorStacks`) はスキップされる.
 - 検出器のテストは「ultralytics で同じ ONNX を推論した結果」(`tests/data/yolo_reference.txt`) を基準にしている.
+- 正答率のテストは `testimages/yoko/stack/multicolor_jpg/answers.txt` と比べ, 正答率と間違えたチップを出力する.
+  正答率が 95% を下回ると失敗する.
+
+### 色の基準色を作り直すとき
+
+チップセットを変えたときや, 色判定の補正の処理を変えたときは, 基準色を作り直す.
+
+```
+make build
+.venv/bin/python pyscript/make_color_references.py
+```
+
+`answers.txt` の画像を CLI の `--lab` で解析し, 正解の色ごとに代表色の中央値をとって,
+`kReferences` の初期化子 (C++) を出力する. これを `core/src/color.cpp` に貼り付けてから `make test` で確かめる.
+検出できなかった画像や枚数が正解と合わない画像は, チップと色の対応が取れないので使わない (標準エラー出力に出る).
 
 ### モデルを更新したとき
 
