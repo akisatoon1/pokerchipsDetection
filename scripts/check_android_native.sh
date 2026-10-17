@@ -18,7 +18,7 @@ for abi in "${ABIS[@]}"; do
   cmake -S "$ROOT/android/app/src/main/cpp" -B "$build_dir" \
     -DCMAKE_TOOLCHAIN_FILE="$NDK_DIR/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI="$abi" \
-    -DANDROID_PLATFORM=android-36 \
+    -DANDROID_PLATFORM=android-35 \
     -DANDROID_STL=c++_shared \
     -DCMAKE_BUILD_TYPE=Release > /dev/null
   cmake --build "$build_dir" -j"$(nproc)"

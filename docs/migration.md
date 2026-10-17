@@ -100,7 +100,7 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 - [ ] 5. GUI が使える: `./build/pokerchip --roi user testimages/yoko/stack/singlecolor/IMG_5587.jpg`
   で ROI を選ぶ画面が出て, 結果の画像が表示される
 - [x] 6. `cd android && ./gradlew assembleDebug` が通る.
-  (2026-10-17 に Android 16 以上向けに作り直してから通した. [worklog.md](worklog.md) を参照)
+  (2026-10-17 に Android 16 以上向けに作り直し, その後 Android 15 以上に広げてから通した. [worklog.md](worklog.md) を参照)
 - [x] 7. エミュレータか実機でアプリが動き, testimages の画像で 3 と同じ枠・枚数・色が出る
   (手順は [setup.md](setup.md) の「Linux と同じ結果になるかの確認」)
 - [ ] 8. 実機での解析時間を測る (参考: 移行元の Linux で CLI 全体が約 0.7 秒)

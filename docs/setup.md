@@ -113,7 +113,7 @@ make android-deps    # = scripts/fetch_android_deps.sh
 2. 初回起動のウィザードで標準の SDK を入れる.
 3. **SDK Manager** (Settings > Languages & Frameworks > Android SDK) で以下を入れる.
    バージョンは `android/app/build.gradle.kts` の指定と合わせる.
-   アプリは Android 16 (API 36) 以上が対象で, Android 17 (API 37) の SDK でビルドする.
+   アプリは Android 15 (API 35) 以上が対象で, Android 17 (API 37) の SDK でビルドする.
    - SDK Platforms: Android 17 (API 37)
    - SDK Tools: NDK (Side by side) `30.0.16248370` ("Show Package Details" で版を選ぶ)
    - SDK Tools: CMake `3.31.6`
@@ -140,7 +140,7 @@ make android-deps    # = scripts/fetch_android_deps.sh
    - `third_party/opencv-4.14.0-android-sdk/` がある
 2. Android Studio で **`android/` ディレクトリ** を開く (リポジトリのルートではない).
    Gradle の同期が走り, `android/local.properties` (SDK の場所) が自動で作られる.
-3. 実機かエミュレータ (Android 16 以上, x86_64 のシステムイメージ) を選んで Run.
+3. 実機かエミュレータ (Android 15 以上, x86_64 のシステムイメージ) を選んで Run.
 
 コマンドラインでビルドする場合:
 

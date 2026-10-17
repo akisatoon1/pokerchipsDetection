@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "com.pokerchip.app"
-        // Android 16 以上だけを対象にする. 古い版との互換のための処理は持たない.
-        minSdk = 36
+        // Android 15 以上だけを対象にする. 古い版との互換のための処理は持たない.
+        minSdk = 35
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
