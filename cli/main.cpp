@@ -1,6 +1,7 @@
 // 指定した画像のチップの数を検出する. Linuxでの実験用のCLI.
 // 解析そのものは core (Androidと共通) が行い, ここでは入出力だけを扱う.
 
+#include <iomanip>
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -37,6 +38,9 @@ struct Options {
 
   //! 結果を JSON でも出力するか.
   bool json = false;
+
+  //! チップごとの代表色 (Lab) も出力するか. 色判定の基準色を作り直すときに使う.
+  bool lab = false;
 };
 
 /**
@@ -47,12 +51,13 @@ void printUsage(const char *prog) {
   std::cerr
       << "Usage: " << prog
       << " [--roi yolo|user] [--rect X,Y,W,H] [--model PATH] [--out PATH] "
-         "[--json] <image_file_path>\n"
+         "[--json] [--lab] <image_file_path>\n"
       << "  --roi    ROIの選び方. yolo: YOLOで検出 (既定), user: 手動\n"
       << "  --rect   ROIを数値で指定する. 同じROIで実験を繰り返すとき用\n"
       << "  --model  ONNXモデルのパス (既定: models/chip_detector.onnx)\n"
       << "  --out    デバッグ画像を保存するパス. 省略時は画面に表示\n"
-      << "  --json   結果をJSONでも出力する" << std::endl;
+      << "  --json   結果をJSONでも出力する\n"
+      << "  --lab    チップごとの代表色 (補正後の Lab) も出力する" << std::endl;
 }
 
 /**
@@ -94,6 +99,8 @@ std::optional<Options> parseArgs(int argc, char *argv[]) {
       opt.outPath = argv[++i];
     } else if (a == "--json") {
       opt.json = true;
+    } else if (a == "--lab") {
+      opt.lab = true;
     } else if (!a.empty() && a[0] != '-' && opt.imagePath.empty()) {
       opt.imagePath = a;
     } else {
@@ -110,8 +117,10 @@ std::optional<Options> parseArgs(int argc, char *argv[]) {
  * @brief 1つのスタックの解析結果を標準出力に書く.
  * @param index スタックの番号.
  * @param s スタックの解析結果.
+ * @param labs チップごとの代表色 (Lab). 空なら書かない.
  */
-void printStack(size_t index, const StackResult &s) {
+void printStack(size_t index, const StackResult &s,
+                const std::vector<cv::Vec3f> &labs) {
   std::cout << "[stack " << index << "] ROI: " << s.box
             << ", score = " << s.score << std::endl;
   if (!s.count.has_value()) {
@@ -131,6 +140,15 @@ void printStack(size_t index, const StackResult &s) {
     std::cout << (i == 0 ? " " : ", ") << chipColorName(s.colors[i]);
   }
   std::cout << std::endl;
+
+  if (labs.empty()) return;
+  std::cout << "  chip lab (top -> bottom) =" << std::fixed
+            << std::setprecision(1);
+  for (size_t i = 0; i < labs.size(); ++i) {
+    std::cout << (i == 0 ? " " : ", ") << "(" << labs[i][0] << ", "
+              << labs[i][1] << ", " << labs[i][2] << ")";
+  }
+  std::cout << std::defaultfloat << std::endl;
 }
 
 /**
@@ -214,7 +232,12 @@ int main(int argc, char *argv[]) {
     }
 
     for (size_t i = 0; i < result.stacks.size(); ++i) {
-      printStack(i, result.stacks[i]);
+      const StackResult &s = result.stacks[i];
+      std::vector<cv::Vec3f> labs;
+      if (opt->lab && s.count.has_value()) {
+        labs = measureChipLab(img(s.box), s.count.value());
+      }
+      printStack(i, s, labs);
     }
     if (opt->json) std::cout << toJson(result) << std::endl;
 

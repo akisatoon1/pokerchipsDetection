@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(googletest)
 find_package(OpenCV REQUIRED COMPONENTS imgcodecs)
 
 add_executable(pokerchip_tests
+  test_color.cpp
   test_pipeline.cpp
   test_detector.cpp
 )
