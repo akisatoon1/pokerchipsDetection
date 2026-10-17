@@ -237,3 +237,13 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - setup.md から udev のルールを入れる手順 (`android-sdk-platform-tools-common` と plugdev への追加) を消した.
   Ubuntu 26.04 の systemd 259 は ADB の端末に `uaccess` を付けるルールを持っており, ログイン中のユーザが
   そのまま使えるため. 古い OS で `no permissions` になったときの対処はトラブルシューティングに残した.
+
+## 2026-10-18: 色の基準色を作るスクリプトと色判定のテストを足す
+
+- 色判定の基準色 (`core/src/color.cpp` の `kReferences`) は今のチップセットから求めた値で,
+  チップセットが変われば作り直す必要があるため, 作り直す手順を用意した. 設計の理由は
+  [architecture.md](architecture.md) の 9.
+- `pyscript/make_color_references.py` を追加した. `answers.txt` の画像を CLI で解析し, 基準色の C++ の定数表を出力する.
+  チップごとの代表色を出させるため, CLI に `--lab` を足した (core に `measureChipLab` を追加).
+- `tests/test_color.cpp` を追加した. 人工の画像で照明の補正が効くことと, `answers.txt` での正答率 (95% 以上) を確かめる.
+  テストは 9 件になった. 手順は [usage.md](usage.md) の「テスト」.
