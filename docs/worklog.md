@@ -198,3 +198,16 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   `log/` は CMake の設定のときに作られる.
 - テストはテスト画像とモデルを `POKERCHIP_SOURCE_DIR` からの絶対パスで探すので, 作業ディレクトリを変えても結果は変わらない
   (`make test` で 6 件すべて通ることを確認した).
+
+## 2026-10-17: Android アプリの対象を Android 15 以上に広げる
+
+- minSdk を 36 (Android 16) から 35 (Android 15) に下げた. compileSdk / targetSdk は 37 のまま.
+- `scripts/check_android_native.sh` の `ANDROID_PLATFORM` も android-35 にした.
+- 使っている API (`ImageDecoder`: API 28, `dynamicLightColorScheme` など: API 31, Photo Picker, `enableEdgeToEdge`) は
+  すべて API 35 で使えるので, Kotlin のコードに版による分岐は要らない (Theme.kt のコメントだけ直した).
+- 確認: `make android-native`, `./gradlew assembleDebug` と `lintDebug` が通る (lint はアイコン未設定の警告 1 件のみ).
+  APK の minSdkVersion が 35 になっていることを `aapt2 dump badging` で確かめた.
+- Android 15 で確かめるため, このマシンの SDK に次を入れた (リポジトリの外の変更).
+  - command-line tools (`~/Android/Sdk/cmdline-tools/latest/`, 16111833). sdkmanager は非推奨で, `android sdk` が後継.
+  - システムイメージ `system-images;android-35;google_apis_playstore;x86_64` と AVD `Medium_Phone_API_35`.
+  API 35 のエミュレータが起動することまでは確かめたが, アプリを入れて動かすのはまだ.
