@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -93,6 +94,12 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
 
             state.bitmap?.let { ResultImage(it, state.result) }
             state.result?.let { ResultSummary(it) }
+
+            // 解析が終われば (失敗しても) 元の画像を保存できる.
+            if (state.source != null && !state.isAnalyzing) {
+                OutlinedButton(onClick = vm::saveSource) { Text("この画像を保存") }
+            }
+            state.saveMessage?.let { Text(it) }
         }
     }
 }

@@ -18,10 +18,14 @@ import kotlinx.coroutines.withContext
 
 /** 画面に出すもの. */
 data class UiState(
+    /** 解析した画像の元のファイル. デバッグ用に保存するときに使う. */
+    val source: Uri? = null,
     val bitmap: Bitmap? = null,
     val result: AnalysisResult? = null,
     val isAnalyzing: Boolean = false,
     val error: String? = null,
+    /** 画像を保存した結果 (保存先か失敗の理由). */
+    val saveMessage: String? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,7 +38,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 画像を読み込んで解析する. */
     fun analyze(uri: Uri) {
-        _state.value = UiState(isAnalyzing = true)
+        _state.value = UiState(source = uri, isAnalyzing = true)
         viewModelScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
@@ -49,6 +53,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 _state.update { it.copy(isAnalyzing = false, error = e.message ?: e.toString()) }
             }
+        }
+    }
+
+    /** 解析した元の画像を Pictures/PokerChip/ に保存する. 検出がうまくいかなかった画像のデバッグ用. */
+    fun saveSource() {
+        val uri = _state.value.source ?: return
+        viewModelScope.launch {
+            val message = try {
+                val path = withContext(Dispatchers.IO) { ImageSaver.save(getApplication(), uri) }
+                "保存しました: $path"
+            } catch (e: Exception) {
+                "保存できませんでした: ${e.message ?: e}"
+            }
+            // 保存中に別の画像を解析し始めていたら, その画面には出さない.
+            _state.update { if (it.source == uri) it.copy(saveMessage = message) else it }
         }
     }
 
