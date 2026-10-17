@@ -16,11 +16,15 @@ namespace {
  */
 const double kSmoothSigma = 2.0;
 
-//! 自己相関で探索するチップ1枚あたりの高さの下限(ピクセル).
-const int kMinChipThicknessPx = 4;
-
-//! 自己相関で探索するチップ1枚あたりの高さの上限(ピクセル).
-const int kMaxChipThicknessPx = 200;
+/**
+ * @brief 周期とみなす自己相関の山の高さの下限. 最も高い山に対する比.
+ *
+ * 周期の整数倍のラグにも同じくらいの高さの山ができ,
+ * 最も高い山を選ぶと周期の2倍を選ぶことがある (IMG_5723).
+ * この比以上の山のうちラグが最小のものを周期にする.
+ * テスト画像では 0.5〜0.9 で結果が変わらなかったので, 間の値にした.
+ */
+const double kPeriodPeakRatio = 0.8;
 
 //! ピーク検出時, 隣接ピークとして許す最小間隔を周期の何割にするか.
 const double kMinDistanceRatio = 0.6;
@@ -65,8 +69,8 @@ std::vector<double> convertToBrightnessDiff(const cv::Mat &roi) {
 /**
  * @brief 1次元のデータをガウシアンで平滑化する.
  *
- * この関数は[明るさの差が要素であるベクトル]の平滑化とトレンド除去に使われる.
- * [明るさの差が要素であるベクトル]の平滑化に意味があるかどうかは不明.
+ * この関数は[明るさの差が要素であるベクトル]の平滑化に使われる.
+ * 平滑化に意味があるかどうかは不明.
  * @param profile 平滑化するデータ.
  * @param sigma ガウシアンの標準偏差 (要素数).
  * @return 平滑化したデータ. 長さは profile と同じ.
@@ -90,46 +94,17 @@ std::vector<double> smoothProfile(const std::vector<double> &profile,
 }
 
 /**
- * @brief データから緩やかな変化 (トレンド) を取り除く.
- *
- * トレンド除去をすると信号の周期推定が行いやすくなるため.
- * @param profile トレンドを除くデータ.
- * @param sigma トレンドを求める平滑化の標準偏差 (要素数).
- * @return profile から平滑化したものを引いたデータ. 長さは profile と同じ.
+ * @brief 信号の自己相関 (相関係数) をラグ 0 から maxLag まで計算する.
+ * @param signal 信号.
+ * @param maxLag 計算するラグの上限 (要素数). signal の長さ未満にする.
+ * @return 各ラグの相関係数. 長さは maxLag + 1.
+ *         分散が 0 になるラグは 0.
  */
-std::vector<double> removeTrend(const std::vector<double> &profile,
-                                double sigma) {
-  std::vector<double> trend = smoothProfile(profile, sigma);
-
-  std::vector<double> out(profile.size());
-  for (size_t i = 0; i < profile.size(); ++i) out[i] = profile[i] - trend[i];
-
-  return out;
-}
-
-/**
- * @brief 自己相関が最も高いラグを信号の周期として推定する.
- *
- * 信号の周期を推定して正しいピークを見つけられるようにするため.
- * 周期が分かれば大まかにピークの位置が分かり,
- * チップの境界ではないピークの誤検出を減らせるかもしれない.
- * @param signal 周期を推定する信号.
- * @return 推定した周期 (要素数). 信号が短すぎる場合や,
- *         正の相関を持つラグがない場合は nullopt.
- */
-std::optional<double> estimatePeriod(const std::vector<double> &signal) {
-  // ラグが大きすぎると自己相関を計算する範囲が狭くなり,
-  // 自己相関の信頼性が低くなるため, ラグの上限を設定する.
-  // チップの高さが推定したい周期なので,
-  // ラグの上限はチップの最大高さよりは小さくする.
-  // ラグの上限がチップの最小高さより小さい場合は周期推定ができないので,
-  // 失敗する.
-  int n = static_cast<int>(signal.size());
-  int maxLag = std::min(kMaxChipThicknessPx, n / 2);
-  if (maxLag < kMinChipThicknessPx) return std::nullopt;
-
+std::vector<double> autocorrelation(const std::vector<double> &signal,
+                                    int maxLag) {
   // 相関係数を計算するために各要素から平均を引く必要があるらしい.
   // それが本当かどうかは知らない.
+  int n = static_cast<int>(signal.size());
   double mean = 0.0;
   for (double v : signal) mean += v;
   mean /= n;
@@ -137,14 +112,8 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
   std::vector<double> centered(n);
   for (int i = 0; i < n; ++i) centered[i] = signal[i] - mean;
 
-  double bestScore = -1.0;
-  int bestLag = -1;
-
-  // もっとも相関の高いラグを見つける.
-  // 周期の倍数のラグのときに相関が大きくなるため,
-  // この方法では不十分である可能性があるが,
-  // 今はうまくいってそうなのでこの方法で行う.
-  for (int lag = kMinChipThicknessPx; lag <= maxLag; ++lag) {
+  std::vector<double> acf(maxLag + 1, 0.0);
+  for (int lag = 0; lag <= maxLag; ++lag) {
     double dot = 0.0, normA = 0.0, normB = 0.0;
     for (int i = 0; i + lag < n; ++i) {
       dot += centered[i] * centered[i + lag];
@@ -153,16 +122,59 @@ std::optional<double> estimatePeriod(const std::vector<double> &signal) {
     }
     if (normA <= 0.0 || normB <= 0.0) continue;
 
-    double score = dot / std::sqrt(normA * normB);
-    if (score > bestScore) {
-      bestScore = score;
-      bestLag = lag;
+    acf[lag] = dot / std::sqrt(normA * normB);
+  }
+
+  return acf;
+}
+
+/**
+ * @brief 自己相関の山から信号の周期を推定する.
+ *
+ * 信号の周期を推定して正しいピークを見つけられるようにするため.
+ * 周期が分かれば大まかにピークの位置が分かり,
+ * チップの境界ではないピークの誤検出を減らせるかもしれない.
+ *
+ * 自己相関はラグ 0 で 1 になり, 平滑化のため小さいラグでも高い.
+ * 単に最大のラグを選ぶとこの裾を選んでしまう (IMG_5721, 5731, 5732)
+ * ので, 自己相関が初めて 0 以下になったより後の山だけを候補にする.
+ * また周期の整数倍のラグにも山ができるので,
+ * 最も高い山の kPeriodPeakRatio 倍以上の山のうちラグが最小のものを選ぶ.
+ * @param signal 周期を推定する信号.
+ * @return 推定した周期 (要素数). 信号が短すぎる場合や,
+ *         正の相関を持つ山がない場合は nullopt.
+ */
+std::optional<double> estimatePeriod(const std::vector<double> &signal) {
+  // ラグが大きすぎると自己相関を計算する範囲が狭くなり,
+  // 自己相関の信頼性が低くなるため, ラグの上限を信号の半分にする.
+  int n = static_cast<int>(signal.size());
+  int maxLag = n / 2;
+  if (maxLag < 2) return std::nullopt;
+
+  std::vector<double> acf = autocorrelation(signal, maxLag);
+
+  // ラグ 0 の山を飛ばす.
+  int start = 1;
+  while (start <= maxLag && acf[start] > 0.0) ++start;
+
+  // 正の相関を持つ山 (極大) を集める.
+  std::vector<int> peakLags;
+  double highest = 0.0;
+  for (int lag = start; lag < maxLag; ++lag) {
+    if (acf[lag] > 0.0 && acf[lag] >= acf[lag - 1] && acf[lag] > acf[lag + 1]) {
+      peakLags.push_back(lag);
+      highest = std::max(highest, acf[lag]);
+    }
+  }
+  if (peakLags.empty()) return std::nullopt;
+
+  for (int lag : peakLags) {
+    if (acf[lag] >= highest * kPeriodPeakRatio) {
+      return static_cast<double>(lag);
     }
   }
 
-  if (bestLag < 0 || bestScore <= 0.0) return std::nullopt;
-
-  return static_cast<double>(bestLag);
+  return std::nullopt;
 }
 
 /**
@@ -263,17 +275,10 @@ double standardDeviation(const std::vector<double> &v) {
 }  // namespace
 
 std::optional<CountResult> countChips(const cv::Mat &roi) {
-  // 射影 -> 平滑化 -> トレンド除去.
+  // 射影 -> 平滑化.
   // 合わせ目で山になる信号が得られる.
   std::vector<double> raw = convertToBrightnessDiff(roi);
   std::vector<double> signal = smoothProfile(raw, kSmoothSigma);
-
-  // トレンド除去のσは周期より十分大きく取りたいが, 周期はまだ未知なので
-  // 一度粗く推定してから決める.
-  std::optional<double> roughPeriod = estimatePeriod(signal);
-  if (roughPeriod.has_value()) {
-    signal = removeTrend(signal, roughPeriod.value() * 2.0);
-  }
 
   std::optional<double> period = estimatePeriod(signal);
   if (!period.has_value()) return std::nullopt;

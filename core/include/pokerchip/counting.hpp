@@ -15,7 +15,7 @@ struct CountResult {
   //! チップ枚数 (peaks.size() - 1)
   int count;
 
-  //! トレンド除去後のプロファイル
+  //! 平滑化したプロファイル
   std::vector<double> signal;
 
   //! 検出した合わせ目の位置
