@@ -253,6 +253,38 @@ std::vector<int> findPeaks(const std::vector<double> &signal, int minDistance,
 }
 
 /**
+ * @brief 信号の両端の近くや両端そのものもピークになりうるようにして,
+ *        ピークを探す.
+ *
+ * YOLO の枠の端が最上段・最下段の境目のすぐ外にあると,
+ * 信号が山を下りきる前に終わり, 顕著さが小さくなって山を捨ててしまう
+ * (IMG_5727, 5582 で最下段を拾わなかった).
+ * ROI の外は境目のない平らな背景とみなし, 両端に信号の最小値を足して探す.
+ * @param signal 信号.
+ * @param minDistance ピーク同士の最小間隔 (要素数).
+ * @param minProminence ピークとみなす顕著さの下限.
+ * @return ピークの位置 (signal の添字). 昇順に並ぶ.
+ */
+std::vector<int> findPeaksIncludingEdges(const std::vector<double> &signal,
+                                         int minDistance,
+                                         double minProminence) {
+  if (signal.empty()) return {};
+
+  double lowest = *std::min_element(signal.begin(), signal.end());
+  std::vector<double> padded;
+  padded.reserve(signal.size() + 2);
+  padded.push_back(lowest);
+  padded.insert(padded.end(), signal.begin(), signal.end());
+  padded.push_back(lowest);
+
+  // 足した値は最小値なのでピークにならない. 位置を元の信号に戻す.
+  std::vector<int> peaks = findPeaks(padded, minDistance, minProminence);
+  for (int &p : peaks) --p;
+
+  return peaks;
+}
+
+/**
  * @brief 信号の標準偏差を計算する.
  *
  * ピークの顕著さのしきい値を決めるために使う.
@@ -286,7 +318,8 @@ std::optional<CountResult> countChips(const cv::Mat &roi) {
   int minDistance =
       std::max(1, static_cast<int>(period.value() * kMinDistanceRatio));
   double minProminence = standardDeviation(signal) * kMinProminenceRatio;
-  std::vector<int> peaks = findPeaks(signal, minDistance, minProminence);
+  std::vector<int> peaks =
+      findPeaksIncludingEdges(signal, minDistance, minProminence);
 
   if (peaks.size() < 2) return std::nullopt;
 
