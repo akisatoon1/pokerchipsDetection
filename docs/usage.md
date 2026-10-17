@@ -61,12 +61,12 @@ GUI なしでビルドした OpenCV では, `--out` を付けずに実行した�
 
 ```
 [stack 0] ROI: [916 x 831 from (1089, 1246)], score = 0.969136
-  autocorrelation: period = 163 px
+  autocorrelation: period = 81 px
   profile length = 831 px
-  detected seams = 5
-  chip count by peaks  = 4
-  chip colors (top -> bottom) = yellow, yellow, yellow, yellow
-{"stacks":[{"box":[1089,1246,916,831],"score":0.969136,"count":4,"colors":["yellow","yellow","yellow","yellow"]}]}
+  detected seams = 11
+  chip count by peaks  = 10
+  chip colors (top -> bottom) = yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow
+{"stacks":[{"box":[1089,1246,916,831],"score":0.969136,"count":10,"colors":["yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow"]}]}
 Saved debug view: debug.png
 ```
 
