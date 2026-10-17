@@ -234,3 +234,6 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   検出がうまくいかなかった画像を Linux の CLI でデバッグするため.
 - PC への取り出しは `adb pull` で行う. adb は Android Studio の標準 SDK の `platform-tools/` に入っているが
   PATH が通っていなかったので, [setup.md](setup.md) の 8 の 5 に PATH を通す手順を足した.
+- setup.md から udev のルールを入れる手順 (`android-sdk-platform-tools-common` と plugdev への追加) を消した.
+  Ubuntu 26.04 の systemd 259 は ADB の端末に `uaccess` を付けるルールを持っており, ログイン中のユーザが
+  そのまま使えるため. 古い OS で `no permissions` になったときの対処はトラブルシューティングに残した.

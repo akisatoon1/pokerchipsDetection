@@ -126,16 +126,12 @@ make android-deps    # = scripts/fetch_android_deps.sh
    ```
 5. 実機を使う場合:
    - 端末で「開発者向けオプション」を有効にし, 「USB デバッグ」をオンにする.
-   - PC 側で udev のルールを入れる.
-     ```
-     sudo apt install android-sdk-platform-tools-common
-     sudo adduser $USER plugdev  # 反映には再ログインが必要
-     ```
    - adb は 2 の標準 SDK に含まれる `platform-tools/` に入っている. コマンドラインで使えるように PATH を通す.
      ```
      echo 'export PATH="$HOME/Android/Sdk/platform-tools:$PATH"' >> ~/.bashrc   # SDK の場所は入れ方で変わる
      ```
    - USB で繋いで `adb devices` に端末が出れば OK.
+     USB の権限は systemd (258 以降) の udev ルールが与えるので, udev のルールを別に入れなくてよい.
 
 ## 9. アプリをビルドして動かす
 
@@ -180,4 +176,5 @@ Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
 | Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
 | Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
 | アプリで解析すると `chip_detector.onnx` が開けないというエラーになる | assets にモデルがない. `make model PT=...` をやり直す (`android/app/src/main/` がある状態で実行すると assets にもコピーされる) |
+| `adb devices` で端末が `no permissions` になる | udev のルールが ADB の端末を知らない (systemd が 258 より古い OS など). `sudo apt install android-sdk-platform-tools-common` でルールを入れ, 端末を挿し直す |
 | エミュレータが起動しない / 非常に遅い | KVM が使えていない. `ls -l /dev/kvm` と `groups` に `kvm` があるかを確認 |
