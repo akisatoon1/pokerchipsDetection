@@ -1,116 +1,270 @@
 #include "pokerchip/color.hpp"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstddef>
 #include <opencv2/imgproc.hpp>
-#include <optional>
 
 namespace {
 
 // ---- パラメータ ----------------------------------------------------------
-// OpenCVのHSVは H: 0-179, S: 0-255, V: 0-255.
-
-//! V がこれ未満なら黒.
-const int kBlackMaxV = 50;
-
-//! S がこれ未満で, V が kBlackMaxV 以上 kGrayMaxV 未満なら灰.
-const int kGrayMaxS = 50;
 
 /**
- * @brief 灰とみなす V の上限.
+ * @brief 区間の左右端をこの割合だけ削る.
  *
- * V が kGrayMaxV 以上の低彩度画素は白っぽいので無視する.
+ * YOLO の矩形の余白に写った背景 (机) と, 円柱の側面の端で
+ * 光が浅く当たって暗くなったりテカったりする画素を除くため.
  */
-const int kGrayMaxV = 200;
-
-/**
- * @brief 赤 (色相環の 0 側) の H の上限.
- *
- * 有彩色の色相の範囲は [min, max) で判定する.
- * 赤は色相環の両端にまたがるので2つに分ける.
- * 紫のチップはマゼンタ寄りで H が 170 付近まで分布するため,
- * 赤と紫の境界は 172 にしている (testimages/yoko/stack で確認).
- */
-const int kRedLowMaxH = 10;
-
-//! 赤 (色相環の 180 側) の H の下限.
-const int kRedHighMinH = 172;
-
-//! 黄の H の下限.
-const int kYellowMinH = 20;
-
-//! 黄の H の上限.
-const int kYellowMaxH = 35;
-
-//! 緑の H の下限.
-const int kGreenMinH = 30;
-
-//! 緑の H の上限.
-const int kGreenMaxH = 90;
-
-//! 青の H の下限.
-const int kBlueMinH = 90;
-
-//! 青の H の上限.
-const int kBlueMaxH = 130;
-
-//! 紫の H の下限.
-const int kPurpleMinH = 130;
-
-//! 紫の H の上限.
-const int kPurpleMaxH = 172;
+const double kSideMarginRatio = 0.15;
 
 /**
  * @brief 区間の上下端をこの割合だけ削る.
  *
- * 合わせ目の影(暗部)が黒としてカウントされるのを避けるため.
+ * 合わせ目の影と, 境目の位置がずれたときに入る隣のチップの画素を除くため.
  */
-const double kSeamMarginRatio = 0.15;
+const double kSeamMarginRatio = 0.2;
+
+/**
+ * @brief 白の候補にする画素の, 最大のチャンネル値の上限 (0-255).
+ *
+ * 255 付近に張り付いた画素は本当の明るさが分からず,
+ * 照明の強さを小さく見積もってしまうため除く.
+ */
+const int kWhiteMaxValue = 250;
+
+//! 白の候補にする画素の, 彩度 ((最大 - 最小) / 最大) の上限.
+const float kWhiteMaxSaturation = 0.35F;
+
+/**
+ * @brief 白の候補のうち, 明るい方から何割を白い縞とみなすか.
+ *
+ * 候補には灰のチップや影になった縞も入るので, 明るいものだけを使う.
+ */
+const double kWhiteTopFraction = 0.1;
+
+//! 補正後の Lab で, L がこれより大きく彩度が kStripeMaxChroma 未満なら白い縞.
+const float kStripeMinL = 75.0F;
+
+//! 白い縞とみなす彩度 (a, b の原点からの距離) の上限.
+const float kStripeMaxChroma = 20.0F;
+
+/**
+ * @brief 白い縞を除いた画素がこの割合以下なら, 除かずに全部の画素を使う.
+ *
+ * 区間のほとんどが白い縞と判定された場合に,
+ * 判定する画素がなくならないようにする.
+ */
+const double kMinColoredFraction = 0.05;
+
+/**
+ * @brief 基準色との距離で, L の差に掛ける重み.
+ *
+ * 明るさは影や照明のむらが残りやすく, a, b より不安定なため軽くする.
+ * 黒と灰は L でしか分けられないので 0 にはしない.
+ */
+const float kLightnessWeight = 0.5F;
 
 //! kUnknown を除いたクラス数. カウント用の配列の大きさに使う.
 const int kNumColorClasses = static_cast<int>(ChipColor::kUnknown);
 
+/**
+ * @brief 色クラスの基準色.
+ */
+struct Reference {
+  //! 色クラス.
+  ChipColor color;
+
+  //! 補正後の Lab の L (0-100).
+  float l;
+
+  //! 補正後の Lab の a.
+  float a;
+
+  //! 補正後の Lab の b.
+  float b;
+};
+
+/**
+ * @brief 各色クラスの基準色. ChipColor の順に並ぶ.
+ *
+ * testimages/yoko/stack/multicolor_jpg の正解 (answers.txt) から
+ * pyscript/make_color_references.py で求めた, チップの代表色の色ごとの中央値.
+ * 今のチップセットに合わせた値なので, チップセットが変わったら作り直す.
+ */
+const std::array<Reference, kNumColorClasses> kReferences = {{
+    {ChipColor::kRed, 35.5F, 35.6F, 22.3F},
+    {ChipColor::kBlue, 18.3F, 12.4F, -27.9F},
+    {ChipColor::kYellow, 70.0F, 1.9F, 53.0F},
+    {ChipColor::kBlack, 9.3F, 0.2F, -2.0F},
+    {ChipColor::kGray, 49.4F, -2.3F, -0.9F},
+    {ChipColor::kPurple, 37.3F, 27.5F, -7.2F},
+    {ChipColor::kGreen, 37.8F, -19.9F, 4.8F},
+}};
+
 // ---- 内部処理 ------------------------------------------------------------
 
 /**
- * @brief 1画素を色クラスに分類する.
- * @param hsv 画素の値 (OpenCV の HSV).
- * @return 色クラス. どこにも属さない場合は nullopt.
+ * @brief 値の中央値を返す.
+ * @param values 値. 並べ替えるので中身は変わる.
+ * @return 中央値. 空なら 0.
  */
-std::optional<ChipColor> classifyPixel(const cv::Vec3b &hsv) {
-  int h = hsv[0];
-  int s = hsv[1];
-  int v = hsv[2];
-
-  if (v < kBlackMaxV) return ChipColor::kBlack;
-  if (s < kGrayMaxS) {
-    if (v < kGrayMaxV) return ChipColor::kGray;
-    return std::nullopt;
-  }
-
-  if (h < kRedLowMaxH || h >= kRedHighMinH) return ChipColor::kRed;
-  if (h >= kYellowMinH && h < kYellowMaxH) return ChipColor::kYellow;
-  if (h >= kBlueMinH && h < kBlueMaxH) return ChipColor::kBlue;
-  if (h >= kPurpleMinH && h < kPurpleMaxH) return ChipColor::kPurple;
-  if (h >= kGreenMinH && h < kGreenMaxH) return ChipColor::kGreen;
-
-  return std::nullopt;
+float median(std::vector<float> &values) {
+  if (values.empty()) return 0.0F;
+  auto mid = values.begin() + static_cast<std::ptrdiff_t>(values.size() / 2);
+  std::nth_element(values.begin(), mid, values.end());
+  return *mid;
 }
 
 /**
- * @brief 区間内の全画素を分類し, 最も画素数の多いクラスを返す.
- * @param segmentBgr チップ1枚分の区間の画像 (BGR).
- * @return 最も画素数の多いクラス. どのクラスの画素もなければ kUnknown.
+ * @brief チップの白い縞の色を求める.
+ *
+ * どのチップにも白い縞があるので, スタックそのものを白の基準に使える.
+ * 明るくて色の薄い画素を候補にし, その中で明るい方の画素の中央値を白とする.
+ * @param bgr 白を探す画像 (BGR, CV_8UC3).
+ * @return 白の色 (BGR, 0-255). 候補の画素がなければ (255, 255, 255) で,
+ *         補正しないのと同じになる.
  */
-ChipColor classifySegment(const cv::Mat &segmentBgr) {
-  cv::Mat hsv;
-  cv::cvtColor(segmentBgr, hsv, cv::COLOR_BGR2HSV);
-
-  std::array<int, kNumColorClasses> counts{};
-  for (int y = 0; y < hsv.rows; ++y) {
-    for (int x = 0; x < hsv.cols; ++x) {
-      std::optional<ChipColor> c = classifyPixel(hsv.at<cv::Vec3b>(y, x));
-      if (c.has_value()) ++counts[static_cast<int>(c.value())];
+cv::Vec3f estimateWhite(const cv::Mat &bgr) {
+  std::vector<cv::Vec3b> candidates;
+  std::vector<int> maxValues;
+  for (int y = 0; y < bgr.rows; ++y) {
+    const auto *row = bgr.ptr<cv::Vec3b>(y);
+    for (int x = 0; x < bgr.cols; ++x) {
+      const cv::Vec3b &px = row[x];
+      int mx = std::max({px[0], px[1], px[2]});
+      int mn = std::min({px[0], px[1], px[2]});
+      if (mx >= kWhiteMaxValue) continue;
+      float saturation = static_cast<float>(mx - mn) / std::max(mx, 1);
+      if (saturation >= kWhiteMaxSaturation) continue;
+      candidates.push_back(px);
+      maxValues.push_back(mx);
     }
+  }
+  if (candidates.empty()) return {255.0F, 255.0F, 255.0F};
+
+  // 候補のうち明るい方から kWhiteTopFraction に入る画素だけを使う.
+  std::vector<int> sorted = maxValues;
+  auto nth =
+      sorted.begin() + static_cast<std::ptrdiff_t>((sorted.size() - 1) *
+                                                   (1.0 - kWhiteTopFraction));
+  std::nth_element(sorted.begin(), nth, sorted.end());
+  int threshold = *nth;
+
+  std::array<std::vector<float>, 3> channels;
+  for (size_t i = 0; i < candidates.size(); ++i) {
+    if (maxValues[i] < threshold) continue;
+    for (int c = 0; c < 3; ++c) channels[c].push_back(candidates[i][c]);
+  }
+
+  return {median(channels[0]), median(channels[1]), median(channels[2])};
+}
+
+/**
+ * @brief 1区間の, 色を判定する画素の Lab を集める.
+ * @param segmentBgr 区間の画像 (BGR, CV_8UC3). 端を削ったもの.
+ * @param white スタックの白の色 (BGR). これで割って白を (1, 1, 1) にそろえる.
+ * @return 白い縞を除いた画素の Lab. 除くと少なすぎる場合は全部の画素の Lab.
+ */
+std::vector<cv::Vec3f> collectChipPixels(const cv::Mat &segmentBgr,
+                                         const cv::Vec3f &white) {
+  // 照明は画素の値に掛け算で効くので, 白の値で割ると打ち消せる.
+  cv::Mat corrected;
+  segmentBgr.convertTo(corrected, CV_32FC3);
+  cv::multiply(
+      corrected,
+      cv::Scalar(1.0 / std::max(white[0], 1.0F), 1.0 / std::max(white[1], 1.0F),
+                 1.0 / std::max(white[2], 1.0F)),
+      corrected);
+  // float の BGR2Lab は 0-1 を想定しているので, 白より明るい画素は 1 にする.
+  cv::min(corrected, 1.0, corrected);
+
+  cv::Mat lab;
+  cv::cvtColor(corrected, lab, cv::COLOR_BGR2Lab);
+
+  std::vector<cv::Vec3f> all;
+  std::vector<cv::Vec3f> colored;
+  for (int y = 0; y < lab.rows; ++y) {
+    const auto *row = lab.ptr<cv::Vec3f>(y);
+    for (int x = 0; x < lab.cols; ++x) {
+      const cv::Vec3f &v = row[x];
+      all.push_back(v);
+      bool stripe =
+          v[0] > kStripeMinL && std::hypot(v[1], v[2]) < kStripeMaxChroma;
+      if (!stripe) colored.push_back(v);
+    }
+  }
+
+  if (static_cast<double>(colored.size()) >
+      static_cast<double>(all.size()) * kMinColoredFraction) {
+    return colored;
+  }
+  return all;
+}
+
+/**
+ * @brief 各区間の, 色を判定する画素を集める.
+ *
+ * 白の推定も, 左右の端を削った同じ列で行う. 背景を白と取り違えないため.
+ * @param roi スタック領域の画像 (BGR). countChips に渡したもの.
+ * @param result roi に対する countChips の結果.
+ * @return 区間ごとの画素の Lab. 上のチップから順に並ぶ.
+ */
+std::vector<std::vector<cv::Vec3f>> collectAllChipPixels(
+    const cv::Mat &roi, const CountResult &result) {
+  int left = static_cast<int>(roi.cols * kSideMarginRatio);
+  int right = static_cast<int>(roi.cols * (1.0 - kSideMarginRatio));
+  if (right <= left) {
+    left = 0;
+    right = roi.cols;
+  }
+  cv::Mat center = roi.colRange(left, right);
+  cv::Vec3f white = estimateWhite(center);
+
+  std::vector<std::vector<cv::Vec3f>> pixels;
+  for (size_t i = 0; i + 1 < result.peaks.size(); ++i) {
+    int top = result.peaks[i];
+    int bottom = result.peaks[i + 1];
+
+    int margin = static_cast<int>((bottom - top) * kSeamMarginRatio);
+    if (bottom - top - 2 * margin <= 0) margin = 0;
+
+    pixels.push_back(collectChipPixels(
+        center.rowRange(top + margin, bottom - margin), white));
+  }
+  return pixels;
+}
+
+/**
+ * @brief Lab の値に最も近い基準色のクラスを返す.
+ * @param lab 補正後の Lab の値.
+ * @return 最も近い基準色のクラス. L の差は kLightnessWeight 倍して測る.
+ */
+ChipColor nearestReference(const cv::Vec3f &lab) {
+  ChipColor best = ChipColor::kUnknown;
+  float bestDistance = 0.0F;
+  for (const Reference &ref : kReferences) {
+    float dl = (lab[0] - ref.l) * kLightnessWeight;
+    float da = lab[1] - ref.a;
+    float db = lab[2] - ref.b;
+    float distance = dl * dl + da * da + db * db;
+    if (best == ChipColor::kUnknown || distance < bestDistance) {
+      best = ref.color;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+/**
+ * @brief 画素ごとに最も近い基準色のクラスを選び, 最も画素数の多いクラスを返す.
+ * @param pixels 1区間の画素の Lab.
+ * @return 最も画素数の多いクラス. 画素がなければ kUnknown.
+ */
+ChipColor classifyPixels(const std::vector<cv::Vec3f> &pixels) {
+  std::array<int, kNumColorClasses> counts{};
+  for (const cv::Vec3f &p : pixels) {
+    ++counts[static_cast<int>(nearestReference(p))];
   }
 
   int best = -1;
@@ -131,18 +285,26 @@ ChipColor classifySegment(const cv::Mat &segmentBgr) {
 std::vector<ChipColor> classifyChipColors(const cv::Mat &roi,
                                           const CountResult &result) {
   std::vector<ChipColor> colors;
-  for (size_t i = 0; i + 1 < result.peaks.size(); ++i) {
-    int top = result.peaks[i];
-    int bottom = result.peaks[i + 1];
-
-    int margin = static_cast<int>((bottom - top) * kSeamMarginRatio);
-    if (bottom - top - 2 * margin <= 0) margin = 0;
-
-    colors.push_back(
-        classifySegment(roi.rowRange(top + margin, bottom - margin)));
+  for (const std::vector<cv::Vec3f> &pixels :
+       collectAllChipPixels(roi, result)) {
+    colors.push_back(classifyPixels(pixels));
   }
-
   return colors;
+}
+
+std::vector<cv::Vec3f> measureChipLab(const cv::Mat &roi,
+                                      const CountResult &result) {
+  std::vector<cv::Vec3f> labs;
+  for (const std::vector<cv::Vec3f> &pixels :
+       collectAllChipPixels(roi, result)) {
+    std::array<std::vector<float>, 3> channels;
+    for (const cv::Vec3f &p : pixels) {
+      for (int c = 0; c < 3; ++c) channels[c].push_back(p[c]);
+    }
+    labs.emplace_back(median(channels[0]), median(channels[1]),
+                      median(channels[2]));
+  }
+  return labs;
 }
 
 std::string chipColorName(ChipColor c) {
