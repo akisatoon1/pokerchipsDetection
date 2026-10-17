@@ -17,3 +17,6 @@ IMG_5729.jpg 17 green green green green blue blue blue blue blue blue yellow yel
 IMG_5730.jpg 20 black black black black black purple purple purple purple purple yellow yellow yellow green green green purple purple purple purple
 IMG_5731.jpg 18 black purple purple black black black black gray gray green green green green blue yellow gray gray gray
 IMG_5732.jpg 19 yellow yellow yellow green green green purple purple purple blue blue blue blue red red red red gray gray
+pokerchip_1792243689727.jpg 12 purple purple purple purple purple purple purple purple gray gray gray gray
+pokerchip_1792243897247.jpg 15 gray gray gray gray gray black black black black red red red red red red
+pokerchip_1792243949649.jpg 16 blue blue blue blue gray gray gray gray gray gray yellow yellow yellow yellow yellow yellow
