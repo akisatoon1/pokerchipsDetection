@@ -1,0 +1,19 @@
+# 複数色スタックの正解. 人が目で数えたもの.
+# 形式: <ファイル名> <枚数> <色...>
+#   色は上のチップから順に, toJson と同じ名前 (red blue yellow black gray purple green) で書く.
+#   1 枚に複数のスタックがあるときは, 左のスタックから順に複数行書く.
+#   紛らわしい画像は, 判断の根拠を直前の行に # で書く.
+# 例: IMG_0000.jpg 3 red blue blue
+IMG_5719.jpg 3 green green yellow
+IMG_5720.jpg 3 black red red
+IMG_5721.jpg 3 purple purple blue
+IMG_5722.jpg 3 green gray gray
+IMG_5723.jpg 5 yellow purple purple purple purple
+IMG_5724.jpg 5 blue blue green green green
+IMG_5725.jpg 11 black black black black black black red red red red red
+IMG_5727.jpg 10 yellow yellow yellow yellow yellow yellow yellow yellow gray gray
+IMG_5728.jpg 10 yellow yellow yellow green green green purple purple purple purple
+IMG_5729.jpg 17 green green green green blue blue blue blue blue blue yellow yellow yellow yellow yellow gray gray
+IMG_5730.jpg 20 black black black black black purple purple purple purple purple yellow yellow yellow green green green purple purple purple purple
+IMG_5731.jpg 18 black purple purple black black black black gray gray green green green green blue yellow gray gray gray
+IMG_5732.jpg 19 yellow yellow yellow green green green purple purple purple blue blue blue blue red red red red gray gray

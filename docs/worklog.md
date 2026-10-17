@@ -219,3 +219,10 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - Android Studio から動かしても CLI の `./gradlew` から動かしても, 同じ JDK 25 で daemon が動く.
   手元に JDK 25 がなければ Gradle が取得先から自動で入れる.
 - 中身は版と URL だけで, マシンに固有の情報はないため, Gradle の案内どおり git で管理する.
+
+## 2026-10-17: 複数色スタックの正解データを置く
+
+- `testimages/yoko/stack/multicolor_jpg/answers.txt` を追加した. 各画像の枚数と色 (上から順) を人が目で確かめて書く.
+- 目的は, AI にアルゴリズムを改善させるときに正解を参照させることと, 将来の結合テストで使うこと.
+- 正解は画像についての事実なので, テストの下ではなく画像の隣に置いた. 形式は `tests/data/yolo_reference.txt` と同じ
+  空白区切りのテキストで, 将来 C++ のテストから JSON のライブラリなしで読める.
