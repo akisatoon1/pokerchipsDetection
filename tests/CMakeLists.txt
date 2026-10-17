@@ -18,5 +18,12 @@ target_compile_definitions(pokerchip_tests PRIVATE
   POKERCHIP_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
+# CMake 4 の gtest_discover_tests は, テストの一覧を作るときに
+# cmake_test_discovery_*.json を作業ディレクトリに書き出す.
+# リポジトリのルートを汚さないよう, 作業ディレクトリを log/ (git 管理外) にする.
+# テストはファイルを POKERCHIP_SOURCE_DIR からの絶対パスで探すので, 作業ディレクトリに依存しない.
+set(POKERCHIP_TEST_WORKING_DIR "${CMAKE_SOURCE_DIR}/log")
+file(MAKE_DIRECTORY "${POKERCHIP_TEST_WORKING_DIR}")
+
 include(GoogleTest)
-gtest_discover_tests(pokerchip_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+gtest_discover_tests(pokerchip_tests WORKING_DIRECTORY "${POKERCHIP_TEST_WORKING_DIR}")

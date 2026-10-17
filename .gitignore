@@ -2,6 +2,9 @@
 build/
 build-android/
 
+# テストの実行時に作られるファイル (gtest_discover_tests の cmake_test_discovery_*.json など)
+log/
+
 # エディタ / IDE の設定
 .vscode/
 .idea/

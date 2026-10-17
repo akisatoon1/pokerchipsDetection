@@ -189,3 +189,12 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   (各コミットで `:app:compileDebugKotlin` が通ることを確認した).
 - このマシンには git の user.name / user.email が設定されていないため, 今回のコミットは `git -c` で
   過去のコミットと同じ作者 (akisatoon) を指定した.
+
+## 2026-10-17: テストの作業ディレクトリを log/ にする
+
+- CMake 4 の `gtest_discover_tests` は, テストの一覧を作るときに `cmake_test_discovery_<hash>.json` を
+  テストの作業ディレクトリに書き出す. 作業ディレクトリがリポジトリのルートだったため, ルートに未追跡のファイルができていた.
+- `tests/CMakeLists.txt` でテストの作業ディレクトリを `log/` にし, `log/` を `.gitignore` に足した.
+  `log/` は CMake の設定のときに作られる.
+- テストはテスト画像とモデルを `POKERCHIP_SOURCE_DIR` からの絶対パスで探すので, 作業ディレクトリを変えても結果は変わらない
+  (`make test` で 6 件すべて通ることを確認した).
