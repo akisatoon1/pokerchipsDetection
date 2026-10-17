@@ -211,3 +211,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   - command-line tools (`~/Android/Sdk/cmdline-tools/latest/`, 16111833). sdkmanager は非推奨で, `android sdk` が後継.
   - システムイメージ `system-images;android-35;google_apis_playstore;x86_64` と AVD `Medium_Phone_API_35`.
   API 35 のエミュレータが起動することまでは確かめたが, アプリを入れて動かすのはまだ.
+
+## 2026-10-17: Gradle daemon の JVM を固定する
+
+- `android/gradle/gradle-daemon-jvm.properties` を追加した. Gradle の `updateDaemonJvm` が作るファイルで,
+  Gradle の daemon を動かす JVM の版 (`toolchainVersion=25`) と, OS ごとの JDK の取得先 (foojay) を書いている.
+- Android Studio から動かしても CLI の `./gradlew` から動かしても, 同じ JDK 25 で daemon が動く.
+  手元に JDK 25 がなければ Gradle が取得先から自動で入れる.
+- 中身は版と URL だけで, マシンに固有の情報はないため, Gradle の案内どおり git で管理する.
