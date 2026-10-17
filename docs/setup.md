@@ -131,7 +131,11 @@ make android-deps    # = scripts/fetch_android_deps.sh
      sudo apt install android-sdk-platform-tools-common
      sudo adduser $USER plugdev  # 反映には再ログインが必要
      ```
-   - USB で繋いで `adb devices` に端末が出れば OK (adb は SDK の `platform-tools/` にある).
+   - adb は 2 の標準 SDK に含まれる `platform-tools/` に入っている. コマンドラインで使えるように PATH を通す.
+     ```
+     echo 'export PATH="$HOME/Android/Sdk/platform-tools:$PATH"' >> ~/.bashrc   # SDK の場所は入れ方で変わる
+     ```
+   - USB で繋いで `adb devices` に端末が出れば OK.
 
 ## 9. アプリをビルドして動かす
 

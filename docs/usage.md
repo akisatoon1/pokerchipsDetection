@@ -111,21 +111,14 @@ done > results.txt
 1 行に「画像のパス + JSON かエラー」が並ぶ. 今のモデルでは, 27 枚のうち 5 枚はスタックが検出されず
 `Error: ROI was not selected.` になる. モデルや処理を変えたときに, 前の結果と `diff` で比べるのに使う.
 
-### Android で保存した画像を解析する
+### Android で保存した画像を取り出す
 
 Android アプリで「この画像を保存」を押すと, 解析した元の画像が端末の `Pictures/PokerChip/` に保存される.
-アプリで検出がうまくいかなかった画像を CLI で調べるのに使う.
-PC と端末を USB でつなぎ (USB デバッグを有効にする), 次のコマンドで取り出す.
+PC と端末を USB でつなぎ ([setup.md](setup.md) の 8 の 5), 次のコマンドで `testimages/android/` に取り出す.
 
 ```
-mkdir -p testimages/android
 adb pull /sdcard/Pictures/PokerChip/. testimages/android/
-./build/pokerchip --json --out /tmp/debug.png testimages/android/pokerchip_XXXX.jpg
 ```
-
-- 保存される画像は元のファイルそのもので, EXIF の向きも残っている. CLI もアプリと同じく向きを反映して読むので,
-  アプリと同じ入力で再現できる.
-- 取り出した画像は端末から消えない. 要らなくなったら `adb shell rm /sdcard/Pictures/PokerChip/*` で消す.
 
 ## テスト
 

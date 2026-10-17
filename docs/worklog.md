@@ -226,3 +226,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - 目的は, AI にアルゴリズムを改善させるときに正解を参照させることと, 将来の結合テストで使うこと.
 - 正解は画像についての事実なので, テストの下ではなく画像の隣に置いた. 形式は `tests/data/yolo_reference.txt` と同じ
   空白区切りのテキストで, 将来 C++ のテストから JSON のライブラリなしで読める.
+
+## 2026-10-17: Android で解析した画像を PC に取り出せるようにする
+
+- `android/app/src/main/java/com/pokerchip/app/ImageSaver.kt` を追加した. アプリの「この画像を保存」で,
+  解析した元の画像を端末の `Pictures/PokerChip/` (MediaStore) にコピーする.
+  検出がうまくいかなかった画像を Linux の CLI でデバッグするため.
+- PC への取り出しは `adb pull` で行う. adb は Android Studio の標準 SDK の `platform-tools/` に入っているが
+  PATH が通っていなかったので, [setup.md](setup.md) の 8 の 5 に PATH を通す手順を足した.
