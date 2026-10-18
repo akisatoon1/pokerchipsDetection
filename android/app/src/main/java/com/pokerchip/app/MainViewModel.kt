@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.pokerchip.app.chips.ChipValues
+import com.pokerchip.app.chips.ChipValuesStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,19 +28,32 @@ data class UiState(
     val error: String? = null,
     /** 画像を保存した結果 (保存先か失敗の理由). */
     val saveMessage: String? = null,
+    /** 色ごとの点数. 決めてあれば, 解析の結果から持ち点を求めて出す. */
+    val chipValues: ChipValues = ChipValues(emptyMap()),
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val _state = MutableStateFlow(UiState())
+    private val chipValuesStore = ChipValuesStore(application)
+    private val _state = MutableStateFlow(UiState(chipValues = chipValuesStore.load()))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     // native 側は同時に1スレッドからしか使えないので, Mutex で直列化する.
     private val nativeLock = Mutex()
     private var native: PokerChipNative? = null
 
+    /** 前の画像と結果を消し, 色ごとの点数を読み直す. 検出画面を開き直したときに, 前の結果を出さないため. */
+    fun reset() {
+        _state.value = UiState(chipValues = chipValuesStore.load())
+    }
+
+    /** 色ごとの点数を読み直す. 設定画面で変えたあとに, 持ち点を計算し直すため. */
+    fun reloadChipValues() {
+        _state.update { it.copy(chipValues = chipValuesStore.load()) }
+    }
+
     /** 画像を読み込んで解析する. */
     fun analyze(uri: Uri) {
-        _state.value = UiState(source = uri, isAnalyzing = true)
+        _state.update { UiState(source = uri, isAnalyzing = true, chipValues = it.chipValues) }
         viewModelScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
