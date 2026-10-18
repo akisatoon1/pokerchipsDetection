@@ -1,11 +1,6 @@
 package com.pokerchip.app.ui
 
-import android.content.Context
-import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,49 +8,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pokerchip.app.MainViewModel
-import java.io.File
+import com.pokerchip.app.chips.computeChipPoints
 
 /**
  * マッチに入らずにチップを数えるだけの画面. 撮影・ギャラリーのボタンと, 解析の結果を並べる.
  *
- * 検出の結果を実機で確かめるために残している (docs/web/app.md).
+ * 検出の結果を実機で確かめるために残している (docs/web/app.md). 色と点数の対応を決めてあれば, 持ち点も出す.
  * @param onBack 戻るとき.
  * @param vm 画像の読み込みと解析.
  */
 @Composable
 fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
-    val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
-
-    // カメラアプリに渡した保存先. 撮影から戻ったときに使う.
-    var pendingCapture by rememberSaveable { mutableStateOf<Uri?>(null) }
-    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        val uri = pendingCapture
-        if (ok && uri != null) vm.analyze(uri)
-    }
-    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) vm.analyze(uri)
-    }
-
+    // 設定画面で対応を変えてから開いたときに, 新しい対応で持ち点を出すため.
+    LaunchedEffect(Unit) { vm.reloadChipValues() }
     BackHandler(onBack = onBack)
 
     // edge-to-edge なので, Scaffold の padding でシステムバーとの重なりを避ける.
@@ -68,24 +49,7 @@ fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    enabled = !state.isAnalyzing,
-                    onClick = {
-                        val uri = createCaptureUri(context)
-                        pendingCapture = uri
-                        takePicture.launch(uri)
-                    },
-                ) { Text("撮影") }
-                Button(
-                    enabled = !state.isAnalyzing,
-                    onClick = {
-                        pickImage.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
-                    },
-                ) { Text("ギャラリー") }
-            }
+            ImagePickButtons(isEnabled = !state.isAnalyzing, onPicked = vm::analyze)
 
             if (state.isAnalyzing) {
                 Row(
@@ -101,9 +65,15 @@ fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
                 Text("エラー: $it", color = MaterialTheme.colorScheme.error)
             }
 
+            val result = state.result
+            if (result != null && !state.chipValues.isEmpty) {
+                val points = remember(result, state.chipValues) { computeChipPoints(result, state.chipValues) }
+                ChipPointsSummary(points)
+            }
+
             state.bitmap?.let { bitmap ->
-                ResultImage(bitmap, state.result)
-                state.result?.let { ResultSummary(bitmap, it) }
+                ResultImage(bitmap, result)
+                result?.let { ResultSummary(bitmap, it) }
             }
 
             // 解析が終われば (失敗しても) 元の画像を保存できる.
@@ -113,11 +83,4 @@ fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
             state.saveMessage?.let { Text(it) }
         }
     }
-}
-
-/** カメラアプリに渡す保存先を cache/captures/ に作る (res/xml/file_paths.xml). */
-private fun createCaptureUri(context: Context): Uri {
-    val dir = File(context.cacheDir, "captures").apply { mkdirs() }
-    val file = File(dir, "capture_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
