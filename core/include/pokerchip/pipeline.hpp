@@ -74,6 +74,8 @@ AnalysisResult analyzeImage(YoloDetector &detector, const cv::Mat &bgr);
  * @brief 解析結果をJSONにする.
  *
  * Androidへの受け渡しと, 環境間の結果比較に使う.
+ * peaks (合わせ目の位置) は元画像でなくROIの上端からのy (px) で出す.
+ * Androidでチップごとの区切り線を描くのに使う.
  * @param result 解析結果.
  * @return JSON 文字列.
  */
