@@ -36,3 +36,9 @@ docs/worklog.md には環境に関する変更だけを記録する.
 @docs/web/security.md
 
 @docs/web/typescript.md
+
+## Android アプリの Kotlin
+
+`android/` の Kotlin を書く・直すときは, 上のコードの書き方 (code-rules.md) と次の Kotlin の書き方に従う.
+
+@docs/web/kotlin.md

@@ -309,3 +309,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - `docs/web/running.md` を追加した. Node の入れ方, `npm ci`, `npm run dev` での起動, コードを変えたときの読み直し方,
   ローカルの DB の消し方, 検査, うまくいかないときの対処をまとめた. CLAUDE.md と `docs/web/typescript.md` からつないだ.
+
+## 2026-10-18: Android アプリの Kotlin の書き方を決める
+
+- `docs/web/kotlin.md` を追加し, CLAUDE.md から読み込ませた. Android アプリが Web の画面を WebView で使うようにするため,
+  Web の規則 (`code-rules.md`, `typescript.md`) を Kotlin に置き換えた. 置き場所を `docs/web/` にしたのは,
+  この作業の計画 (`docs/web/plans/2026-10-18-android-webview.md`) で変えてよい場所がその下だったため.
+- 整形の道具 (ktfmt, ktlint) は入れず, Android Studio の整形に任せる. Android の検査は
+  `./gradlew assembleDebug testDebugUnitTest lintDebug` にした.
