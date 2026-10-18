@@ -23,3 +23,20 @@ export function validateInitialPoints(
   }
   return { ok: true, value: initialPoints };
 }
+
+/**
+ * 持ち点 p が決まりを満たすかを確かめる.
+ *
+ * p は 0 以上 MAX_POINTS 以下の整数 (docs/web/scoring.md). チップの点数は整数なので小数は扱わない.
+ * @param points 利用者が入れた持ち点.
+ * @returns そのままの値. 決まりを満たさなければ ok: false と理由.
+ */
+export function validatePoints(points: number): RuleResult<number> {
+  if (!Number.isInteger(points) || points < 0 || points > MAX_POINTS) {
+    return {
+      ok: false,
+      reason: `持ち点は 0 以上 ${String(MAX_POINTS)} 以下の整数にしてください`,
+    };
+  }
+  return { ok: true, value: points };
+}
