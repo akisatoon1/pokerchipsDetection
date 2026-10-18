@@ -154,8 +154,17 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 
 ### 8. Android アプリ
 
-- Kotlin + Jetpack Compose. 画面は「撮影 / ギャラリー選択 → 解析 → 結果の表示」.
-  結果は, 元画像に枠と枚数を重ねた全体画像と, その下にスタックごとの確認画像を並べる.
+- Kotlin + Jetpack Compose. 点数計算のマッチの画面は Web ([web/app.md](web/app.md)) を WebView で表示し,
+  アプリ自身は次の画面だけを持つ. 画面を Web と 2 重に作ると, 確認のダイアログなどの細かい振る舞いがずれるため.
+  - 数えるだけの画面: 「撮影 / ギャラリー選択 → 解析 → 結果の表示」. 検出の結果を実機で確かめるために残す.
+  - 検出画面と, 色と点数の設定画面: チップから持ち点を求め, Web の入力欄に入れる.
+- アプリの画面は, WebView の画面の上に重ねて出す. WebView は閉じずに残し, 画面の回転でも Activity を作り直さない
+  (`configChanges`). 検出画面から戻ったときに, 開いていたページと入力中の欄を保つため.
+- WebView で開くのは接続先 (`BuildConfig.WEB_BASE_URL`) と同じオリジンのページだけで, 他のサイトは外のブラウザに渡す.
+  Web とアプリの連絡 (bridge) は `androidx.webkit` の `addWebMessageListener` で, 接続先のページからだけ受ける.
+  メッセージは JSON の文字で, 読み取り (`BridgeMessage.kt`) と URL の判定 (`OriginPolicy.kt`) は Android の API に触れない関数にして,
+  JVM の単体テスト (`src/test/`) で確かめる.
+- 解析の結果は, 元画像に枠と枚数を重ねた全体画像と, その下にスタックごとの確認画像を並べる.
   確認画像は ROI を広げて切り出し, 合わせ目に横線を引き, 右にチップごとの色を並べたもので,
   ユーザが枚数と色の正しさを一目で確かめられるようにする. ROI を広げるのは, ROI 自体のずれにも気づけるようにするため.
   描画は Compose で行い, core は合わせ目の位置 (JSON の `peaks`) を渡すだけにする. 文字が画面の解像度で描け, JNI も薄いまま済む.
@@ -166,6 +175,7 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
   Linux の `cv::imread` も EXIF の向きを反映するので, 両環境で同じ向きの画像を解析する.
 - 解析はバックグラウンドスレッドで行う. `cv::dnn::Net` はスレッドセーフでないので,
   Kotlin 側で `Mutex` を使って native の呼び出しを直列化する.
+- Kotlin の書き方は [web/kotlin.md](web/kotlin.md) にまとめる.
 
 | ファイル (`android/app/src/main/`) | 役割 |
 |---|---|
@@ -175,7 +185,11 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 | `java/.../AnalysisResult.kt` | JSON → データクラス |
 | `java/.../ImageLoader.kt` | Uri → Bitmap (EXIF の回転を補正) |
 | `java/.../MainViewModel.kt` | 画像の読込と解析, 状態の保持 |
-| `java/.../MainActivity.kt`, `ui/` | 画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
+| `java/.../MainActivity.kt` | 画面の切り替え (WebView の画面の上に, ほかの画面を重ねる) |
+| `java/.../web/` | WebView で開く URL の判定, 読み込みの様子, Web との連絡 (bridge) |
+| `java/.../ui/WebScreen.kt` | マッチの画面 (WebView). 上のバー, 下に引いて更新, つながらないときの画面 |
+| `java/.../ui/CountScreen.kt`, `ui/ResultViews.kt` | 数えるだけの画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
+| `debug/` | debug のビルドでだけ, 手元の `wrangler dev` (http://localhost) への平文の通信を許す |
 
 ### 9. 色の基準色は正解付きの画像から C++ の処理で求める
 
