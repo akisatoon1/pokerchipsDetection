@@ -29,3 +29,28 @@ export function checkCanStartRound(state: StartRoundState): RuleResult<null> {
   }
   return { ok: true, value: null };
 }
+
+/** ラウンドを確定できるかを決めるための, ラウンドの今の様子. */
+export interface CloseRoundState {
+  isOpen: boolean;
+  // 全員の持ち点がそろっているか.
+  isComplete: boolean;
+}
+
+/**
+ * ラウンドを確定できるかを判定する.
+ *
+ * 全員の持ち点がそろっていれば確定できる. 合計が合わなくても確定はできる.
+ * そのまま確定するかはリーダーが選ぶため (docs/web/scoring.md).
+ * @param state ラウンドが入力中か, 持ち点がそろっているか.
+ * @returns 確定できれば ok: true. できなければ理由.
+ */
+export function checkCanCloseRound(state: CloseRoundState): RuleResult<null> {
+  if (!state.isOpen) {
+    return { ok: false, reason: "このラウンドはもう確定しています" };
+  }
+  if (!state.isComplete) {
+    return { ok: false, reason: "全員の持ち点がそろってから確定してください" };
+  }
+  return { ok: true, value: null };
+}

@@ -61,3 +61,45 @@ export function scoreRound(input: RoundInput): RoundScore {
     hasTotalMismatch: isComplete && totalPoints !== expectedTotalPoints,
   };
 }
+
+/** 累計を計算するための, 1 つのラウンド. */
+export interface RoundForTotals {
+  isClosed: boolean;
+  scores: readonly PlayerRoundScore[];
+}
+
+/** 1 人の累計. */
+export interface PlayerTotal {
+  playerId: string;
+  total: number;
+}
+
+/**
+ * プレイヤーごとの累計を計算する.
+ *
+ * 累計は確定したラウンドの増減の和. 入力中のラウンドは含めない (docs/web/scoring.md).
+ * @param playerIds マッチのプレイヤーの id. この順に結果を並べる.
+ * @param rounds マッチのラウンド.
+ * @returns プレイヤーごとの累計. 確定したラウンドがなければ全員 0.
+ */
+export function computeTotals(
+  playerIds: readonly string[],
+  rounds: readonly RoundForTotals[],
+): PlayerTotal[] {
+  const totals = new Map(playerIds.map((playerId) => [playerId, 0]));
+  for (const round of rounds) {
+    if (!round.isClosed) {
+      continue;
+    }
+    for (const score of round.scores) {
+      const current = totals.get(score.playerId);
+      if (current !== undefined && score.delta !== null) {
+        totals.set(score.playerId, current + score.delta);
+      }
+    }
+  }
+  return playerIds.map((playerId) => ({
+    playerId,
+    total: totals.get(playerId) ?? 0,
+  }));
+}
