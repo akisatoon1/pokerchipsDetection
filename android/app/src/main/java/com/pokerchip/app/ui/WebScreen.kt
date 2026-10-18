@@ -54,9 +54,10 @@ import com.pokerchip.app.web.decideUrlAction
  * @param baseUrl 接続先. 最初にここのトップページを開く.
  * @param isActive この画面が前に出ているか. 他の画面を重ねている間は false にし, 戻るボタンを譲る.
  * @param onOpenCount メニューの「数えるだけ」を選んだとき.
+ * @param onOpenChipValues メニューの「色と点数の設定」を選んだとき.
  */
 @Composable
-fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit) {
+fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit, onOpenChipValues: () -> Unit) {
     val context = LocalContext.current
     var canGoBack by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -113,6 +114,13 @@ fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit) {
                             onClick = {
                                 isMenuOpen = false
                                 onOpenCount()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("色と点数の設定") },
+                            onClick = {
+                                isMenuOpen = false
+                                onOpenChipValues()
                             },
                         )
                     }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.pokerchip.app.ui.ChipValuesScreen
 import com.pokerchip.app.ui.CountScreen
 import com.pokerchip.app.ui.PokerChipTheme
 import com.pokerchip.app.ui.WebScreen
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
 private enum class Overlay {
     NONE,
     COUNT,
+    CHIP_VALUES,
 }
 
 /** アプリ全体. マッチの画面を常に置き, ほかの画面はその上に重ねる. */
@@ -44,10 +46,15 @@ private fun PokerChipApp() {
             baseUrl = BuildConfig.WEB_BASE_URL,
             isActive = overlay == Overlay.NONE,
             onOpenCount = { overlay = Overlay.COUNT },
+            onOpenChipValues = { overlay = Overlay.CHIP_VALUES },
         )
         when (overlay) {
             Overlay.NONE -> Unit
             Overlay.COUNT -> CountScreen(onBack = { overlay = Overlay.NONE })
+            Overlay.CHIP_VALUES -> ChipValuesScreen(
+                onBack = { overlay = Overlay.NONE },
+                onSaved = { overlay = Overlay.NONE },
+            )
         }
     }
 }
