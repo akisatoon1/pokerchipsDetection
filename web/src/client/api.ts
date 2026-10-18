@@ -53,6 +53,9 @@ const joinedPlayer = z.object({ playerId: z.string(), token: z.string() });
 
 const startedRound = z.object({ roundId: z.string(), number: z.number() });
 
+// 本文のない応答 (204). 本文を JSON として読めないので null になる.
+const noContent = z.null();
+
 /** 作ったマッチと, リーダーのトークン. */
 export type CreatedMatch = z.infer<typeof createdMatch>;
 
@@ -238,4 +241,21 @@ export function renamePlayer(
     renamedPlayer,
     { method: "PATCH", body: { name }, token },
   );
+}
+
+/**
+ * マッチを削除する. リーダーだけができ, 元に戻せない.
+ *
+ * @param matchId マッチの id.
+ * @param token リーダーのトークン.
+ * @returns 消せたら null. リーダーでない, 見つからないなどで失敗なら説明.
+ */
+export function deleteMatch(
+  matchId: string,
+  token: string,
+): Promise<ApiResult<null>> {
+  return request(`/api/matches/${encodeURIComponent(matchId)}`, noContent, {
+    method: "DELETE",
+    token,
+  });
 }

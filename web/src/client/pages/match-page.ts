@@ -1,5 +1,6 @@
 import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
 import {
+  deleteMatch,
   getMatch,
   joinMatch,
   renamePlayer,
@@ -7,7 +8,12 @@ import {
   type MatchView,
 } from "../api";
 import { element, labeledField } from "../dom";
-import { loadMembership, saveMembership, type Membership } from "../membership";
+import {
+  loadMembership,
+  removeMembership,
+  saveMembership,
+  type Membership,
+} from "../membership";
 import { formatDelta, renderRoundsSection } from "./rounds-section";
 
 /**
@@ -65,6 +71,10 @@ export async function renderMatchPage(
       void renderMatchPage(root, matchId);
     }),
   );
+  // 削除は取り返しがつかないので, ほかの操作から離して最後に置く (docs/web/app.md).
+  if (membership !== null && membership.playerId === match.leaderPlayerId) {
+    sections.push(renderDeleteSection(match, membership));
+  }
   root.replaceChildren(...sections);
 }
 
@@ -162,6 +172,65 @@ function openStartRoundDialog(
         void renderMatchPage(root, latest.id);
       },
     );
+  });
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
+// リーダーにだけ出す, マッチを削除する欄. 権限の確認はサーバーでも毎回行う.
+function renderDeleteSection(
+  match: MatchView,
+  membership: Membership,
+): HTMLElement {
+  const open = element("button", {
+    className: "danger",
+    text: "マッチを削除する",
+  });
+  open.addEventListener("click", () => {
+    openDeleteMatchDialog(match, membership);
+  });
+  return element("section", { className: "delete-section" }, [
+    element("h2", { text: "マッチの削除" }),
+    open,
+  ]);
+}
+
+// 削除の前の確認. 全員の結果が消え, 元に戻せないことを伝える.
+function openDeleteMatchDialog(match: MatchView, membership: Membership): void {
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const confirm = element("button", { className: "danger", text: "削除する" });
+  const cancel = element("button", { text: "やめる" });
+  const dialog = element("dialog", {}, [
+    element("h3", { text: `「${match.name}」を削除しますか` }),
+    element("p", {
+      className: "warning",
+      text: "全員の持ち点と累計が消え, 元に戻せません. 参加している人も, このマッチを開けなくなります.",
+    }),
+    element("div", { className: "dialog-buttons" }, [cancel, confirm]),
+    message,
+  ]);
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+  });
+  cancel.addEventListener("click", () => {
+    dialog.close();
+  });
+  confirm.addEventListener("click", () => {
+    confirm.disabled = true;
+    message.textContent = "";
+    void deleteMatch(match.id, membership.token).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        confirm.disabled = false;
+        return;
+      }
+      // 消したマッチには戻る意味がないので, トークンも消してトップページに戻る.
+      removeMembership(match.id);
+      location.assign("/");
+    });
   });
   document.body.append(dialog);
   dialog.showModal();

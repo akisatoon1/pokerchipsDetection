@@ -53,3 +53,17 @@ export function loadMembership(matchId: string): Membership | null {
   }
   return null;
 }
+
+/**
+ * 保存したトークンを消す.
+ *
+ * マッチを削除したときに使う. 消すと, このブラウザはそのマッチの本人として戻れなくなる.
+ * @param matchId マッチの id.
+ */
+export function removeMembership(matchId: string): void {
+  try {
+    localStorage.removeItem(storageKey(matchId));
+  } catch {
+    // 保存を許さないブラウザなら, もともと保存されていない.
+  }
+}
