@@ -41,6 +41,7 @@ npm run dev      # 画面をビルドし, ローカルの D1 に migrations を�
 ```
 
 Node は `~/.local/node` に入っている. PATH が通っていないシェルでは `export PATH="$HOME/.local/node/bin:$PATH"` を先に実行する.
+Node の入れ方と起動の手順は [running.md](running.md) にある.
 
 ## 書き方
 
