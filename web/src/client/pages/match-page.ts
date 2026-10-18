@@ -1,5 +1,5 @@
 import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
-import { getMatch, joinMatch, type MatchView } from "../api";
+import { getMatch, joinMatch, startRound, type MatchView } from "../api";
 import { element, labeledField } from "../dom";
 import { loadMembership, saveMembership, type Membership } from "../membership";
 
@@ -31,10 +31,73 @@ export async function renderMatchPage(
     element("p", { text: `初期点数 ${String(match.initialPoints)}` }),
   ];
   if (membership === null) {
-    sections.push(renderJoinSection(root, matchId));
+    sections.push(
+      match.isJoinOpen
+        ? renderJoinSection(root, matchId)
+        : element("p", {
+            text: "ラウンドが始まったので, 参加の受付は終わりました.",
+          }),
+    );
   }
-  sections.push(renderShareSection(), renderPlayersSection(match, membership));
+  if (match.isJoinOpen) {
+    sections.push(renderShareSection());
+  }
+  sections.push(renderPlayersSection(match, membership));
+  if (membership !== null && membership.playerId === match.leaderPlayerId) {
+    sections.push(renderLeaderSection(root, match, membership));
+  }
+  sections.push(renderRoundsSection(match));
   root.replaceChildren(...sections);
+}
+
+// リーダーにだけ出す操作. 権限の確認はサーバーでも毎回行う.
+function renderLeaderSection(
+  root: HTMLElement,
+  match: MatchView,
+  membership: Membership,
+): HTMLElement {
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const start = element("button", { text: "ラウンドを始める" });
+  start.disabled = !match.canStartRound;
+  start.addEventListener("click", () => {
+    start.disabled = true;
+    message.textContent = "";
+    void startRound(match.id, membership.token).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        start.disabled = false;
+        return;
+      }
+      void renderMatchPage(root, match.id);
+    });
+  });
+  return element("section", {}, [
+    element("h2", { text: "リーダーの操作" }),
+    start,
+    message,
+  ]);
+}
+
+function renderRoundsSection(match: MatchView): HTMLElement {
+  if (match.rounds.length === 0) {
+    return element("section", {}, [
+      element("h2", { text: "ラウンド" }),
+      element("p", { text: "まだラウンドはありません." }),
+    ]);
+  }
+  // 新しいラウンドを上に出す. 入力中のラウンドがいちばん見たいものなので.
+  const items = [...match.rounds].reverse().map((round) =>
+    element("li", {
+      text: `ラウンド ${String(round.number)} (${round.status === "open" ? "入力中" : "確定"})`,
+    }),
+  );
+  return element("section", {}, [
+    element("h2", { text: "ラウンド" }),
+    element("ul", {}, items),
+  ]);
 }
 
 // このブラウザがまだ参加していなければ, 名前を入れて参加する欄を出す.
