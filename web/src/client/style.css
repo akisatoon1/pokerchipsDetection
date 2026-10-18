@@ -79,6 +79,7 @@ td:first-child {
 dialog {
   max-width: 36rem;
   width: calc(100% - 2rem);
+  box-sizing: border-box;
 }
 
 .dialog-buttons {

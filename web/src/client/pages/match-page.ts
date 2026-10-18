@@ -81,8 +81,20 @@ function renderLeaderSection(
   const start = element("button", { text: "ラウンドを始める" });
   start.disabled = !match.canStartRound;
   start.addEventListener("click", () => {
-    start.disabled = true;
     message.textContent = "";
+    // 最初のラウンドの前だけ, メンバーを確かめさせる. 始めると途中参加できないため.
+    // 2 ラウンド目以降はメンバーが変わらないので, すぐ始める.
+    if (match.rounds.length === 0) {
+      void getMatch(match.id).then((result) => {
+        if (!result.ok) {
+          message.textContent = result.error;
+          return;
+        }
+        openStartRoundDialog(root, result.value, membership);
+      });
+      return;
+    }
+    start.disabled = true;
     void startRound(match.id, membership.token, match.players.length).then(
       (result) => {
         if (!result.ok) {
@@ -99,6 +111,60 @@ function renderLeaderSection(
     start,
     message,
   ]);
+}
+
+// 最初のラウンドを始める前の確認. 最新のメンバーを見せ, 途中参加できないことを伝える.
+function openStartRoundDialog(
+  root: HTMLElement,
+  latest: MatchView,
+  membership: Membership,
+): void {
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const confirm = element("button", { text: "始める" });
+  const cancel = element("button", { text: "やめる" });
+  const members = latest.players.map((player) =>
+    element("li", { text: player.name }),
+  );
+  const dialog = element("dialog", {}, [
+    element("h3", { text: "このメンバーで始めますか" }),
+    element("p", {
+      text: `参加しているのは ${String(latest.players.length)} 人です.`,
+    }),
+    element("ul", {}, members),
+    element("p", {
+      className: "warning",
+      text: "始めると, これ以上だれも参加できません. 足りない人がいれば, やめて参加を待ってください.",
+    }),
+    element("div", { className: "dialog-buttons" }, [cancel, confirm]),
+    message,
+  ]);
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+  });
+  cancel.addEventListener("click", () => {
+    dialog.close();
+  });
+  confirm.addEventListener("click", () => {
+    confirm.disabled = true;
+    message.textContent = "";
+    // 確かめた人数を送る. 確かめている間に誰かが参加していたら, サーバーが拒否する.
+    void startRound(latest.id, membership.token, latest.players.length).then(
+      (result) => {
+        if (!result.ok) {
+          message.textContent = result.error;
+          confirm.disabled = false;
+          return;
+        }
+        dialog.close();
+        void renderMatchPage(root, latest.id);
+      },
+    );
+  });
+  document.body.append(dialog);
+  dialog.showModal();
 }
 
 // このブラウザがまだ参加していなければ, 名前を入れて参加する欄を出す.
@@ -147,6 +213,10 @@ function renderShareSection(): HTMLElement {
   return element("section", {}, [
     element("h2", { text: "仲間を呼ぶ" }),
     element("p", { text: "この URL を送ると, 仲間が参加できます." }),
+    element("p", {
+      className: "warning",
+      text: "最初のラウンドが始まると, 参加できなくなります.",
+    }),
     element("input", {
       className: "share-url",
       attributes: { readonly: "", value: location.href },
