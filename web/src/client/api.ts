@@ -19,10 +19,21 @@ const matchView = z.object({
   name: z.string(),
   initialPoints: z.number(),
   leaderPlayerId: z.string(),
+  isJoinOpen: z.boolean(),
+  canStartRound: z.boolean(),
   players: z.array(z.object({ id: z.string(), name: z.string() })),
+  rounds: z.array(
+    z.object({
+      id: z.string(),
+      number: z.number(),
+      status: z.enum(["open", "closed"]),
+    }),
+  ),
 });
 
 const joinedPlayer = z.object({ playerId: z.string(), token: z.string() });
+
+const startedRound = z.object({ roundId: z.string(), number: z.number() });
 
 /** 作ったマッチと, リーダーのトークン. */
 export type CreatedMatch = z.infer<typeof createdMatch>;
@@ -122,5 +133,23 @@ export function joinMatch(
     `/api/matches/${encodeURIComponent(matchId)}/players`,
     joinedPlayer,
     { method: "POST", body: { name } },
+  );
+}
+
+/**
+ * ラウンドを始める. リーダーだけができる.
+ *
+ * @param matchId マッチの id.
+ * @param token リーダーのトークン.
+ * @returns 新しいラウンドの id と番号. リーダーでない, 入力中のラウンドがあるなどで失敗なら説明.
+ */
+export function startRound(
+  matchId: string,
+  token: string,
+): Promise<ApiResult<{ roundId: string; number: number }>> {
+  return request(
+    `/api/matches/${encodeURIComponent(matchId)}/rounds`,
+    startedRound,
+    { method: "POST", body: {}, token },
   );
 }

@@ -74,12 +74,18 @@ matchesApi.get("/:matchId", async (c) => {
     playerCount: players.length,
     hasRoundStarted: rounds.length > 0,
   });
+  const canStartRound = checkCanStartRound({
+    playerCount: players.length,
+    hasOpenRound: rounds.some((round) => round.status === "open"),
+  });
+  // 画面が規則を持たずに済むよう, 参加やラウンドの開始ができるかも返す.
   return c.json({
     id: match.id,
     name: match.name,
     initialPoints: match.initialPoints,
     leaderPlayerId: match.leaderPlayerId,
     isJoinOpen: canJoin.ok,
+    canStartRound: canStartRound.ok,
     players,
     rounds,
   });

@@ -12,6 +12,7 @@ async function roundsOf(matchId: string) {
   const match = await response.json<{
     rounds: { number: number; status: string }[];
     isJoinOpen: boolean;
+    canStartRound: boolean;
   }>();
   return match;
 }
@@ -60,7 +61,9 @@ describe("ラウンドを始める", () => {
 
   it("入力中のラウンドがあるときは拒否する", async () => {
     const { leader } = await matchWithTwoPlayers();
+    expect((await roundsOf(leader.matchId)).canStartRound).toBe(true);
     expect((await startRound(leader.matchId, leader.token)).status).toBe(201);
+    expect((await roundsOf(leader.matchId)).canStartRound).toBe(false);
     expect((await startRound(leader.matchId, leader.token)).status).toBe(409);
     expect((await roundsOf(leader.matchId)).rounds).toHaveLength(1);
   });

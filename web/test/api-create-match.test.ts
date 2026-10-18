@@ -24,6 +24,7 @@ describe("マッチを作る", () => {
       initialPoints: 100,
       leaderPlayerId: created.playerId,
       isJoinOpen: true,
+      canStartRound: false,
       players: [{ id: created.playerId, name: "リーダー" }],
       rounds: [],
     });
