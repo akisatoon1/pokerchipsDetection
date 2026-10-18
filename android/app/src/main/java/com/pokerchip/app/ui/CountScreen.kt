@@ -2,6 +2,7 @@ package com.pokerchip.app.ui
 
 import android.content.Context
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,9 +34,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pokerchip.app.MainViewModel
 import java.io.File
 
-/** 撮影・ギャラリーのボタンと, 解析の結果を並べた画面. */
+/**
+ * マッチに入らずにチップを数えるだけの画面. 撮影・ギャラリーのボタンと, 解析の結果を並べる.
+ *
+ * 検出の結果を実機で確かめるために残している (docs/web/app.md).
+ * @param onBack 戻るとき.
+ * @param vm 画像の読み込みと解析.
+ */
 @Composable
-fun MainScreen(vm: MainViewModel = viewModel()) {
+fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
 
@@ -49,8 +56,10 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         if (uri != null) vm.analyze(uri)
     }
 
+    BackHandler(onBack = onBack)
+
     // edge-to-edge なので, Scaffold の padding でシステムバーとの重なりを避ける.
-    Scaffold { padding ->
+    Scaffold(topBar = { AppTopBar(title = "数えるだけ", onBack = onBack) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

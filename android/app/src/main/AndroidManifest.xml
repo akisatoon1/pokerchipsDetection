@@ -8,8 +8,10 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.PokerChip">
 
+        <!-- 画面を回しても作り直さない. 作り直すと WebView が読み込み直され, 入力中の欄が消えるため. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
