@@ -280,3 +280,12 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   推測できない id とトークン, サーバーでの権限確認, 入力の検証, XSS の防止などを決めた.
 - 承認された計画を `docs/plans/` に 1 計画 1 ファイルで残し, 実装の前にコミットすることにした.
   人の指示と承認された計画を, あとから見られるようにするため. 書き方は `docs/web-development.md` の「計画の記録」.
+
+## 2026-10-18: Web アプリの文書を docs/web/ に移す
+
+- Web アプリの文書を `docs/` 直下から `docs/web/` に移し, ファイル名の `web-` を外した
+  (`app.md`, `scoring.md`, `development.md`, `code-rules.md`, `security.md`). 計画の記録は `docs/web/plans/` に置く.
+  Web 関係の文書をまとめるため.
+- Web アプリのコードは, フロントエンドとバックエンドとも `web/` の下に置くことにした (`server/` は作らない).
+- CLAUDE.md からの読み込みは, ルートの CLAUDE.md に残した. `web/CLAUDE.md` のような下の階層に置くと,
+  そのディレクトリのファイルを読むまで読み込まれず, 計画を作る段階で規則が抜けるおそれがあるため.
