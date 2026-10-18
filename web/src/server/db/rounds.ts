@@ -10,6 +10,30 @@ export interface RoundRecord {
   status: RoundStatus;
 }
 
+/** ラウンドと, それが属するマッチ. */
+export interface RoundWithMatch extends RoundRecord {
+  matchId: string;
+}
+
+/**
+ * ラウンドを id で探す.
+ *
+ * @param db D1 のデータベース.
+ * @param roundId ラウンドの id.
+ * @returns 見つかったラウンド. なければ null.
+ */
+export async function findRound(
+  db: D1Database,
+  roundId: string,
+): Promise<RoundWithMatch | null> {
+  return db
+    .prepare(
+      "SELECT id, match_id AS matchId, number, status FROM rounds WHERE id = ?",
+    )
+    .bind(roundId)
+    .first<RoundWithMatch>();
+}
+
 /**
  * マッチのラウンドを番号の順に返す.
  *
