@@ -27,6 +27,7 @@ describe("マッチを作る", () => {
       canStartRound: false,
       players: [{ id: created.playerId, name: "リーダー" }],
       rounds: [],
+      totals: [{ playerId: created.playerId, total: 0 }],
     });
     expect(created.token).toMatch(/^[A-Za-z0-9_-]{22}$/);
   });

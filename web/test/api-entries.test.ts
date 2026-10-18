@@ -1,6 +1,6 @@
-import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import {
+  closeRound,
   createMatch,
   matchWithOpenRound,
   putEntry,
@@ -97,12 +97,11 @@ describe("持ち点を入れる・直す", () => {
   });
 
   it("確定したラウンドへの入力は拒否する", async () => {
-    const { leader, playerB, roundId } = await matchWithOpenRound();
+    const { leader, playerB, playerC, roundId } = await matchWithOpenRound();
     await putEntry(roundId, playerB.playerId, 100, playerB.token);
-    // 確定の API は次の機能で作るので, ここでは DB を直接変える.
-    await env.DB.prepare("UPDATE rounds SET status = 'closed' WHERE id = ?")
-      .bind(roundId)
-      .run();
+    await putEntry(roundId, leader.playerId, 100, leader.token);
+    await putEntry(roundId, playerC.playerId, 100, playerC.token);
+    expect((await closeRound(roundId, leader.token)).status).toBe(200);
     const response = await putEntry(
       roundId,
       playerB.playerId,

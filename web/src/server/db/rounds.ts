@@ -97,3 +97,28 @@ export async function insertOpenRound(
     throw error;
   }
 }
+
+/**
+ * ラウンドを, 入力中で全員の持ち点がそろっているときだけ確定する.
+ *
+ * 確定できるかの判定は rules/rounds.ts で済ませておく. ここの条件は, 同時に確定や
+ * 入力が送られても決まりを破らないための最後の守り.
+ * @param db D1 のデータベース.
+ * @param roundId ラウンドの id.
+ * @returns 確定できたら true. 既に確定していた, そろっていなかったなら false.
+ */
+export async function closeRoundIfComplete(
+  db: D1Database,
+  roundId: string,
+): Promise<boolean> {
+  const result = await db
+    .prepare(
+      `UPDATE rounds SET status = 'closed'
+       WHERE id = ? AND status = 'open'
+         AND (SELECT COUNT(*) FROM entries WHERE round_id = rounds.id)
+           = (SELECT COUNT(*) FROM players WHERE match_id = rounds.match_id)`,
+    )
+    .bind(roundId)
+    .run();
+  return result.meta.changes === 1;
+}

@@ -1,6 +1,10 @@
 import { checkCanJoin } from "../../rules/players";
 import { checkCanStartRound } from "../../rules/rounds";
-import { scoreRound } from "../../rules/scoring";
+import {
+  computeTotals,
+  scoreRound,
+  type RoundScore,
+} from "../../rules/scoring";
 import type { EntryRecord } from "../db/entries";
 import type { MatchRecord } from "../db/matches";
 import type { PlayerRecord } from "../db/players";
@@ -15,6 +19,32 @@ export interface MatchData {
 }
 
 /**
+ * DB から読んだ持ち点から, 1 つのラウンドの増減と合計の検査を計算する.
+ *
+ * @param match マッチ. 初期点数を使う.
+ * @param players マッチのプレイヤー. この順に結果を並べる.
+ * @param entries マッチの持ち点. 他のラウンドのものが混ざっていてよい.
+ * @param roundId 計算するラウンドの id.
+ * @returns ラウンドの結果.
+ */
+export function scoreRoundFromRecords(
+  match: MatchRecord,
+  players: readonly PlayerRecord[],
+  entries: readonly EntryRecord[],
+  roundId: string,
+): RoundScore {
+  return scoreRound({
+    initialPoints: match.initialPoints,
+    playerIds: players.map((player) => player.id),
+    pointsByPlayer: new Map(
+      entries
+        .filter((entry) => entry.roundId === roundId)
+        .map((entry) => [entry.playerId, entry.points]),
+    ),
+  });
+}
+
+/**
  * 結果を見る API の応答を作る.
  *
  * 増減や, 参加・ラウンドの開始ができるかは規則で計算して入れる. 画面が規則を持たずに済むようにするため.
@@ -24,21 +54,17 @@ export interface MatchData {
 export function buildMatchView(data: MatchData) {
   const { match, players, rounds, entries } = data;
   const playerIds = players.map((player) => player.id);
-  const roundViews = rounds.map((round) => {
-    const pointsByPlayer = new Map(
-      entries
-        .filter((entry) => entry.roundId === round.id)
-        .map((entry) => [entry.playerId, entry.points]),
-    );
-    return {
-      ...round,
-      ...scoreRound({
-        initialPoints: match.initialPoints,
-        playerIds,
-        pointsByPlayer,
-      }),
-    };
-  });
+  const roundViews = rounds.map((round) => ({
+    ...round,
+    ...scoreRoundFromRecords(match, players, entries, round.id),
+  }));
+  const totals = computeTotals(
+    playerIds,
+    roundViews.map((round) => ({
+      isClosed: round.status === "closed",
+      scores: round.scores,
+    })),
+  );
   const canJoin = checkCanJoin({
     playerCount: players.length,
     hasRoundStarted: rounds.length > 0,
@@ -56,5 +82,6 @@ export function buildMatchView(data: MatchData) {
     canStartRound: canStartRound.ok,
     players,
     rounds: roundViews,
+    totals,
   };
 }
