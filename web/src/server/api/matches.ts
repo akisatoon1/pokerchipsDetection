@@ -6,7 +6,11 @@ import { checkCanJoin } from "../../rules/players";
 import { validateInitialPoints } from "../../rules/points";
 import { checkCanStartRound } from "../../rules/rounds";
 import { listEntries } from "../db/entries";
-import { findMatch, insertMatchWithLeader } from "../db/matches";
+import {
+  deleteMatchWithEverything,
+  findMatch,
+  insertMatchWithLeader,
+} from "../db/matches";
 import {
   insertPlayerIfAllowed,
   listPlayers,
@@ -82,6 +86,24 @@ matchesApi.get("/:matchId", async (c) => {
     listEntries(c.env.DB, matchId),
   ]);
   return c.json(buildMatchView({ match, players, rounds, entries }));
+});
+
+// マッチを削除する. リーダーだけができる. 入力中のラウンドがあっても消せ, 元に戻せない (docs/web/app.md).
+matchesApi.delete("/:matchId", async (c) => {
+  const matchId = c.req.param("matchId");
+  const match = await findMatch(c.env.DB, matchId);
+  if (match === null) {
+    return c.json({ error: "マッチが見つかりません" }, 404);
+  }
+  const requester = await findRequestingPlayer(c.env.DB, c.req.raw, matchId);
+  if (requester === null) {
+    return c.json({ error: "このマッチのプレイヤーだと確かめられません" }, 401);
+  }
+  if (requester.id !== match.leaderPlayerId) {
+    return c.json({ error: "マッチを削除できるのはリーダーだけです" }, 403);
+  }
+  await deleteMatchWithEverything(c.env.DB, matchId);
+  return c.body(null, 204);
 });
 
 // 参加する. URL を知っていれば誰でも参加でき, トークンを受け取る.

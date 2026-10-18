@@ -171,3 +171,10 @@ export function renamePlayer(
     ...(token === undefined ? {} : { token }),
   });
 }
+
+export function deleteMatch(matchId: string, token?: string) {
+  return send(`/api/matches/${matchId}`, {
+    method: "DELETE",
+    ...(token === undefined ? {} : { token }),
+  });
+}
