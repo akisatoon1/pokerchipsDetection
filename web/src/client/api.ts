@@ -45,6 +45,8 @@ const matchView = z.object({
 
 const closedRound = z.object({ status: z.literal("closed") });
 
+const renamedPlayer = z.object({ name: z.string() });
+
 const savedEntry = z.object({ points: z.number() });
 
 const joinedPlayer = z.object({ playerId: z.string(), token: z.string() });
@@ -210,5 +212,27 @@ export function closeRound(
     `/api/rounds/${encodeURIComponent(roundId)}/close`,
     closedRound,
     { method: "POST", body: {}, token },
+  );
+}
+
+/**
+ * 自分の名前を変える.
+ *
+ * @param matchId マッチの id.
+ * @param playerId 自分のプレイヤーの id.
+ * @param name 新しい名前.
+ * @param token 自分のトークン.
+ * @returns 保存した名前. 決まりを満たさない, 他の人と重なるなどで失敗なら説明.
+ */
+export function renamePlayer(
+  matchId: string,
+  playerId: string,
+  name: string,
+  token: string,
+): Promise<ApiResult<{ name: string }>> {
+  return request(
+    `/api/matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`,
+    renamedPlayer,
+    { method: "PATCH", body: { name }, token },
   );
 }

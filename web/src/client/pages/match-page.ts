@@ -1,5 +1,11 @@
 import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
-import { getMatch, joinMatch, startRound, type MatchView } from "../api";
+import {
+  getMatch,
+  joinMatch,
+  renamePlayer,
+  startRound,
+  type MatchView,
+} from "../api";
 import { element, labeledField } from "../dom";
 import { loadMembership, saveMembership, type Membership } from "../membership";
 import { formatDelta, renderRoundsSection } from "./rounds-section";
@@ -43,7 +49,11 @@ export async function renderMatchPage(
   if (match.isJoinOpen) {
     sections.push(renderShareSection());
   }
-  sections.push(renderPlayersSection(match, membership));
+  sections.push(
+    renderPlayersSection(match, membership, () => {
+      void renderMatchPage(root, matchId);
+    }),
+  );
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
     sections.push(renderLeaderSection(root, match, membership));
   }
@@ -145,6 +155,7 @@ function renderShareSection(): HTMLElement {
 function renderPlayersSection(
   match: MatchView,
   membership: Membership | null,
+  onChanged: () => void,
 ): HTMLElement {
   const items = match.players.map((player) => {
     const marks: string[] = [];
@@ -157,9 +168,66 @@ function renderPlayersSection(
     const suffix = marks.length > 0 ? ` (${marks.join(", ")})` : "";
     return element("li", { text: `${player.name}${suffix}` });
   });
-  return element("section", {}, [
+  const section = element("section", {}, [
     element("h2", { text: `プレイヤー (${String(match.players.length)} 人)` }),
     element("ul", {}, items),
+  ]);
+  const self = match.players.find(
+    (player) => player.id === membership?.playerId,
+  );
+  if (membership !== null && self !== undefined) {
+    section.append(
+      renderRenameForm(match.id, self.name, membership, onChanged),
+    );
+  }
+  return section;
+}
+
+// 自分の名前を変える欄. 本人ならいつでも変えられる.
+function renderRenameForm(
+  matchId: string,
+  currentName: string,
+  membership: Membership,
+  onChanged: () => void,
+): HTMLElement {
+  const name = element("input", {
+    attributes: { required: "", maxlength: String(MAX_PLAYER_NAME_LENGTH) },
+  });
+  name.value = currentName;
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const submit = element("button", {
+    text: "名前を変える",
+    attributes: { type: "submit" },
+  });
+  const form = element("form", { className: "rename-form" }, [
+    labeledField("あなたの名前", name),
+    submit,
+    message,
+  ]);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    message.textContent = "";
+    void renamePlayer(
+      matchId,
+      membership.playerId,
+      name.value,
+      membership.token,
+    ).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        submit.disabled = false;
+        return;
+      }
+      onChanged();
+    });
+  });
+  return element("details", {}, [
+    element("summary", { text: "名前を変える" }),
+    form,
   ]);
 }
 
