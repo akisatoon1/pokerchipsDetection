@@ -104,6 +104,37 @@ export async function findPlayerByTokenHash(
     .first<PlayerRecord>();
 }
 
+/** 名前を変えた結果. */
+export type RenamePlayerOutcome = "renamed" | "name-taken";
+
+/**
+ * プレイヤーの名前を変える.
+ *
+ * @param db D1 のデータベース.
+ * @param playerId プレイヤーの id.
+ * @param name 新しい名前. 検証済みのもの.
+ * @returns 変えられたか. 同じマッチの他の人と重なれば "name-taken".
+ * @throws DB に届かないときや, 思わぬ制約に反したとき.
+ */
+export async function renamePlayer(
+  db: D1Database,
+  playerId: string,
+  name: string,
+): Promise<RenamePlayerOutcome> {
+  try {
+    await db
+      .prepare("UPDATE players SET name = ? WHERE id = ?")
+      .bind(name, playerId)
+      .run();
+    return "renamed";
+  } catch (error) {
+    if (isUniqueViolation(error, "players.match_id, players.name")) {
+      return "name-taken";
+    }
+    throw error;
+  }
+}
+
 /**
  * D1 の例外が, 指定した列の UNIQUE 制約に反したものかを調べる.
  *
