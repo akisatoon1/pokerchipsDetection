@@ -154,7 +154,11 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 
 ### 8. Android アプリ
 
-- Kotlin + Jetpack Compose. 画面は「撮影 / ギャラリー選択 → 解析 → 矩形・枚数・色を重ねて表示」.
+- Kotlin + Jetpack Compose. 画面は「撮影 / ギャラリー選択 → 解析 → 結果の表示」.
+  結果は, 元画像に枠と枚数を重ねた全体画像と, その下にスタックごとの確認画像を並べる.
+  確認画像は ROI を広げて切り出し, 合わせ目に横線を引き, 右にチップごとの色を並べたもので,
+  ユーザが枚数と色の正しさを一目で確かめられるようにする. ROI を広げるのは, ROI 自体のずれにも気づけるようにするため.
+  描画は Compose で行い, core は合わせ目の位置 (JSON の `peaks`) を渡すだけにする. 文字が画面の解像度で描け, JNI も薄いまま済む.
 - JNI は薄く: `nativeCreate(モデルのバイト列)`, `nativeAnalyze(Bitmap)`, `nativeRelease`.
   結果は JSON 文字列で返す (Kotlin 側でパースするだけで済み, JNI のコードが小さくなる).
   JSON は core の `toJson` が作るので, Linux の `--json` と同じ形式になる.
@@ -171,7 +175,7 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 | `java/.../AnalysisResult.kt` | JSON → データクラス |
 | `java/.../ImageLoader.kt` | Uri → Bitmap (EXIF の回転を補正) |
 | `java/.../MainViewModel.kt` | 画像の読込と解析, 状態の保持 |
-| `java/.../MainActivity.kt` | 画面 (撮影 / ギャラリー, 枠と枚数の表示, 色の内訳) |
+| `java/.../MainActivity.kt`, `ui/` | 画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
 
 ### 9. 色の基準色は正解付きの画像から C++ の処理で求める
 

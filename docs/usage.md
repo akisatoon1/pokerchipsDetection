@@ -67,7 +67,7 @@ GUI なしでビルドした OpenCV では, `--out` を付けずに実行した�
   detected seams = 11
   chip count by peaks  = 10
   chip colors (top -> bottom) = yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow
-{"stacks":[{"box":[1089,1246,916,831],"score":0.969136,"count":10,"colors":["yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow"]}]}
+{"stacks":[{"box":[1089,1246,916,831],"score":0.969136,"count":10,"peaks":[6,92,174,258,340,420,501,582,667,745,821],"colors":["yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow"]}]}
 Saved debug view: debug.png
 ```
 
@@ -90,6 +90,7 @@ Saved debug view: debug.png
 | `box` | `[x, y, 幅, 高さ]` (元画像のピクセル) |
 | `score` | 検出スコア |
 | `count` | 枚数 |
+| `peaks` | チップの合わせ目の y. 元画像でなく ROI の上端からのピクセル. Android で区切り線を描くのに使う |
 | `colors` | 上のチップから順の色 |
 
 枚数を数えられなかったスタックは `Failed to count chips.` と出て, デバッグ画像も作られない.
