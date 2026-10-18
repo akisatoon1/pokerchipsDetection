@@ -1,5 +1,11 @@
 import { MAX_POINTS } from "../../rules/limits";
-import { putEntry, type MatchView, type RoundView } from "../api";
+import {
+  closeRound,
+  getMatch,
+  putEntry,
+  type MatchView,
+  type RoundView,
+} from "../api";
 import { element, labeledField } from "../dom";
 import type { Membership } from "../membership";
 
@@ -26,12 +32,13 @@ export function renderRoundsSection(
     match.players.map((player) => [player.id, player.name]),
   );
   for (const round of [...match.rounds].reverse()) {
-    section.append(renderRound(round, namesById, membership, onChanged));
+    section.append(renderRound(match, round, namesById, membership, onChanged));
   }
   return section;
 }
 
 function renderRound(
+  match: MatchView,
   round: RoundView,
   namesById: ReadonlyMap<string, string>,
   membership: Membership | null,
@@ -48,14 +55,114 @@ function renderRound(
   }
   children.push(renderScoreTable(round, namesById));
   if (round.hasTotalMismatch) {
-    children.push(
-      element("p", {
-        className: "warning",
-        text: `持ち点の合計 ${String(round.totalPoints)} が, 初期点数 × 人数 = ${String(round.expectedTotalPoints)} と合いません.`,
-      }),
-    );
+    children.push(renderMismatchWarning(round));
+  }
+  // 権限の確認はサーバーでも毎回行う. ここで隠すのは, 押せない人に見せないためだけ.
+  if (isOpen && membership?.playerId === match.leaderPlayerId) {
+    children.push(renderCloseControl(match.id, round, membership, onChanged));
   }
   return element("article", { className: "round" }, children);
+}
+
+function renderMismatchWarning(round: RoundView): HTMLElement {
+  const label = round.status === "open" ? "" : "確定時に, ";
+  return element("p", {
+    className: "warning",
+    text: `${label}持ち点の合計 ${String(round.totalPoints)} が, 初期点数 × 人数 = ${String(round.expectedTotalPoints)} と合いません.`,
+  });
+}
+
+// 確定のボタン. 押したら最新の持ち点を読み直し, 一覧を見せて確かめさせてから確定する.
+function renderCloseControl(
+  matchId: string,
+  round: RoundView,
+  membership: Membership,
+  onChanged: () => void,
+): HTMLElement {
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const button = element("button", { text: "このラウンドを確定する" });
+  button.disabled = !round.isComplete;
+  button.addEventListener("click", () => {
+    message.textContent = "";
+    void getMatch(matchId).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        return;
+      }
+      const latest = result.value.rounds.find((item) => item.id === round.id);
+      if (latest === undefined) {
+        message.textContent = "ラウンドが見つかりません";
+        return;
+      }
+      openCloseDialog(result.value, latest, membership, onChanged);
+    });
+  });
+  const children: HTMLElement[] = [button];
+  if (!round.isComplete) {
+    children.push(
+      element("p", { text: "全員の持ち点がそろうと確定できます." }),
+    );
+  }
+  children.push(message);
+  return element("div", { className: "close-control" }, children);
+}
+
+function openCloseDialog(
+  match: MatchView,
+  round: RoundView,
+  membership: Membership,
+  onChanged: () => void,
+): void {
+  const namesById = new Map(
+    match.players.map((player) => [player.id, player.name]),
+  );
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const confirm = element("button", { text: "確定する" });
+  const cancel = element("button", { text: "やめる" });
+  const dialog = element("dialog", {}, [
+    element("h3", {
+      text: `ラウンド ${String(round.number)} を確定しますか`,
+    }),
+    element("p", { text: "確定すると, 持ち点は直せなくなります." }),
+    renderScoreTable(round, namesById),
+    ...(round.hasTotalMismatch
+      ? [
+          renderMismatchWarning(round),
+          element("p", {
+            text: "このまま確定するか, やめて直してもらうかを選んでください.",
+          }),
+        ]
+      : []),
+    element("div", { className: "dialog-buttons" }, [cancel, confirm]),
+    message,
+  ]);
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+  });
+  cancel.addEventListener("click", () => {
+    dialog.close();
+  });
+  confirm.addEventListener("click", () => {
+    confirm.disabled = true;
+    message.textContent = "";
+    void closeRound(round.id, membership.token).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        confirm.disabled = false;
+        return;
+      }
+      dialog.close();
+      onChanged();
+    });
+  });
+  document.body.append(dialog);
+  dialog.showModal();
 }
 
 /**

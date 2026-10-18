@@ -40,7 +40,10 @@ const matchView = z.object({
       hasTotalMismatch: z.boolean(),
     }),
   ),
+  totals: z.array(z.object({ playerId: z.string(), total: z.number() })),
 });
+
+const closedRound = z.object({ status: z.literal("closed") });
 
 const savedEntry = z.object({ points: z.number() });
 
@@ -189,5 +192,23 @@ export function putEntry(
     `/api/rounds/${encodeURIComponent(roundId)}/entries/${encodeURIComponent(playerId)}`,
     savedEntry,
     { method: "PUT", body: { points }, token },
+  );
+}
+
+/**
+ * ラウンドを確定する. リーダーだけができ, 取り消せない.
+ *
+ * @param roundId ラウンドの id.
+ * @param token リーダーのトークン.
+ * @returns 確定した状態. 未入力の人がいる, リーダーでないなどで失敗なら説明.
+ */
+export function closeRound(
+  roundId: string,
+  token: string,
+): Promise<ApiResult<{ status: "closed" }>> {
+  return request(
+    `/api/rounds/${encodeURIComponent(roundId)}/close`,
+    closedRound,
+    { method: "POST", body: {}, token },
   );
 }
