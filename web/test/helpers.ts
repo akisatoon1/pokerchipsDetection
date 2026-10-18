@@ -143,3 +143,16 @@ export function closeRound(roundId: string, token?: string) {
     ...(token === undefined ? {} : { token }),
   });
 }
+
+export function renamePlayer(
+  matchId: string,
+  playerId: string,
+  name: string,
+  token?: string,
+) {
+  return send(`/api/matches/${matchId}/players/${playerId}`, {
+    method: "PATCH",
+    body: { name },
+    ...(token === undefined ? {} : { token }),
+  });
+}

@@ -7,7 +7,11 @@ import { validateInitialPoints } from "../../rules/points";
 import { checkCanStartRound } from "../../rules/rounds";
 import { listEntries } from "../db/entries";
 import { findMatch, insertMatchWithLeader } from "../db/matches";
-import { insertPlayerIfAllowed, listPlayers } from "../db/players";
+import {
+  insertPlayerIfAllowed,
+  listPlayers,
+  renamePlayer,
+} from "../db/players";
 import { insertOpenRound, listRounds } from "../db/rounds";
 import { createRandomId, hashToken } from "../secrets";
 import { findRequestingPlayer } from "./auth";
@@ -22,7 +26,7 @@ const createMatchBody = z
   })
   .strict();
 
-const joinMatchBody = z.object({ name: z.string() }).strict();
+const playerNameBody = z.object({ name: z.string() }).strict();
 
 // 本文に何も持たない操作も, 他のサイトから送られにくいよう空の JSON を送らせる.
 const emptyBody = z.object({}).strict();
@@ -81,7 +85,7 @@ matchesApi.get("/:matchId", async (c) => {
 // 参加する. URL を知っていれば誰でも参加でき, トークンを受け取る.
 matchesApi.post("/:matchId/players", async (c) => {
   const matchId = c.req.param("matchId");
-  const body = await parseJsonBody(c.req.raw, joinMatchBody);
+  const body = await parseJsonBody(c.req.raw, playerNameBody);
   if (!body.ok) {
     return c.json({ error: body.error }, 400);
   }
@@ -159,4 +163,32 @@ matchesApi.post("/:matchId/rounds", async (c) => {
     );
   }
   return c.json({ roundId, number: outcome.number }, 201);
+});
+
+// 名前を変える. 本人だけが, いつでも変えられる. 計算は id で行うので, 結果には影響しない.
+matchesApi.patch("/:matchId/players/:playerId", async (c) => {
+  const { matchId, playerId } = c.req.param();
+  const body = await parseJsonBody(c.req.raw, playerNameBody);
+  if (!body.ok) {
+    return c.json({ error: body.error }, 400);
+  }
+  const name = normalizePlayerName(body.value.name);
+  if (!name.ok) {
+    return c.json({ error: name.reason }, 400);
+  }
+  if ((await findMatch(c.env.DB, matchId)) === null) {
+    return c.json({ error: "マッチが見つかりません" }, 404);
+  }
+  const requester = await findRequestingPlayer(c.env.DB, c.req.raw, matchId);
+  if (requester === null) {
+    return c.json({ error: "このマッチのプレイヤーだと確かめられません" }, 401);
+  }
+  if (requester.id !== playerId) {
+    return c.json({ error: "名前を変えられるのは本人だけです" }, 403);
+  }
+  const outcome = await renamePlayer(c.env.DB, playerId, name.value);
+  if (outcome === "name-taken") {
+    return c.json({ error: "その名前はもう使われています" }, 409);
+  }
+  return c.json({ name: name.value });
 });
