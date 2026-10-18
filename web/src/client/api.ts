@@ -2,9 +2,14 @@ import { z } from "zod";
 
 // API を呼ぶ処理. 応答は zod で形を確かめてから使う.
 
-/** API の結果. 失敗なら利用者に見せる説明を持つ. */
+/**
+ * API の結果. 失敗なら利用者に見せる説明と, HTTP のステータスを持つ.
+ *
+ * ステータスは, 見つからない (404) ときに一覧から消すなど, 失敗の種類で扱いを変えるために使う.
+ * サーバーにつながらなかったときは null.
+ */
 export type ApiResult<T> =
-  { ok: true; value: T } | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string; status: number | null };
 
 const errorResponse = z.object({ error: z.string() });
 
@@ -101,7 +106,7 @@ async function request<T>(
       body: options.body === undefined ? null : JSON.stringify(options.body),
     });
   } catch {
-    return { ok: false, error: "サーバーにつながりません" };
+    return { ok: false, error: "サーバーにつながりません", status: null };
   }
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -111,11 +116,16 @@ async function request<T>(
       error: parsedError.success
         ? parsedError.data.error
         : "うまくいきませんでした",
+      status: response.status,
     };
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return { ok: false, error: "サーバーの応答が読めません" };
+    return {
+      ok: false,
+      error: "サーバーの応答が読めません",
+      status: response.status,
+    };
   }
   return { ok: true, value: parsed.data };
 }

@@ -8,12 +8,12 @@ import { element, labeledField } from "../dom";
 import { saveMembership } from "../membership";
 
 /**
- * マッチを作る画面を出す.
+ * マッチを作る欄を作る. トップページに置く.
  *
  * 作ったらトークンを保存し, マッチの画面に移る.
- * @param root 画面を入れる要素.
+ * @returns マッチを作る欄.
  */
-export function renderCreatePage(root: HTMLElement): void {
+export function renderCreateSection(): HTMLElement {
   const matchName = element("input", {
     attributes: { required: "", maxlength: String(MAX_MATCH_NAME_LENGTH) },
   });
@@ -74,9 +74,9 @@ export function renderCreatePage(root: HTMLElement): void {
     });
   });
 
-  root.replaceChildren(
-    element("h1", { text: "点数計算" }),
+  return element("section", {}, [
+    element("h2", { text: "マッチを作る" }),
     element("p", { text: "マッチを作り, URL を仲間に送ってください." }),
     form,
-  );
+  ]);
 }
