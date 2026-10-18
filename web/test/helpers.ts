@@ -81,3 +81,56 @@ export function startRound(matchId: string, token?: string) {
     ...(token === undefined ? {} : { token }),
   });
 }
+
+export function putEntry(
+  roundId: string,
+  playerId: string,
+  points: unknown,
+  token?: string,
+) {
+  return send(`/api/rounds/${roundId}/entries/${playerId}`, {
+    method: "PUT",
+    body: { points },
+    ...(token === undefined ? {} : { token }),
+  });
+}
+
+export interface PlayerScoreView {
+  playerId: string;
+  points: number | null;
+  delta: number | null;
+}
+
+export interface RoundView {
+  id: string;
+  number: number;
+  status: "open" | "closed";
+  scores: PlayerScoreView[];
+  isComplete: boolean;
+  totalPoints: number;
+  expectedTotalPoints: number;
+  hasTotalMismatch: boolean;
+}
+
+export interface MatchView {
+  id: string;
+  isJoinOpen: boolean;
+  canStartRound: boolean;
+  players: { id: string; name: string }[];
+  rounds: RoundView[];
+}
+
+export async function readMatch(matchId: string): Promise<MatchView> {
+  const response = await send(`/api/matches/${matchId}`);
+  return response.json();
+}
+
+// リーダー A と, 参加した B, C のマッチを作り, 最初のラウンドを始める.
+export async function matchWithOpenRound(initialPoints = 100) {
+  const leader = await createMatch({ leaderName: "A", initialPoints });
+  const playerB = await joinMatch(leader.matchId, "B");
+  const playerC = await joinMatch(leader.matchId, "C");
+  const started = await startRound(leader.matchId, leader.token);
+  const { roundId } = await started.json<{ roundId: string }>();
+  return { leader, playerB, playerC, roundId };
+}

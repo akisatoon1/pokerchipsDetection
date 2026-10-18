@@ -5,11 +5,13 @@ import { normalizeMatchName, normalizePlayerName } from "../../rules/names";
 import { checkCanJoin } from "../../rules/players";
 import { validateInitialPoints } from "../../rules/points";
 import { checkCanStartRound } from "../../rules/rounds";
+import { listEntries } from "../db/entries";
 import { findMatch, insertMatchWithLeader } from "../db/matches";
 import { insertPlayerIfAllowed, listPlayers } from "../db/players";
 import { insertOpenRound, listRounds } from "../db/rounds";
 import { createRandomId, hashToken } from "../secrets";
 import { findRequestingPlayer } from "./auth";
+import { buildMatchView } from "./match-view";
 import { parseJsonBody } from "./request";
 
 const createMatchBody = z
@@ -68,27 +70,12 @@ matchesApi.get("/:matchId", async (c) => {
   if (match === null) {
     return c.json({ error: "マッチが見つかりません" }, 404);
   }
-  const players = await listPlayers(c.env.DB, matchId);
-  const rounds = await listRounds(c.env.DB, matchId);
-  const canJoin = checkCanJoin({
-    playerCount: players.length,
-    hasRoundStarted: rounds.length > 0,
-  });
-  const canStartRound = checkCanStartRound({
-    playerCount: players.length,
-    hasOpenRound: rounds.some((round) => round.status === "open"),
-  });
-  // 画面が規則を持たずに済むよう, 参加やラウンドの開始ができるかも返す.
-  return c.json({
-    id: match.id,
-    name: match.name,
-    initialPoints: match.initialPoints,
-    leaderPlayerId: match.leaderPlayerId,
-    isJoinOpen: canJoin.ok,
-    canStartRound: canStartRound.ok,
-    players,
-    rounds,
-  });
+  const [players, rounds, entries] = await Promise.all([
+    listPlayers(c.env.DB, matchId),
+    listRounds(c.env.DB, matchId),
+    listEntries(c.env.DB, matchId),
+  ]);
+  return c.json(buildMatchView({ match, players, rounds, entries }));
 });
 
 // 参加する. URL を知っていれば誰でも参加でき, トークンを受け取る.

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { createMiddleware } from "hono/factory";
 import { matchesApi } from "./api/matches";
+import { roundsApi } from "./api/rounds";
 
 /** リクエストの本文の上限 (バイト). 公開された URL に大量のデータを送られても壊れないようにするため. */
 const MAX_BODY_BYTES = 4 * 1024;
@@ -34,6 +35,7 @@ app.use(
 app.use("/api/*", requireJson);
 
 app.route("/api/matches", matchesApi);
+app.route("/api/rounds", roundsApi);
 
 // 知らない API には, 内部の情報を含まない短いエラーだけを返す.
 app.notFound((c) => c.json({ error: "見つかりません" }, 404));
