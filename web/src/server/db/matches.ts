@@ -70,3 +70,29 @@ export async function findMatch(
     .bind(matchId)
     .first<MatchRecord>();
 }
+
+/**
+ * マッチと, そのプレイヤー, ラウンド, 持ち点を 1 つのトランザクションですべて消す.
+ *
+ * 元に戻す手段は持たない仕様なので, 消したことにして残すのではなく, 行そのものを消す (docs/web/app.md).
+ * 途中で失敗して一部だけが残らないよう, batch でまとめる.
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id. なければ何も消さない.
+ * @throws DB に届かないとき.
+ */
+export async function deleteMatchWithEverything(
+  db: D1Database,
+  matchId: string,
+): Promise<void> {
+  // 外部キーで参照される側を後に消す. entries は rounds と players を, その 2 つは matches を参照している.
+  await db.batch([
+    db
+      .prepare(
+        "DELETE FROM entries WHERE round_id IN (SELECT id FROM rounds WHERE match_id = ?)",
+      )
+      .bind(matchId),
+    db.prepare("DELETE FROM rounds WHERE match_id = ?").bind(matchId),
+    db.prepare("DELETE FROM players WHERE match_id = ?").bind(matchId),
+    db.prepare("DELETE FROM matches WHERE id = ?").bind(matchId),
+  ]);
+}
