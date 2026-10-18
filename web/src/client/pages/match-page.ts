@@ -2,6 +2,7 @@ import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
 import { getMatch, joinMatch, startRound, type MatchView } from "../api";
 import { element, labeledField } from "../dom";
 import { loadMembership, saveMembership, type Membership } from "../membership";
+import { renderRoundsSection } from "./rounds-section";
 
 /**
  * マッチの画面を出す.
@@ -46,7 +47,11 @@ export async function renderMatchPage(
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
     sections.push(renderLeaderSection(root, match, membership));
   }
-  sections.push(renderRoundsSection(match));
+  sections.push(
+    renderRoundsSection(match, membership, () => {
+      void renderMatchPage(root, matchId);
+    }),
+  );
   root.replaceChildren(...sections);
 }
 
@@ -78,25 +83,6 @@ function renderLeaderSection(
     element("h2", { text: "リーダーの操作" }),
     start,
     message,
-  ]);
-}
-
-function renderRoundsSection(match: MatchView): HTMLElement {
-  if (match.rounds.length === 0) {
-    return element("section", {}, [
-      element("h2", { text: "ラウンド" }),
-      element("p", { text: "まだラウンドはありません." }),
-    ]);
-  }
-  // 新しいラウンドを上に出す. 入力中のラウンドがいちばん見たいものなので.
-  const items = [...match.rounds].reverse().map((round) =>
-    element("li", {
-      text: `ラウンド ${String(round.number)} (${round.status === "open" ? "入力中" : "確定"})`,
-    }),
-  );
-  return element("section", {}, [
-    element("h2", { text: "ラウンド" }),
-    element("ul", {}, items),
   ]);
 }
 

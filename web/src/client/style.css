@@ -63,3 +63,11 @@ th:first-child,
 td:first-child {
   text-align: left;
 }
+
+.round {
+  margin-bottom: 1.5rem;
+}
+
+.entry-form {
+  margin-bottom: 0.75rem;
+}

@@ -27,9 +27,22 @@ const matchView = z.object({
       id: z.string(),
       number: z.number(),
       status: z.enum(["open", "closed"]),
+      scores: z.array(
+        z.object({
+          playerId: z.string(),
+          points: z.number().nullable(),
+          delta: z.number().nullable(),
+        }),
+      ),
+      isComplete: z.boolean(),
+      totalPoints: z.number(),
+      expectedTotalPoints: z.number(),
+      hasTotalMismatch: z.boolean(),
     }),
   ),
 });
+
+const savedEntry = z.object({ points: z.number() });
 
 const joinedPlayer = z.object({ playerId: z.string(), token: z.string() });
 
@@ -43,6 +56,9 @@ export type JoinedPlayer = z.infer<typeof joinedPlayer>;
 
 /** マッチの画面に出すもの. */
 export type MatchView = z.infer<typeof matchView>;
+
+/** マッチの 1 つのラウンド. */
+export type RoundView = MatchView["rounds"][number];
 
 /** 新しいマッチの入力. */
 export interface NewMatchInput {
@@ -151,5 +167,27 @@ export function startRound(
     `/api/matches/${encodeURIComponent(matchId)}/rounds`,
     startedRound,
     { method: "POST", body: {}, token },
+  );
+}
+
+/**
+ * 自分の持ち点を入れる・直す.
+ *
+ * @param roundId ラウンドの id.
+ * @param playerId 自分のプレイヤーの id.
+ * @param points 持ち点.
+ * @param token 自分のトークン.
+ * @returns 保存した持ち点. 範囲外, 確定済みなどで失敗なら説明.
+ */
+export function putEntry(
+  roundId: string,
+  playerId: string,
+  points: number,
+  token: string,
+): Promise<ApiResult<{ points: number }>> {
+  return request(
+    `/api/rounds/${encodeURIComponent(roundId)}/entries/${encodeURIComponent(playerId)}`,
+    savedEntry,
+    { method: "PUT", body: { points }, token },
   );
 }
