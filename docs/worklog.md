@@ -289,3 +289,18 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - Web アプリのコードは, フロントエンドとバックエンドとも `web/` の下に置くことにした (`server/` は作らない).
 - CLAUDE.md からの読み込みは, ルートの CLAUDE.md に残した. `web/CLAUDE.md` のような下の階層に置くと,
   そのディレクトリのファイルを読むまで読み込まれず, 計画を作る段階で規則が抜けるおそれがあるため.
+
+## 2026-10-18: Web アプリの技術を決め, 雛形を作る
+
+- 技術を TypeScript, Cloudflare Workers + Hono, D1, フレームワークなしの画面 (Vite でビルド) に決めた.
+  無料枠で足り, 画面と API を同じドメインから配れるため. `docs/web/app.md` の「未定のこと」を置き換えた.
+- Node 24.22.0 を `~/.local/node` に入れ (公式の tarball を SHASUMS256 で確かめた), `~/.bashrc` で PATH を通した. sudo は使っていない.
+- `web/` に雛形を作った. `src/rules/` (規則), `src/server/api/` (API), `src/server/db/` (DB アクセス), `src/client/` (画面), `migrations/`, `test/`.
+  画面は DOM の型で検査するため, `src/client/` に別の `tsconfig.json` を置いた.
+- コミット前の検査を `web/` の `npm run check` にまとめた (Prettier, ESLint, tsc, Vitest, npm audit).
+  テストは `@cloudflare/vitest-plugin` で workerd とローカルの D1 で動かす. 計画にあった `@cloudflare/vitest-pool-workers` は
+  廃止されていて, 中の古い依存に既知の脆弱性があり `npm audit` が通らなかったため, 後継に替えた.
+- eslint 10 が同梱しなくなった `@eslint/js` を開発用の依存に足した. ESLint で `innerHTML` と `Math.random` を禁じた.
+- npm 11 が初期設定で止める install script を, esbuild と workerd にだけ `package.json` の `allowScripts` で許した.
+  実行用のプログラムを取ってくるのに要るため.
+- TypeScript の書き方と検査のコマンドを `docs/web/typescript.md` にまとめ, CLAUDE.md から読み込ませた.

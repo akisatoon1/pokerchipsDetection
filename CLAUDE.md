@@ -21,10 +21,12 @@ docs/worklog.md には環境に関する変更だけを記録する.
 
 ## Web アプリの開発
 
-`web/` の作業をするときは, 次の流れ, コードの書き方, セキュリティの規則に従う.
+`web/` の作業をするときは, 次の流れ, コードの書き方, セキュリティの規則, TypeScript の書き方に従う.
 
 @docs/web/development.md
 
 @docs/web/code-rules.md
 
 @docs/web/security.md
+
+@docs/web/typescript.md
