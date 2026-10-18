@@ -22,6 +22,8 @@ docs/worklog.md には環境に関する変更だけを記録する.
 
 ## Web アプリの開発
 
-`web/`, `server/` の作業をするときは, 次の流れに従う.
+`web/`, `server/` の作業をするときは, 次の流れとコードの書き方に従う.
 
 @docs/web-development.md
+
+@docs/web-code-rules.md
