@@ -1,5 +1,6 @@
+import { parseMatchUrl } from "../../rules/match-url";
 import { getMatch } from "../api";
-import { element } from "../dom";
+import { element, labeledField } from "../dom";
 import {
   listSavedMatches,
   removeMembership,
@@ -22,7 +23,7 @@ function renderNoSavedMatches(): HTMLElement {
 }
 
 /**
- * トップページを出す. 参加中のマッチの一覧と, マッチを作る欄を並べる.
+ * トップページを出す. 参加中のマッチの一覧, URL を貼って参加する欄, マッチを作る欄を並べる.
  *
  * @param root 画面を入れる要素.
  */
@@ -30,6 +31,7 @@ export function renderHomePage(root: HTMLElement): void {
   root.replaceChildren(
     element("h1", { text: "点数計算" }),
     renderSavedMatchesSection(),
+    renderPasteSection(),
     renderCreateSection(),
   );
 }
@@ -103,4 +105,41 @@ async function fillSavedMatchItem(
     }),
     openedAt,
   );
+}
+
+// 送られた URL を貼ってマッチの画面に移る欄. Android アプリには URL の欄がないので, その代わりになる.
+// 参加はマッチの画面で行う.
+function renderPasteSection(): HTMLElement {
+  const url = element("input", {
+    attributes: { required: "", inputmode: "url", autocomplete: "off" },
+  });
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const submit = element("button", {
+    text: "開く",
+    attributes: { type: "submit" },
+  });
+  const form = element("form", {}, [
+    labeledField("マッチの URL", url),
+    submit,
+    message,
+  ]);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    message.textContent = "";
+    // 別のサイトの URL を開かせないため, このサイトのマッチの URL だけを受け付ける.
+    const parsed = parseMatchUrl(url.value, location.origin);
+    if (!parsed.ok) {
+      message.textContent = parsed.reason;
+      return;
+    }
+    location.assign(`/m/${encodeURIComponent(parsed.value)}`);
+  });
+  return element("section", {}, [
+    element("h2", { text: "URL を貼って参加する" }),
+    element("p", { text: "仲間から送られたマッチの URL を貼ってください." }),
+    form,
+  ]);
 }
