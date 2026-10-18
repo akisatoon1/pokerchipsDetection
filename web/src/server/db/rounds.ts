@@ -1,0 +1,75 @@
+import { isUniqueViolation } from "./players";
+
+/** ラウンドの状態. 入力中か確定. */
+export type RoundStatus = "open" | "closed";
+
+/** DB に保存したラウンド. */
+export interface RoundRecord {
+  id: string;
+  number: number;
+  status: RoundStatus;
+}
+
+/**
+ * マッチのラウンドを番号の順に返す.
+ *
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id.
+ * @returns ラウンドの一覧. なければ空.
+ */
+export async function listRounds(
+  db: D1Database,
+  matchId: string,
+): Promise<RoundRecord[]> {
+  const { results } = await db
+    .prepare(
+      "SELECT id, number, status FROM rounds WHERE match_id = ? ORDER BY number",
+    )
+    .bind(matchId)
+    .all<RoundRecord>();
+  return results;
+}
+
+/** ラウンドを保存した結果. */
+export type InsertRoundOutcome =
+  { inserted: true; number: number } | { inserted: false };
+
+/**
+ * 入力中のラウンドを, 次の番号で保存する.
+ *
+ * 入力中のラウンドが既にあれば, 部分 UNIQUE インデックスに反して保存されない.
+ * 始められるかの判定は rules/rounds.ts で済ませておく. ここは同時に送られたときの最後の守り.
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id.
+ * @param roundId 新しいラウンドの id.
+ * @returns 保存できたらその番号. 入力中のラウンドがあった, 番号がぶつかったなら inserted: false.
+ * @throws DB に届かないときや, 思わぬ制約に反したとき.
+ */
+export async function insertOpenRound(
+  db: D1Database,
+  matchId: string,
+  roundId: string,
+): Promise<InsertRoundOutcome> {
+  try {
+    const row = await db
+      .prepare(
+        `INSERT INTO rounds (id, match_id, number, status)
+         SELECT ?, ?, COALESCE(MAX(number), 0) + 1, 'open' FROM rounds WHERE match_id = ?
+         RETURNING number`,
+      )
+      .bind(roundId, matchId, matchId)
+      .first<{ number: number }>();
+    if (row === null) {
+      return { inserted: false };
+    }
+    return { inserted: true, number: row.number };
+  } catch (error) {
+    if (
+      isUniqueViolation(error, "rounds.match_id, rounds.number") ||
+      isUniqueViolation(error, "rounds.match_id")
+    ) {
+      return { inserted: false };
+    }
+    throw error;
+  }
+}

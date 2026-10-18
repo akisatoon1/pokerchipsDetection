@@ -33,20 +33,22 @@ export interface NewPlayer {
 }
 
 /** 参加を保存した結果. */
-export type InsertPlayerOutcome = "inserted" | "full" | "name-taken" | "busy";
+export type InsertPlayerOutcome =
+  "inserted" | "not-allowed" | "name-taken" | "busy";
 
 /**
- * プレイヤーを, 人数の上限を超えないときだけ保存する.
+ * プレイヤーを, 人数が上限に届いておらず, ラウンドもまだ始まっていないときだけ保存する.
  *
- * 人数を数えることと保存することを 1 つの SQL で行い, 同時に参加されても上限を超えないようにする.
+ * 参加できるかの判定は rules/players.ts で済ませておく. ここの条件は, 同時に参加や
+ * ラウンドの開始が送られても決まりを破らないための最後の守り.
  * @param db D1 のデータベース.
  * @param player 保存するプレイヤー.
  * @param maxPlayers 1 つのマッチのプレイヤーの上限.
- * @returns 保存できたか. 満員なら "full", 同じマッチに同じ名前があれば "name-taken",
- *   同時に参加した人と参加の順番がぶつかったら "busy".
+ * @returns 保存できたか. 条件を満たさなければ "not-allowed", 同じマッチに同じ名前があれば
+ *   "name-taken", 同時に参加した人と参加の順番がぶつかったら "busy".
  * @throws DB に届かないときや, 思わぬ制約に反したとき.
  */
-export async function insertPlayerIfRoom(
+export async function insertPlayerIfAllowed(
   db: D1Database,
   player: NewPlayer,
   maxPlayers: number,
@@ -56,7 +58,8 @@ export async function insertPlayerIfRoom(
       .prepare(
         `INSERT INTO players (id, match_id, name, token_hash, position)
          SELECT ?, ?, ?, ?, COUNT(*) + 1 FROM players WHERE match_id = ?
-         HAVING COUNT(*) < ?`,
+         HAVING COUNT(*) < ?
+           AND NOT EXISTS (SELECT 1 FROM rounds WHERE match_id = ?)`,
       )
       .bind(
         player.playerId,
@@ -65,9 +68,10 @@ export async function insertPlayerIfRoom(
         player.tokenHash,
         player.matchId,
         maxPlayers,
+        player.matchId,
       )
       .run();
-    return result.meta.changes === 1 ? "inserted" : "full";
+    return result.meta.changes === 1 ? "inserted" : "not-allowed";
   } catch (error) {
     if (isUniqueViolation(error, "players.match_id, players.name")) {
       return "name-taken";
@@ -77,6 +81,27 @@ export async function insertPlayerIfRoom(
     }
     throw error;
   }
+}
+
+/**
+ * トークンのハッシュから, マッチのプレイヤーを探す.
+ *
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id. 別のマッチのトークンでは見つからない.
+ * @param tokenHash トークンの SHA-256.
+ * @returns 見つかったプレイヤー. なければ null.
+ */
+export async function findPlayerByTokenHash(
+  db: D1Database,
+  matchId: string,
+  tokenHash: string,
+): Promise<PlayerRecord | null> {
+  return db
+    .prepare(
+      "SELECT id, name FROM players WHERE match_id = ? AND token_hash = ?",
+    )
+    .bind(matchId, tokenHash)
+    .first<PlayerRecord>();
 }
 
 /**

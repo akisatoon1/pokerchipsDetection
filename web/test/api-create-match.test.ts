@@ -23,7 +23,9 @@ describe("マッチを作る", () => {
       name: "金曜の会",
       initialPoints: 100,
       leaderPlayerId: created.playerId,
+      isJoinOpen: true,
       players: [{ id: created.playerId, name: "リーダー" }],
+      rounds: [],
     });
     expect(created.token).toMatch(/^[A-Za-z0-9_-]{22}$/);
   });
