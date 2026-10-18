@@ -189,6 +189,9 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 | `java/.../web/` | WebView で開く URL の判定, 読み込みの様子, Web との連絡 (bridge) |
 | `java/.../ui/WebScreen.kt` | マッチの画面 (WebView). 上のバー, 下に引いて更新, つながらないときの画面 |
 | `java/.../ui/CountScreen.kt`, `ui/ResultViews.kt` | 数えるだけの画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
+| `java/.../chips/` | チップの色の一覧, 色ごとの点数の読み取りと保存, 解析の結果から持ち点を求める関数 |
+| `java/.../ChipValuesViewModel.kt`, `ui/ChipValuesScreen.kt` | 色と点数の設定画面 |
+| `java/.../ui/ChipInputScreen.kt`, `ui/ChipPointsViews.kt` | 検出画面 (持ち点の内訳と合計, 求められない理由) |
 | `debug/` | debug のビルドでだけ, 手元の `wrangler dev` (http://localhost) への平文の通信を許す |
 
 ### 9. 色の基準色は正解付きの画像から C++ の処理で求める

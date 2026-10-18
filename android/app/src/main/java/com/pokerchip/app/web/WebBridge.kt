@@ -38,5 +38,16 @@ class WebBridge(
     companion object {
         /** Web から見える名前. web/src/client/app-bridge.ts と同じにする. */
         const val BRIDGE_NAME = "pokerchipApp"
+
+        /**
+         * Web に返事を送る.
+         *
+         * 返す口は [install] で入れた bridge からしか届かないので機能はあるはずだが, 送る前にも確かめる.
+         * @param reply メッセージと一緒に届いた, 返事を送る口.
+         * @param message 送る JSON の文字.
+         */
+        fun sendReply(reply: JavaScriptReplyProxy, message: String) {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) reply.postMessage(message)
+        }
     }
 }

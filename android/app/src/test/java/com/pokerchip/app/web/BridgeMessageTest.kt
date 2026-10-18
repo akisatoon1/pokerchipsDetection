@@ -1,6 +1,7 @@
 package com.pokerchip.app.web
 
 import org.junit.Assert.assertEquals
+import org.json.JSONObject
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -43,5 +44,18 @@ class BridgeMessageTest {
             parseBridgeMessage("""{"type":"copyText","text":"$longest"}"""),
         )
         assertNull(parseBridgeMessage("""{"type":"copyText","text":"${longest}a"}"""))
+    }
+
+    @Test
+    fun チップから入力のメッセージを読む() {
+        assertEquals(BridgeMessage.StartChipInput, parseBridgeMessage("""{"type":"startChipInput"}"""))
+    }
+
+    @Test
+    fun 持ち点を返すメッセージは種類と持ち点を持つ() {
+        val json = JSONObject(chipPointsMessage(1200))
+        assertEquals("chipPoints", json.getString("type"))
+        assertEquals(1200, json.getInt("points"))
+        assertEquals(2, json.length())
     }
 }

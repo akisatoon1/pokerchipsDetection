@@ -6,6 +6,7 @@ import {
   type MatchView,
   type RoundView,
 } from "../api";
+import { isInApp, requestChipPoints } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import type { Membership } from "../membership";
 
@@ -246,9 +247,12 @@ function renderEntryForm(
   });
   const form = element("form", { className: "entry-form" }, [
     labeledField("あなたの持ち点", points),
-    submit,
-    message,
   ]);
+  // チップの検出は Android アプリにしかないので, アプリの中でだけ出す (docs/web/app.md).
+  if (isInApp()) {
+    form.append(renderChipInputControl(points));
+  }
+  form.append(submit, message);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     submit.disabled = true;
@@ -268,4 +272,23 @@ function renderEntryForm(
     });
   });
   return form;
+}
+
+// 「チップから入力」のボタン. アプリが求めた持ち点を欄に入れるだけで, 送らない.
+// 検出は間違うことがあるので, 人が確かめてから「保存する」を押すため.
+function renderChipInputControl(points: HTMLInputElement): HTMLElement {
+  const status = element("p", { attributes: { role: "status" } });
+  const button = element("button", {
+    text: "チップから入力",
+    attributes: { type: "button" },
+  });
+  button.addEventListener("click", () => {
+    status.textContent = "";
+    requestChipPoints((chipPoints) => {
+      points.value = String(chipPoints);
+      status.textContent =
+        "チップから求めた持ち点を入れました. 確かめて「保存する」を押してください.";
+    });
+  });
+  return element("div", { className: "chip-input" }, [button, status]);
 }
