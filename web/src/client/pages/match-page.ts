@@ -10,6 +10,7 @@ import {
 import { element, labeledField } from "../dom";
 import {
   loadMembership,
+  recordMatchOpened,
   removeMembership,
   saveMembership,
   type Membership,
@@ -30,15 +31,20 @@ export async function renderMatchPage(
   root.replaceChildren(element("p", { text: "読み込み中…" }));
   const result = await getMatch(matchId);
   if (!result.ok) {
+    // 削除されたマッチには戻る意味がないので, 保存したトークンも消す.
+    if (result.status === 404) {
+      removeMembership(matchId);
+    }
     root.replaceChildren(
       element("h1", { text: "点数計算" }),
       element("p", { className: "error", text: result.error }),
-      element("a", { text: "マッチを作る", attributes: { href: "/" } }),
+      element("a", { text: "トップページへ", attributes: { href: "/" } }),
     );
     return;
   }
   const match = result.value;
   const membership = loadMembership(matchId);
+  recordMatchOpened(matchId);
   const sections: HTMLElement[] = [
     element("h1", { text: match.name }),
     element("p", { text: `初期点数 ${String(match.initialPoints)}` }),
