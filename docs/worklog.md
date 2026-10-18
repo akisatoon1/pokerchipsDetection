@@ -335,3 +335,12 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - Web では, トップページ (`web/src/client/pages/home-page.ts`) を足し, マッチを作る画面を
   その中の欄 (`create-page.ts` → `create-section.ts`) にした. アプリとの連絡口を `web/src/client/app-bridge.ts` に置いた.
 - 手順を `docs/web/running.md` の「Android アプリから試す」に書いた.
+
+## 2026-10-18: Android アプリにチップから持ち点を入れる画面を足す
+
+計画は `docs/web/plans/2026-10-18-android-webview.md`.
+
+- `android/.../chips/` (`ChipValues.kt`, `ChipValuesStore.kt`, `ChipPoints.kt`) を足した. 色ごとの点数は SharedPreferences
+  (`chip_values`) に保存する.
+- 画面に `ChipValuesViewModel.kt`, `ui/ChipValuesScreen.kt` (色と点数の設定), `ui/ChipInputScreen.kt`, `ui/ChipPointsViews.kt` (検出画面),
+  `ui/ImagePickButtons.kt` (撮影とギャラリーのボタン. 数えるだけの画面と共有) を足した.

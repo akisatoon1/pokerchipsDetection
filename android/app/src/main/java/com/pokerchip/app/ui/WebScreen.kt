@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.webkit.JavaScriptReplyProxy
 import com.pokerchip.app.BuildConfig
 import com.pokerchip.app.web.AppWebViewClient
 import com.pokerchip.app.web.BridgeMessage
@@ -55,9 +56,16 @@ import com.pokerchip.app.web.decideUrlAction
  * @param isActive この画面が前に出ているか. 他の画面を重ねている間は false にし, 戻るボタンを譲る.
  * @param onOpenCount メニューの「数えるだけ」を選んだとき.
  * @param onOpenChipValues メニューの「色と点数の設定」を選んだとき.
+ * @param onStartChipInput Web の「チップから入力」が押されたとき. 持ち点を Web に返す口を渡す.
  */
 @Composable
-fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit, onOpenChipValues: () -> Unit) {
+fun WebScreen(
+    baseUrl: String,
+    isActive: Boolean,
+    onOpenCount: () -> Unit,
+    onOpenChipValues: () -> Unit,
+    onStartChipInput: (JavaScriptReplyProxy) -> Unit,
+) {
     val context = LocalContext.current
     var canGoBack by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -84,9 +92,10 @@ fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit, onOpe
                 onRendererGone = { webViewGeneration++ },
             ),
         ).apply {
-            WebBridge(baseUrl) { message, _ ->
+            WebBridge(baseUrl) { message, reply ->
                 when (message) {
                     is BridgeMessage.CopyText -> copyUrl(context, message.text, baseUrl)
+                    BridgeMessage.StartChipInput -> onStartChipInput(reply)
                 }
             }.install(this)
             loadUrl(lastUrl)
