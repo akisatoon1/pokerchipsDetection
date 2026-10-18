@@ -4,6 +4,8 @@
 
 - 設計: [docs/architecture.md](docs/architecture.md)
 - Linux での使い方 (ビルド, CLI, テスト): [docs/usage.md](docs/usage.md)
+- 点数計算 (マッチとラウンド): [docs/scoring.md](docs/scoring.md)
+- 点数計算アプリ (Web, バックエンド): [docs/web-app.md](docs/web-app.md)
 
 ## コーディング規約
 
