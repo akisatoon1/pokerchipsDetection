@@ -151,7 +151,12 @@ fun WebScreen(
                     factory = { viewContext ->
                         SwipeRefreshLayout(viewContext).apply {
                             addView(webView)
-                            setOnRefreshListener { webView.reload() }
+                            setOnRefreshListener {
+                                // 引くと SwipeRefreshLayout が自分でぐるぐるを出す. こちらの状態も true にしておかないと,
+                                // 読み込みのあとに false を入れても値が変わらず update が呼ばれないので, ぐるぐるが消えない.
+                                isRefreshing = true
+                                webView.reload()
+                            }
                         }
                     },
                     update = { layout ->
