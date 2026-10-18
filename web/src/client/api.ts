@@ -22,8 +22,13 @@ const matchView = z.object({
   players: z.array(z.object({ id: z.string(), name: z.string() })),
 });
 
+const joinedPlayer = z.object({ playerId: z.string(), token: z.string() });
+
 /** 作ったマッチと, リーダーのトークン. */
 export type CreatedMatch = z.infer<typeof createdMatch>;
+
+/** 参加したプレイヤーの id とトークン. */
+export type JoinedPlayer = z.infer<typeof joinedPlayer>;
 
 /** マッチの画面に出すもの. */
 export type MatchView = z.infer<typeof matchView>;
@@ -100,4 +105,22 @@ export function createMatch(
  */
 export function getMatch(matchId: string): Promise<ApiResult<MatchView>> {
   return request(`/api/matches/${encodeURIComponent(matchId)}`, matchView);
+}
+
+/**
+ * マッチに参加する.
+ *
+ * @param matchId マッチの id.
+ * @param name 参加する人の名前.
+ * @returns プレイヤーの id とトークン. 名前が重なる, 満員などで失敗なら説明.
+ */
+export function joinMatch(
+  matchId: string,
+  name: string,
+): Promise<ApiResult<JoinedPlayer>> {
+  return request(
+    `/api/matches/${encodeURIComponent(matchId)}/players`,
+    joinedPlayer,
+    { method: "POST", body: { name } },
+  );
 }
