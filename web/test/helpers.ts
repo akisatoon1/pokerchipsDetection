@@ -54,3 +54,30 @@ export async function createMatch(
   }
   return response.json();
 }
+
+export interface JoinedPlayer {
+  playerId: string;
+  token: string;
+}
+
+export async function joinMatch(
+  matchId: string,
+  name: string,
+): Promise<JoinedPlayer> {
+  const response = await send(`/api/matches/${matchId}/players`, {
+    method: "POST",
+    body: { name },
+  });
+  if (response.status !== 201) {
+    throw new Error(`参加できなかった: ${String(response.status)}`);
+  }
+  return response.json();
+}
+
+export function startRound(matchId: string, token?: string) {
+  return send(`/api/matches/${matchId}/rounds`, {
+    method: "POST",
+    body: {},
+    ...(token === undefined ? {} : { token }),
+  });
+}
