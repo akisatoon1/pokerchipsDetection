@@ -84,7 +84,7 @@ describe("ラウンドを始める", () => {
     const { leader } = await matchWithTwoPlayers();
     const response = await send(`/api/matches/${leader.matchId}/rounds`, {
       method: "POST",
-      body: { number: 5 },
+      body: { playerCount: 2, number: 5 },
       token: leader.token,
     });
     expect(response.status).toBe(400);
@@ -93,6 +93,42 @@ describe("ラウンドを始める", () => {
   it("存在しないマッチなら 404 を返す", async () => {
     const leader = await createMatch();
     expect((await startRound("no-such-match", leader.token)).status).toBe(404);
+  });
+});
+
+describe("確かめた人数", () => {
+  it("今の人数と同じ人数を送れば始められる", async () => {
+    const { leader } = await matchWithTwoPlayers();
+    expect((await startRound(leader.matchId, leader.token, 2)).status).toBe(
+      201,
+    );
+  });
+
+  it("確かめたあとに 1 人参加して人数が変わったら拒否し, ラウンドはできない", async () => {
+    const { leader } = await matchWithTwoPlayers();
+    // リーダーが 2 人を確かめている間に C が参加した.
+    await joinMatch(leader.matchId, "C");
+    const response = await startRound(leader.matchId, leader.token, 2);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "参加者が変わりました. 確かめ直してください",
+    });
+    expect((await roundsOf(leader.matchId)).rounds).toEqual([]);
+  });
+
+  it.each([
+    ["ない", {}],
+    ["文字列", { playerCount: "2" }],
+    ["負の数", { playerCount: -1 }],
+    ["小数", { playerCount: 2.5 }],
+  ])("playerCount が%sなら拒否する", async (_label, body) => {
+    const { leader } = await matchWithTwoPlayers();
+    const response = await send(`/api/matches/${leader.matchId}/rounds`, {
+      method: "POST",
+      body,
+      token: leader.token,
+    });
+    expect(response.status).toBe(400);
   });
 });
 

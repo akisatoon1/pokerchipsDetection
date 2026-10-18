@@ -95,11 +95,11 @@ describe("ラウンドを確定する", () => {
     );
   });
 
-  it("確定したあとは, 次のラウンドを始められる", async () => {
+  it("確定したあとは, 同じ人数を送って次のラウンドを始められる", async () => {
     const setup = await matchWithOpenRound();
     await enterAll(setup, setup.roundId, [150, 150, 0]);
     await closeRound(setup.roundId, setup.leader.token);
-    const next = await startRound(setup.leader.matchId, setup.leader.token);
+    const next = await startRound(setup.leader.matchId, setup.leader.token, 3);
     expect(next.status).toBe(201);
     expect(await next.json()).toEqual(expect.objectContaining({ number: 2 }));
   });
