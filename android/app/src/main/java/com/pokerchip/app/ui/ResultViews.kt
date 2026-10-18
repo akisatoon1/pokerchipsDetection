@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.pokerchip.app.AnalysisResult
 import com.pokerchip.app.StackResult
+import com.pokerchip.app.chips.ChipColor
 import kotlin.math.roundToInt
 
 /** 画像に検出したスタックの枠と枚数を重ねて表示する. */
@@ -212,14 +213,6 @@ private val SEAM_COLOR = Color(0xFFFFA000)
 private val LABEL_BACKGROUND = Color(0xFF1E1E1E)
 private val LABEL_TEXT = Color(0xFFE6E6E6)
 
-/** 色名 (core の chipColorName) の見本の色. core の chipColorBgr と同じ値. */
-private fun chipColor(name: String): Color = when (name) {
-    "red" -> Color(220, 0, 0)
-    "blue" -> Color(0, 80, 220)
-    "yellow" -> Color(240, 220, 0)
-    "black" -> Color(0, 0, 0)
-    "gray" -> Color(128, 128, 128)
-    "purple" -> Color(140, 0, 180)
-    "green" -> Color(0, 180, 0)
-    else -> Color.White
-}
+/** 色名 (core の chipColorName) の見本の色. 知らない色 (unknown) は白. */
+private fun chipColor(name: String): Color =
+    ChipColor.fromCoreName(name)?.let { Color(it.swatchArgb) } ?: Color.White
