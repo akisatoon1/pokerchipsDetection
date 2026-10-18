@@ -118,6 +118,7 @@ export interface MatchView {
   canStartRound: boolean;
   players: { id: string; name: string }[];
   rounds: RoundView[];
+  totals: { playerId: string; total: number }[];
 }
 
 export async function readMatch(matchId: string): Promise<MatchView> {
@@ -133,4 +134,12 @@ export async function matchWithOpenRound(initialPoints = 100) {
   const started = await startRound(leader.matchId, leader.token);
   const { roundId } = await started.json<{ roundId: string }>();
   return { leader, playerB, playerC, roundId };
+}
+
+export function closeRound(roundId: string, token?: string) {
+  return send(`/api/rounds/${roundId}/close`, {
+    method: "POST",
+    body: {},
+    ...(token === undefined ? {} : { token }),
+  });
 }
