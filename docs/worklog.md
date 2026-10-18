@@ -317,3 +317,21 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   この作業の計画 (`docs/web/plans/2026-10-18-android-webview.md`) で変えてよい場所がその下だったため.
 - 整形の道具 (ktfmt, ktlint) は入れず, Android Studio の整形に任せる. Android の検査は
   `./gradlew assembleDebug testDebugUnitTest lintDebug` にした.
+
+## 2026-10-18: Android アプリでマッチの画面 (Web) を WebView で出す
+
+計画は `docs/web/plans/2026-10-18-android-webview.md`.
+
+- Android アプリのマッチの画面を, Web を WebView で表示する形にした. 今までの画面は「数えるだけ」の画面
+  (`ui/MainScreen.kt` → `ui/CountScreen.kt`) としてメニューから開く. 上のバーの部品 `ui/AppTopBar.kt`,
+  WebView の画面 `ui/WebScreen.kt`, WebView まわりの `web/` (`OriginPolicy.kt`, `BridgeMessage.kt`, `WebBridge.kt`,
+  `AppWebViewClient.kt`) を足した. 単体テストを `android/app/src/test/` に置いた.
+- 依存を足した: `androidx.webkit` 1.17.1 (bridge を接続先のページからだけ受ける), `androidx.swiperefreshlayout` 1.2.0
+  (下に引いて更新), テスト用に `junit` 4.13.2 と `org.json:json` 20260814 (Android の org.json は JVM のテストでは中身がないため).
+- 接続先を `BuildConfig.WEB_BASE_URL` にした. debug は `http://localhost:8787` で, `adb reverse tcp:8787 tcp:8787` で
+  PC の `wrangler dev` に届ける. release はデプロイするときに替える仮の値. `android/app/src/debug/` に,
+  debug でだけ localhost への平文の http を許す設定を置いた. INTERNET の権限を足した.
+- Android の検査を `./gradlew assembleDebug testDebugUnitTest lintDebug` にした ([web/kotlin.md](web/kotlin.md)).
+- Web では, トップページ (`web/src/client/pages/home-page.ts`) を足し, マッチを作る画面を
+  その中の欄 (`create-page.ts` → `create-section.ts`) にした. アプリとの連絡口を `web/src/client/app-bridge.ts` に置いた.
+- 手順を `docs/web/running.md` の「Android アプリから試す」に書いた.
