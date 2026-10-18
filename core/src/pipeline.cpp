@@ -59,7 +59,15 @@ std::string toJson(const AnalysisResult &result) {
     } else {
       os << "null";
     }
-    os << ",\"colors\":[";
+    os << ",\"peaks\":[";
+    if (s.count.has_value()) {
+      const std::vector<int> &peaks = s.count->peaks;
+      for (size_t j = 0; j < peaks.size(); ++j) {
+        if (j > 0) os << ",";
+        os << peaks[j];
+      }
+    }
+    os << "],\"colors\":[";
     for (size_t j = 0; j < s.colors.size(); ++j) {
       if (j > 0) os << ",";
       os << "\"" << chipColorName(s.colors[j]) << "\"";

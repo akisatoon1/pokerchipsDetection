@@ -92,8 +92,10 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                 Text("エラー: $it", color = MaterialTheme.colorScheme.error)
             }
 
-            state.bitmap?.let { ResultImage(it, state.result) }
-            state.result?.let { ResultSummary(it) }
+            state.bitmap?.let { bitmap ->
+                ResultImage(bitmap, state.result)
+                state.result?.let { ResultSummary(bitmap, it) }
+            }
 
             // 解析が終われば (失敗しても) 元の画像を保存できる.
             if (state.source != null && !state.isAnalyzing) {

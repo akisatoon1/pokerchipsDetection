@@ -11,6 +11,8 @@ data class StackResult(
     val score: Float,
     /** カウントに失敗したら null. */
     val count: Int?,
+    /** チップの合わせ目の y. 元画像でなく ROI の上端からのピクセル. カウントに失敗したら空. */
+    val peaks: List<Int>,
     /** 上のチップから順の色名 (core の chipColorName). */
     val colors: List<String>,
 )
@@ -24,6 +26,7 @@ data class AnalysisResult(val stacks: List<StackResult>) {
                 (0 until stacks.length()).map { i ->
                     val s = stacks.getJSONObject(i)
                     val box = s.getJSONArray("box")
+                    val peaks = s.getJSONArray("peaks")
                     val colors = s.getJSONArray("colors")
                     StackResult(
                         x = box.getInt(0),
@@ -32,6 +35,7 @@ data class AnalysisResult(val stacks: List<StackResult>) {
                         height = box.getInt(3),
                         score = s.getDouble("score").toFloat(),
                         count = if (s.isNull("count")) null else s.getInt("count"),
+                        peaks = (0 until peaks.length()).map { peaks.getInt(it) },
                         colors = (0 until colors.length()).map { colors.getString(it) },
                     )
                 },

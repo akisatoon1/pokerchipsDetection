@@ -32,7 +32,8 @@ TEST(ToJson, Format) {
   EXPECT_EQ(toJson(result),
             "{\"stacks\":["
             "{\"box\":[1,2,3,4],\"score\":0.5,\"count\":2,"
-            "\"colors\":[\"red\",\"blue\"]},"
-            "{\"box\":[5,6,7,8],\"score\":1,\"count\":null,\"colors\":[]}"
+            "\"peaks\":[0,10,20],\"colors\":[\"red\",\"blue\"]},"
+            "{\"box\":[5,6,7,8],\"score\":1,\"count\":null,\"peaks\":[],"
+            "\"colors\":[]}"
             "]}");
 }
