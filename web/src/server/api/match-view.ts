@@ -69,9 +69,11 @@ export function buildMatchView(data: MatchData) {
     playerCount: players.length,
     hasRoundStarted: rounds.length > 0,
   });
+  // 画面に出すのは, リーダーが今の人数を確かめたとして始められるか.
   const canStartRound = checkCanStartRound({
     playerCount: players.length,
     hasOpenRound: rounds.some((round) => round.status === "open"),
+    confirmedPlayerCount: players.length,
   });
   return {
     id: match.id,
