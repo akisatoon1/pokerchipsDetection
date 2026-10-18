@@ -29,8 +29,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 手元の wrangler dev. adb reverse tcp:8787 tcp:8787 で PC に届ける (docs/web/running.md).
+            // エミュレータでも実機でも同じ URL で試せるようにするため.
+            buildConfigField("String", "WEB_BASE_URL", "\"http://localhost:8787\"")
+        }
         release {
             isMinifyEnabled = false
+            // 本番にデプロイするときに, 本番の URL に替える.
+            buildConfigField("String", "WEB_BASE_URL", "\"https://example.invalid\"")
         }
     }
 
@@ -41,6 +48,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // core (リポジトリ直下) を含むネイティブのビルド. 中身は src/main/cpp/CMakeLists.txt.
@@ -66,5 +74,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.swiperefreshlayout)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    testImplementation(libs.junit)
 }

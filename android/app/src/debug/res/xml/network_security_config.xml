@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- debug のビルドの接続先は http://localhost:8787 (adb reverse で PC の wrangler dev に届ける).
+     平文の http は localhost にだけ許し, ほかは既定どおり https だけにする. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
