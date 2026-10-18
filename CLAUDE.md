@@ -4,8 +4,7 @@
 
 - 設計: [docs/architecture.md](docs/architecture.md)
 - Linux での使い方 (ビルド, CLI, テスト): [docs/usage.md](docs/usage.md)
-- 点数計算 (マッチとラウンド): [docs/scoring.md](docs/scoring.md)
-- 点数計算アプリ (Web, バックエンド): [docs/web-app.md](docs/web-app.md)
+- 点数計算アプリ (Web, バックエンド): [docs/web/app.md](docs/web/app.md), 点数計算のルール: [docs/web/scoring.md](docs/web/scoring.md)
 
 ## コーディング規約
 
@@ -22,10 +21,10 @@ docs/worklog.md には環境に関する変更だけを記録する.
 
 ## Web アプリの開発
 
-`web/`, `server/` の作業をするときは, 次の流れ, コードの書き方, セキュリティの規則に従う.
+`web/` の作業をするときは, 次の流れ, コードの書き方, セキュリティの規則に従う.
 
-@docs/web-development.md
+@docs/web/development.md
 
-@docs/web-code-rules.md
+@docs/web/code-rules.md
 
-@docs/web-security.md
+@docs/web/security.md
