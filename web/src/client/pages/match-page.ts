@@ -285,6 +285,22 @@ function renderJoinSection(root: HTMLElement, matchId: string): HTMLElement {
 }
 
 function renderShareSection(): HTMLElement {
+  const url = location.href;
+  const copy = element("button", { text: "URL をコピー" });
+  const message = element("p", { attributes: { role: "status" } });
+  copy.addEventListener("click", () => {
+    message.textContent = "";
+    message.className = "";
+    void copyText(url).then((isCopied) => {
+      if (isCopied) {
+        message.textContent = "コピーしました.";
+        return;
+      }
+      message.className = "error";
+      message.textContent =
+        "コピーできませんでした. 上の欄の URL を選んでコピーしてください.";
+    });
+  });
   return element("section", {}, [
     element("h2", { text: "仲間を呼ぶ" }),
     element("p", { text: "この URL を送ると, 仲間が参加できます." }),
@@ -294,9 +310,21 @@ function renderShareSection(): HTMLElement {
     }),
     element("input", {
       className: "share-url",
-      attributes: { readonly: "", value: location.href },
+      attributes: { readonly: "", value: url },
     }),
+    copy,
+    message,
   ]);
+}
+
+// 文字をコピーする. ブラウザが許さない (https でない, 権限がないなど) ときは false.
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function renderPlayersSection(
