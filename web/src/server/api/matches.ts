@@ -28,8 +28,10 @@ const createMatchBody = z
 
 const playerNameBody = z.object({ name: z.string() }).strict();
 
-// 本文に何も持たない操作も, 他のサイトから送られにくいよう空の JSON を送らせる.
-const emptyBody = z.object({}).strict();
+// リーダーが始める前に確かめた人数. 今の人数と違えば始めない.
+const startRoundBody = z
+  .object({ playerCount: z.number().int().nonnegative() })
+  .strict();
 
 /** /api/matches の下の API. */
 export const matchesApi = new Hono<{ Bindings: Cloudflare.Env }>();
@@ -129,7 +131,7 @@ matchesApi.post("/:matchId/players", async (c) => {
 // ラウンドを始める. リーダーだけができる.
 matchesApi.post("/:matchId/rounds", async (c) => {
   const matchId = c.req.param("matchId");
-  const body = await parseJsonBody(c.req.raw, emptyBody);
+  const body = await parseJsonBody(c.req.raw, startRoundBody);
   if (!body.ok) {
     return c.json({ error: body.error }, 400);
   }
@@ -149,7 +151,7 @@ matchesApi.post("/:matchId/rounds", async (c) => {
   const canStart = checkCanStartRound({
     playerCount: players.length,
     hasOpenRound: rounds.some((round) => round.status === "open"),
-    confirmedPlayerCount: players.length,
+    confirmedPlayerCount: body.value.playerCount,
   });
   if (!canStart.ok) {
     return c.json({ error: canStart.reason }, 409);

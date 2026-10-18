@@ -74,12 +74,27 @@ export async function joinMatch(
   return response.json();
 }
 
-export function startRound(matchId: string, token?: string) {
+// playerCount を渡さなければ, 今の人数を確かめたものとして送る.
+export async function startRound(
+  matchId: string,
+  token?: string,
+  playerCount?: number,
+) {
+  const confirmedCount = playerCount ?? (await currentPlayerCount(matchId));
   return send(`/api/matches/${matchId}/rounds`, {
     method: "POST",
-    body: {},
+    body: { playerCount: confirmedCount },
     ...(token === undefined ? {} : { token }),
   });
+}
+
+async function currentPlayerCount(matchId: string): Promise<number> {
+  const response = await send(`/api/matches/${matchId}`);
+  if (response.status !== 200) {
+    return 0;
+  }
+  const match = await response.json<{ players: unknown[] }>();
+  return match.players.length;
 }
 
 export function putEntry(

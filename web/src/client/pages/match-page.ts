@@ -83,14 +83,16 @@ function renderLeaderSection(
   start.addEventListener("click", () => {
     start.disabled = true;
     message.textContent = "";
-    void startRound(match.id, membership.token).then((result) => {
-      if (!result.ok) {
-        message.textContent = result.error;
-        start.disabled = false;
-        return;
-      }
-      void renderMatchPage(root, match.id);
-    });
+    void startRound(match.id, membership.token, match.players.length).then(
+      (result) => {
+        if (!result.ok) {
+          message.textContent = result.error;
+          start.disabled = false;
+          return;
+        }
+        void renderMatchPage(root, match.id);
+      },
+    );
   });
   return element("section", {}, [
     element("h2", { text: "リーダーの操作" }),

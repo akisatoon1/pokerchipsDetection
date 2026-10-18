@@ -162,16 +162,19 @@ export function joinMatch(
  *
  * @param matchId マッチの id.
  * @param token リーダーのトークン.
- * @returns 新しいラウンドの id と番号. リーダーでない, 入力中のラウンドがあるなどで失敗なら説明.
+ * @param playerCount リーダーが始める前に確かめた人数. 今の人数と違えばサーバーが拒否する.
+ * @returns 新しいラウンドの id と番号. リーダーでない, 入力中のラウンドがある,
+ *   参加者が変わったなどで失敗なら説明.
  */
 export function startRound(
   matchId: string,
   token: string,
+  playerCount: number,
 ): Promise<ApiResult<{ roundId: string; number: number }>> {
   return request(
     `/api/matches/${encodeURIComponent(matchId)}/rounds`,
     startedRound,
-    { method: "POST", body: {}, token },
+    { method: "POST", body: { playerCount }, token },
   );
 }
 
