@@ -344,3 +344,10 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   (`chip_values`) に保存する.
 - 画面に `ChipValuesViewModel.kt`, `ui/ChipValuesScreen.kt` (色と点数の設定), `ui/ChipInputScreen.kt`, `ui/ChipPointsViews.kt` (検出画面),
   `ui/ImagePickButtons.kt` (撮影とギャラリーのボタン. 数えるだけの画面と共有) を足した.
+
+## 2026-10-18: push の前の確認のスキルを足す
+
+- Claude Code のプロジェクトのスキル `.claude/skills/pre-push-check/` を足した. GitHub に push する前に,
+  まだ push していないコミットに上げてはいけないもの (秘密情報, 手元の設定, ビルド結果, 大きいファイル,
+  位置情報の入った写真など) が入っていないかを調べる. 手順は `SKILL.md`, 機械的な検査は `scan.py`
+  (`python3 -I .claude/skills/pre-push-check/scan.py`. 画像の検査に Pillow を使う).
