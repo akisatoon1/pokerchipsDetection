@@ -1,6 +1,8 @@
 package com.pokerchip.app.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -39,6 +41,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.pokerchip.app.BuildConfig
 import com.pokerchip.app.web.AppWebViewClient
+import com.pokerchip.app.web.BridgeMessage
+import com.pokerchip.app.web.UrlAction
+import com.pokerchip.app.web.WebBridge
+import com.pokerchip.app.web.decideUrlAction
 
 /**
  * マッチの画面 (Web) を WebView で出す画面.
@@ -76,7 +82,14 @@ fun WebScreen(baseUrl: String, isActive: Boolean, onOpenCount: () -> Unit) {
                 },
                 onRendererGone = { webViewGeneration++ },
             ),
-        ).apply { loadUrl(lastUrl) }
+        ).apply {
+            WebBridge(baseUrl) { message, _ ->
+                when (message) {
+                    is BridgeMessage.CopyText -> copyUrl(context, message.text, baseUrl)
+                }
+            }.install(this)
+            loadUrl(lastUrl)
+        }
     }
     DisposableEffect(webView) {
         onDispose { webView.destroy() }
@@ -167,6 +180,13 @@ private fun createWebView(context: Context, client: AppWebViewClient): WebView {
         settings.allowContentAccess = false
         webViewClient = client
     }
+}
+
+// 参加の URL をコピーする. Web のページが頼めるのは URL のコピーなので, 接続先のページの URL だけを受ける.
+private fun copyUrl(context: Context, text: String, baseUrl: String) {
+    if (decideUrlAction(text, baseUrl) != UrlAction.OPEN_IN_APP) return
+    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText("マッチの URL", text))
 }
 
 private fun openExternally(context: Context, uri: Uri) {

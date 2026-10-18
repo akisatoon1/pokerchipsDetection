@@ -7,6 +7,7 @@ import {
   startRound,
   type MatchView,
 } from "../api";
+import { copyTextInApp } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import {
   loadMembership,
@@ -319,6 +320,10 @@ function renderShareSection(): HTMLElement {
 
 // 文字をコピーする. ブラウザが許さない (https でない, 権限がないなど) ときは false.
 async function copyText(text: string): Promise<boolean> {
+  // アプリの中では, WebView でブラウザのコピーの機能が確実には動かないので, アプリに頼む.
+  if (copyTextInApp(text)) {
+    return true;
+  }
   try {
     await navigator.clipboard.writeText(text);
     return true;
