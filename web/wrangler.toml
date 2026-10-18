@@ -1,0 +1,17 @@
+name = "pokerchip-score"
+main = "src/server/index.ts"
+compatibility_date = "2026-10-01"
+
+# 画面は Vite でビルドした静的ファイル. /api/ 以外はここから配り,
+# 知らないパス (/m/{matchId} など) には index.html を返して画面側で振り分ける.
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+# database_id はデプロイするときに本物の値に替える. ローカルでは使われない.
+[[d1_databases]]
+binding = "DB"
+database_name = "pokerchip-score"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
