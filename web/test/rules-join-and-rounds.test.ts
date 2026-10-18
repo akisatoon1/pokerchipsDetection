@@ -24,20 +24,42 @@ describe("参加できるか", () => {
 
 describe("ラウンドを始められるか", () => {
   it("2 人いて入力中のラウンドがなければ始められる", () => {
-    expect(checkCanStartRound({ playerCount: 2, hasOpenRound: false }).ok).toBe(
-      true,
-    );
+    expect(
+      checkCanStartRound({
+        playerCount: 2,
+        hasOpenRound: false,
+        confirmedPlayerCount: 2,
+      }).ok,
+    ).toBe(true);
   });
 
   it("1 人なら始められない", () => {
-    expect(checkCanStartRound({ playerCount: 1, hasOpenRound: false }).ok).toBe(
-      false,
-    );
+    expect(
+      checkCanStartRound({
+        playerCount: 1,
+        hasOpenRound: false,
+        confirmedPlayerCount: 1,
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("確かめた人数と今の人数が違えば始められない", () => {
+    expect(
+      checkCanStartRound({
+        playerCount: 3,
+        hasOpenRound: false,
+        confirmedPlayerCount: 2,
+      }).ok,
+    ).toBe(false);
   });
 
   it("入力中のラウンドがあれば始められない", () => {
-    expect(checkCanStartRound({ playerCount: 3, hasOpenRound: true }).ok).toBe(
-      false,
-    );
+    expect(
+      checkCanStartRound({
+        playerCount: 3,
+        hasOpenRound: true,
+        confirmedPlayerCount: 3,
+      }).ok,
+    ).toBe(false);
   });
 });

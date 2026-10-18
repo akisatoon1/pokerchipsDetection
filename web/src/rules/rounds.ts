@@ -5,13 +5,17 @@ import type { RuleResult } from "./rule-result";
 export interface StartRoundState {
   playerCount: number;
   hasOpenRound: boolean;
+  // リーダーが始める前に確かめた人数.
+  confirmedPlayerCount: number;
 }
 
 /**
  * 新しいラウンドを始められるかを判定する.
  *
  * 入力中のラウンドは常に 1 つだけにする. 確定するまで次のラウンドは始められない (docs/web/app.md).
- * @param state マッチの人数と, 入力中のラウンドがあるか.
+ * リーダーが確かめた人数と今の人数が違えば始めない. 確かめている間に誰かが参加して,
+ * リーダーが見ていないメンバーで始まってしまうのを防ぐため.
+ * @param state マッチの人数, 入力中のラウンドがあるか, リーダーが確かめた人数.
  * @returns 始められれば ok: true. 始められなければ理由.
  */
 export function checkCanStartRound(state: StartRoundState): RuleResult<null> {
@@ -26,6 +30,9 @@ export function checkCanStartRound(state: StartRoundState): RuleResult<null> {
       ok: false,
       reason: `ラウンドは ${String(MIN_PLAYERS_TO_START_ROUND)} 人以上で始めてください`,
     };
+  }
+  if (state.confirmedPlayerCount !== state.playerCount) {
+    return { ok: false, reason: "参加者が変わりました. 確かめ直してください" };
   }
   return { ok: true, value: null };
 }

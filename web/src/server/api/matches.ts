@@ -149,6 +149,7 @@ matchesApi.post("/:matchId/rounds", async (c) => {
   const canStart = checkCanStartRound({
     playerCount: players.length,
     hasOpenRound: rounds.some((round) => round.status === "open"),
+    confirmedPlayerCount: players.length,
   });
   if (!canStart.ok) {
     return c.json({ error: canStart.reason }, 409);
