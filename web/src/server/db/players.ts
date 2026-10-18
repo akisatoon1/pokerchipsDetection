@@ -23,3 +23,73 @@ export async function listPlayers(
     .all<PlayerRecord>();
   return results;
 }
+
+/** 参加するプレイヤー. 値は検証済みのもの. */
+export interface NewPlayer {
+  playerId: string;
+  matchId: string;
+  name: string;
+  tokenHash: string;
+}
+
+/** 参加を保存した結果. */
+export type InsertPlayerOutcome = "inserted" | "full" | "name-taken" | "busy";
+
+/**
+ * プレイヤーを, 人数の上限を超えないときだけ保存する.
+ *
+ * 人数を数えることと保存することを 1 つの SQL で行い, 同時に参加されても上限を超えないようにする.
+ * @param db D1 のデータベース.
+ * @param player 保存するプレイヤー.
+ * @param maxPlayers 1 つのマッチのプレイヤーの上限.
+ * @returns 保存できたか. 満員なら "full", 同じマッチに同じ名前があれば "name-taken",
+ *   同時に参加した人と参加の順番がぶつかったら "busy".
+ * @throws DB に届かないときや, 思わぬ制約に反したとき.
+ */
+export async function insertPlayerIfRoom(
+  db: D1Database,
+  player: NewPlayer,
+  maxPlayers: number,
+): Promise<InsertPlayerOutcome> {
+  try {
+    const result = await db
+      .prepare(
+        `INSERT INTO players (id, match_id, name, token_hash, position)
+         SELECT ?, ?, ?, ?, COUNT(*) + 1 FROM players WHERE match_id = ?
+         HAVING COUNT(*) < ?`,
+      )
+      .bind(
+        player.playerId,
+        player.matchId,
+        player.name,
+        player.tokenHash,
+        player.matchId,
+        maxPlayers,
+      )
+      .run();
+    return result.meta.changes === 1 ? "inserted" : "full";
+  } catch (error) {
+    if (isUniqueViolation(error, "players.match_id, players.name")) {
+      return "name-taken";
+    }
+    if (isUniqueViolation(error, "players.match_id, players.position")) {
+      return "busy";
+    }
+    throw error;
+  }
+}
+
+/**
+ * D1 の例外が, 指定した列の UNIQUE 制約に反したものかを調べる.
+ *
+ * D1 は制約の違反を例外の文言でしか伝えないため, 文言を見る.
+ * @param error 捕まえた例外.
+ * @param columns SQLite が文言に入れる列の並び (例: "players.match_id, players.name").
+ * @returns その制約に反したものなら true.
+ */
+export function isUniqueViolation(error: unknown, columns: string): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes(`UNIQUE constraint failed: ${columns}`)
+  );
+}
