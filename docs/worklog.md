@@ -304,3 +304,8 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - npm 11 が初期設定で止める install script を, esbuild と workerd にだけ `package.json` の `allowScripts` で許した.
   実行用のプログラムを取ってくるのに要るため.
 - TypeScript の書き方と検査のコマンドを `docs/web/typescript.md` にまとめ, CLAUDE.md から読み込ませた.
+
+## 2026-10-18: Web アプリの起動の手順を書く
+
+- `docs/web/running.md` を追加した. Node の入れ方, `npm ci`, `npm run dev` での起動, コードを変えたときの読み直し方,
+  ローカルの DB の消し方, 検査, うまくいかないときの対処をまとめた. CLAUDE.md と `docs/web/typescript.md` からつないだ.

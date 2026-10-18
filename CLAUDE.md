@@ -5,6 +5,7 @@
 - 設計: [docs/architecture.md](docs/architecture.md)
 - Linux での使い方 (ビルド, CLI, テスト): [docs/usage.md](docs/usage.md)
 - 点数計算アプリ (Web, バックエンド): [docs/web/app.md](docs/web/app.md), 点数計算のルール: [docs/web/scoring.md](docs/web/scoring.md)
+- 点数計算アプリの起動: [docs/web/running.md](docs/web/running.md)
 
 ## コーディング規約
 
