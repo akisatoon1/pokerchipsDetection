@@ -71,3 +71,19 @@ td:first-child {
 .entry-form {
   margin-bottom: 0.75rem;
 }
+
+.close-control {
+  margin-top: 0.75rem;
+}
+
+dialog {
+  max-width: 36rem;
+  width: calc(100% - 2rem);
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

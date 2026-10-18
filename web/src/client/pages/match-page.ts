@@ -2,7 +2,7 @@ import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
 import { getMatch, joinMatch, startRound, type MatchView } from "../api";
 import { element, labeledField } from "../dom";
 import { loadMembership, saveMembership, type Membership } from "../membership";
-import { renderRoundsSection } from "./rounds-section";
+import { formatDelta, renderRoundsSection } from "./rounds-section";
 
 /**
  * マッチの画面を出す.
@@ -46,6 +46,9 @@ export async function renderMatchPage(
   sections.push(renderPlayersSection(match, membership));
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
     sections.push(renderLeaderSection(root, match, membership));
+  }
+  if (match.rounds.length > 0) {
+    sections.push(renderTotalsSection(match));
   }
   sections.push(
     renderRoundsSection(match, membership, () => {
@@ -157,5 +160,31 @@ function renderPlayersSection(
   return element("section", {}, [
     element("h2", { text: `プレイヤー (${String(match.players.length)} 人)` }),
     element("ul", {}, items),
+  ]);
+}
+
+// 累計. 確定したラウンドだけの増減の和で, API が計算したものをそのまま出す.
+function renderTotalsSection(match: MatchView): HTMLElement {
+  const namesById = new Map(
+    match.players.map((player) => [player.id, player.name]),
+  );
+  const rows = match.totals.map((total) =>
+    element("tr", {}, [
+      element("td", { text: namesById.get(total.playerId) ?? "" }),
+      element("td", { text: formatDelta(total.total) }),
+    ]),
+  );
+  return element("section", {}, [
+    element("h2", { text: "累計" }),
+    element("p", { text: "確定したラウンドだけを足しています." }),
+    element("table", {}, [
+      element("thead", {}, [
+        element("tr", {}, [
+          element("th", { text: "名前" }),
+          element("th", { text: "累計" }),
+        ]),
+      ]),
+      element("tbody", {}, rows),
+    ]),
   ]);
 }
