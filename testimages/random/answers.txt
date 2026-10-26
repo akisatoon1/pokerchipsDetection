@@ -1,0 +1,20 @@
+# 上から (斜め上から) 撮ったスタックの正解. AI (Claude) が目で数えた案で, 人の確認がまだ.
+# 形式は yoko/stack/multicolor_jpg/answers.txt と同じ: <ファイル名> <枚数> <色...>
+#   色は上のチップから順. 1 枚に複数のスタックがあるときは, 左のスタックから順に複数行書く.
+#
+# 数え方: スタック正面の細い縦の帯を拡大し, 合わせ目の数と 1 枚あたりの高さ (px) の両方で確かめた.
+#   一番上のチップは, 上面の縁の模様 (エッジスポット) が側面に続いて見えるので, 帯が 1.5 枚分くらい太く見える.
+#   これを 2 枚と数えないようにした.
+#
+# 黄のスタック. 上から黄 3, 赤 3, 黄 3.
+top.jpg 9 yellow yellow yellow red red red yellow yellow yellow
+# 左から紫, 灰, 緑.
+upper.jpg 12 purple purple purple purple purple purple purple purple purple purple purple purple
+upper.jpg 4 gray gray gray gray
+upper.jpg 14 green green green green green green green green green green green green green green
+# 左から黒, 赤, 灰.
+# 黒: 一番下の 1 枚が左手前にずれていて, その上面が見えている. これも 1 枚と数えた.
+black.jpg 9 black black black black black black black black black
+black.jpg 12 red red red red red red red red red red red red
+# 灰: 自信が低い. 上から 2, 3 枚目の帯が他より細く (約 20 px, 他は約 30 px), 14 か 15 か迷った.
+black.jpg 15 gray gray gray gray gray gray gray gray gray gray gray gray gray gray gray
