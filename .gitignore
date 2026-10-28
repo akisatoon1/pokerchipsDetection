@@ -16,6 +16,12 @@ log/
 # 学習済みの重み. モデル側のリポジトリ (yoloPokerchip) から受け取る
 *.pt
 
+# データセット
+testimages/
+
+# tmp
+tmp/
+
 # 外部ファイルの取得先とビルド結果 (OpenCV, OpenCV Android SDK, Android NDK).
 # scripts/build_opencv.sh と scripts/fetch_android_deps.sh で作り直せる
 third_party/
