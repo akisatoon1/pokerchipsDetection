@@ -17,7 +17,14 @@ log/
 *.pt
 
 # データセット
-testimages/
+# 親ディレクトリが無視されていると中のファイルを ! で戻せないため, 1 段ずつ戻す
+testimages/*
+!testimages/v2/
+testimages/v2/*
+!testimages/v2/single_color/
+testimages/v2/single_color/*
+!testimages/v2/single_color/answers.jsonl
+!testimages/v2/single_color/README.md
 
 # tmp
 tmp/
