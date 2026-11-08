@@ -351,3 +351,14 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   まだ push していないコミットに上げてはいけないもの (秘密情報, 手元の設定, ビルド結果, 大きいファイル,
   位置情報の入った写真など) が入っていないかを調べる. 手順は `SKILL.md`, 機械的な検査は `scan.py`
   (`python3 -I .claude/skills/pre-push-check/scan.py`. 画像の検査に Pillow を使う).
+
+## 2026-10-30: 研究開発の試作の置き場所を作る
+
+- `research/` を研究開発の試作 (Python の実験コードと結果) の置き場所にした. git の履歴に残さないため `.gitignore` で除外する.
+  1 つの研究につき `research/YYYY-MM-DD-<内容>/` を 1 つ作り, 中の `README.md` に目的, 手順, 結果を書く.
+- 最初の研究は `research/2026-10-30-v2-color-count/` (v2 の単色スタックの色別計数). `run_all.sh` で最初から流せる.
+
+## 2026-11-08: 画像のラベル付けの道具を入れる
+
+- スタックの側面を囲む bounding box のラベル付けに labelme 7.9.1 を使う. リポジトリの根の専用の仮想環境 `.venv-label` に入れた (`.venv` に入れると固定している `onnxruntime` のバージョンが下がるため). 手順は `docs/labeling.md`.
+- ラベルの置き場所を `testimages/v2/single_color/labels/` (画像ごとに 1 つの JSON) にし, git で管理するよう `.gitignore` に足した.
