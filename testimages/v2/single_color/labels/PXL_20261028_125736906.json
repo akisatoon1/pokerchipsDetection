@@ -1,0 +1,31 @@
+{
+  "version": "7.9.1",
+  "flags": {
+    "confirmed": true,
+    "unconfirmed": false
+  },
+  "shapes": [
+    {
+      "label": "stack_side",
+      "points": [
+        [
+          1263.5474471737768,
+          2522.0722980172427
+        ],
+        [
+          2107.8811956171144,
+          3020.204302998563
+        ]
+      ],
+      "group_id": null,
+      "description": "ai:hologram",
+      "shape_type": "rectangle",
+      "flags": {},
+      "mask": null
+    }
+  ],
+  "imagePath": "../PXL_20261028_125736906.jpg",
+  "imageData": null,
+  "imageHeight": 4624,
+  "imageWidth": 3472
+}

@@ -1,0 +1,31 @@
+{
+  "version": "7.9.1",
+  "flags": {
+    "confirmed": true,
+    "unconfirmed": false
+  },
+  "shapes": [
+    {
+      "label": "stack_side",
+      "points": [
+        [
+          992.9036392682378,
+          1488.1527527502626
+        ],
+        [
+          2321.3294603327904,
+          2120.0893325917123
+        ]
+      ],
+      "group_id": null,
+      "description": "ai:seam",
+      "shape_type": "rectangle",
+      "flags": {},
+      "mask": null
+    }
+  ],
+  "imagePath": "../PXL_20261028_124951420.NIGHT.jpg",
+  "imageData": null,
+  "imageHeight": 4624,
+  "imageWidth": 3472
+}

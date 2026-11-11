@@ -1,0 +1,31 @@
+{
+  "version": "7.9.1",
+  "flags": {
+    "confirmed": true,
+    "unconfirmed": false
+  },
+  "shapes": [
+    {
+      "label": "stack_side",
+      "points": [
+        [
+          1207.7106753226592,
+          1768.4965162554984
+        ],
+        [
+          2353.1,
+          3242.0
+        ]
+      ],
+      "group_id": null,
+      "description": "ai:seam",
+      "shape_type": "rectangle",
+      "flags": {},
+      "mask": null
+    }
+  ],
+  "imagePath": "../PXL_20261028_125957668.jpg",
+  "imageData": null,
+  "imageHeight": 4624,
+  "imageWidth": 3472
+}
