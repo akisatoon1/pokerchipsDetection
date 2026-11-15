@@ -1,6 +1,7 @@
 # ビルド結果
 build/
 build-android/
+build-wasm/
 
 # テストの実行時に作られるファイル (gtest_discover_tests の cmake_test_discovery_*.json など)
 log/
@@ -34,13 +35,16 @@ tmp/
 # 研究開発の試作 (Python の実験コードと結果). git の履歴には残さない
 research/
 
-# 外部ファイルの取得先とビルド結果 (OpenCV, OpenCV Android SDK, Android NDK).
-# scripts/build_opencv.sh と scripts/fetch_android_deps.sh で作り直せる
+# 外部ファイルの取得先とビルド結果 (OpenCV, OpenCV Android SDK, Android NDK, Emscripten, WASM 用の OpenCV).
+# scripts/build_opencv.sh, scripts/fetch_android_deps.sh, scripts/fetch_emsdk.sh, scripts/build_opencv_wasm.sh で作り直せる
 third_party/
 
 # scripts/export_model.sh で作る ONNX モデル (Android の assets へのコピーも含む)
 models/
 *.onnx
+
+# scripts/build_wasm.sh が Web で配る場所に置く WASM とモデル
+web/src/client/public/detector/
 
 # Android (Gradle, Kotlin, Android Studio が作るもの)
 android/.gradle/
