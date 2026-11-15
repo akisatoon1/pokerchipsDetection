@@ -13,6 +13,7 @@ Web アプリ (`web/`) の TypeScript に固有の書き方をまとめる.
 | DB | Cloudflare D1 (SQLite) |
 | 入力の検証 | zod |
 | 画面 | フレームワークなし. Vite でビルドし, Workers の Static Assets で配る |
+| チップの検出 | core を Emscripten で WASM にしたもの (`wasm/`). 画面から呼ぶ |
 | テスト | Vitest と `@cloudflare/vitest-plugin` (workerd とローカルの D1 で動かす) |
 | 整形・lint | Prettier, ESLint (typescript-eslint) |
 
@@ -24,7 +25,8 @@ Web アプリ (`web/`) の TypeScript に固有の書き方をまとめる.
 | `web/src/server/api/` | API | 入力の検証, 権限の確認, 規則と DB アクセスの呼び出し, 応答の形 |
 | `web/src/server/db/` | DB アクセス | SQL はここにだけ書く |
 | `web/src/server/index.ts` | | Worker の入口. API をつなぐ |
-| `web/src/client/` | 画面 | HTML と, API を呼んで表示する処理 |
+| `web/src/client/` | 画面 | HTML と, API を呼んで表示する処理. チップの検出 (WASM の core を呼ぶ) |
+| `web/src/client/public/detector/` | | WASM とモデル. `scripts/build_wasm.sh` が置くビルドの結果で, git にも整形と lint にも入れない |
 | `web/migrations/` | | D1 の表の定義. 番号の順に当てる |
 | `web/test/` | | テスト |
 
@@ -39,6 +41,8 @@ npm run check    # 整形の確認, lint, 型検査, 全テスト, npm audit
 npm run format   # 整形する
 npm run dev      # 画面をビルドし, ローカルの D1 に migrations を当てて wrangler dev を起動する
 ```
+
+チップを検出するには, 先にリポジトリのルートで `scripts/build_wasm.sh` を流しておく ([running.md](../../web/running.md)).
 
 Node は `~/.local/node` に入っている. PATH が通っていないシェルでは `export PATH="$HOME/.local/node/bin:$PATH"` を先に実行する.
 Node の入れ方と起動の手順は [running.md](../../web/running.md) にある.
@@ -76,3 +80,6 @@ Node の入れ方と起動の手順は [running.md](../../web/running.md) にあ
 
 - 要素は `document.createElement` で作り, 文字は `textContent` で入れる. `innerHTML` は lint で禁じている.
 - 点数の計算はしない. API が返した増減や累計をそのまま表示する.
+- 例外として, チップの検出の結果から持ち点を求める換算は, 画面が規則 (`src/rules/`) を呼んで行う.
+  換算はバックエンドに置かない仕様 ([app.md](../../web/app.md)) のため. 求めた持ち点は入力欄に入れるだけで, 送るときに API が検証する.
+- WASM から返る値は外からの入力として扱い, zod で検証してから使う. core と画面の版がずれたときに, 黙って間違った値を出さないため.

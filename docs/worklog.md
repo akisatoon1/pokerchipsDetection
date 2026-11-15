@@ -426,3 +426,15 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `typescript-eslint` は最新版でも `minimatch` 10.2.6 (11.0.1 未満に脆弱性) を使うので, `package.json` の `overrides` で
   eslint と同じ 11.0.8 にそろえた. typescript-eslint が直したら `overrides` を消す.
 - `workerd` の版が変わったので, `allowScripts` の許可を `workerd@1.20261101.1` に替えた.
+
+## 2026-11-15: Web でチップを検出する構成を文書に書く (ブランチ web-detection)
+
+計画は [web/plans/2026-11-15-web-detection.md](web/plans/2026-11-15-web-detection.md) の 3.
+
+- 構成を変えた. チップの検出はブラウザでも行い, Web の画面が WASM の core を呼ぶ. Android アプリの中では当面 native の検出を使う.
+  仕様は `docs/web/app.md` の「チップの検出」に, 設計は `docs/architecture.md` の「10. Web でも core を WASM にして動かす」に書いた.
+- Web の層の決まり (`docs/development/web/layers.md`) に, 画面が規則を直接呼んでよいとき (チップの検出と換算に関わるものだけ) を足した.
+- 手順を足した. WASM の用意は `docs/environment/setup.md` の 10, WASM のビルドと CLI との比べは `docs/logic/usage.md` の「WASM」,
+  スマートフォンのブラウザから LAN で開く手順は `docs/web/running.md`.
+- `wasm/` を CLAUDE.md の表と, ロジックの地図 (`docs/logic/README.md`) に足した.
+- `make format` と `make check` は `wasm/` と `functional_tests/` の C++ を対象にしていない (Makefile はこの計画で触らない). 整形は `clang-format -i` で行う.

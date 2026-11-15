@@ -2,7 +2,7 @@
 
 Linux マシンでのビルド, CLI の実行, テスト, コードの検査の方法.
 環境構築 (apt, OpenCV, Python, モデルの用意) が済んでいることが前提で, その手順は [setup.md](../environment/setup.md) の 1〜6 にある.
-Android アプリのビルドは [setup.md](../environment/setup.md) の 7〜9 を参照.
+Android アプリのビルドは [setup.md](../environment/setup.md) の 7〜9 を, WASM の用意は 10 を参照.
 
 コマンドはすべて **リポジトリのルートで** 実行する. CLI もテストも, モデル (`models/chip_detector.onnx`) や
 テスト画像をリポジトリのルートからの相対パスで探すため.
@@ -169,6 +169,23 @@ make test
 `make model` は `models/chip_detector.onnx` を作り, Android の assets にもコピーし,
 `models/VERSION` に変換元の `.pt` の sha256 を記録する.
 
+## WASM
+
+Web の画面で動かす core (WASM) のビルドと, Linux の CLI と結果が同じかの確かめ方.
+Emscripten と WASM 用の OpenCV の用意 ([setup.md](../environment/setup.md) の 10) が済んでいることが前提.
+
+```
+scripts/build_wasm.sh                     # build-wasm/ でビルドし, .js, .wasm, モデルを web/src/client/public/detector/ に置く
+functional_tests/compare_wasm_cli.sh      # testimages の全画像を WASM と CLI で解析して比べる
+functional_tests/compare_wasm_cli.sh testimages/v1/yoko/stack/multicolor_jpg/IMG_5720.jpg   # 画像を選んで比べる
+```
+
+- 比べる前に `make build` と `scripts/build_wasm.sh` をしておく. WASM は Node で動かす.
+- スタックの数, box, count, peaks, colors が一致し, score の差が 0.001 以内なら一致とする. 違う画像は, どの値が違うかを出す.
+  空の画像, 大きさの合わない画素, 壊れたモデルを渡すと落ちずにエラーの文が返ること, 各ファイルが 25 MiB 以下であることも確かめる.
+- 1 枚でも違えば終了コード 1 で終わる. core を変えたら, Web に出す前に流す.
+- WASM に渡す画素は, CLI と同じ `cv::imread` で読む小さな道具 (`functional_tests/decode_rgba.cpp`) で作る. ブラウザの画像の読み方の違いは含まない.
+
 ## コードの整形と検査
 
 ```
@@ -178,6 +195,7 @@ make check         # 整形の確認 (format-check) と clang-tidy の検査. �
 ```
 
 - 対象は `core/`, `cli/` (clang-tidy) と, それに加えて `tests/`, `android/app/src/main/cpp/` (clang-format).
+- `wasm/` と `functional_tests/` の C++ は対象に入っていない. 変えたら `clang-format -i <ファイル>` で整形する.
 - 設定はリポジトリのルートの `.clang-format` と `.clang-tidy`.
 
 ## make のターゲット一覧

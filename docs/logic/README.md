@@ -1,6 +1,6 @@
-# 地図: ロジック, CLI (`core/`, `cli/`, `tests/`)
+# 地図: ロジック, CLI (`core/`, `cli/`, `tests/`, `wasm/`)
 
-チップの計数のロジック (C++) と, それを Linux で動かす CLI, テストの作業で読む.
+チップの計数のロジック (C++) と, それを Linux で動かす CLI, ブラウザで動かす WASM の殻, テストの作業で読む.
 
 ## 作業の前に必ず読む (ルール)
 
@@ -8,10 +8,10 @@
 
 ## 作業の前に読む (文脈)
 
-- [../architecture.md](../architecture.md) 処理の流れ (検出, 色の判定) と設計判断の理由
-- [usage.md](usage.md) ビルド, CLI の実行, テスト, 検査のコマンド
+- [../architecture.md](../architecture.md) 処理の流れ (検出, 色の判定) と設計判断の理由. WASM の殻は「10. Web でも core を WASM にして動かす」
+- [usage.md](usage.md) ビルド, CLI の実行, テスト, 検査, WASM のビルドと CLI との比べのコマンド
 
 ## 要るときに読む
 
 - [labeling.md](labeling.md) テスト画像のラベル付けの手順
-- [../environment/setup.md](../environment/setup.md) OpenCV やモデルの用意
+- [../environment/setup.md](../environment/setup.md) OpenCV やモデル, Emscripten と WASM 用の OpenCV の用意

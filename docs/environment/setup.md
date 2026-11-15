@@ -1,7 +1,7 @@
 # セットアップ手順
 
 新しいマシンでこのプロジェクトを使えるようにするまでの手順.
-Linux で実験・テストをする部分 (1〜6) と, Android アプリをビルドする部分 (7〜9) がある.
+Linux で実験・テストをする部分 (1〜6) と, Android アプリをビルドする部分 (7〜9), Web でチップを検出する WASM をビルドする部分 (10) がある.
 セットアップが済んだ後の Linux マシンでの使い方 (ビルド, CLI の実行, テスト) は [usage.md](../logic/usage.md),
 設計の理由は [architecture.md](../architecture.md) を参照.
 
@@ -13,7 +13,7 @@ clang-format / clang-tidy のバージョンが違うと整形結果や指摘が
 | 項目 | 目安 | 備考 |
 |---|---|---|
 | メモリ | 16GB 以上 | Android Studio とエミュレータを同時に動かすため |
-| ディスクの空き | 40GB 以上 | Android SDK とエミュレータで約 15GB, OpenCV のビルドで約 4.5GB, Python の venv で約 6GB |
+| ディスクの空き | 40GB 以上 | Android SDK とエミュレータで約 15GB, OpenCV のビルドで約 4.5GB, Python の venv で約 6GB, Emscripten で約 1.7GB |
 | sudo | 必要 | apt でのパッケージのインストール |
 | KVM | エミュレータを使う場合 | `ls /dev/kvm` で存在を確認. BIOS で CPU の仮想化を有効にする |
 | `best.pt` | 必須 | 学習済みの YOLO の重み. git 管理外なので別途受け取る (6 を参照) |
@@ -165,6 +165,22 @@ Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
 画像は `adb push testimages/yoko/stack/singlecolor/IMG_5587.jpg /sdcard/Pictures/` で端末に送り,
 アプリの「ギャラリー」から選ぶ. 枠の位置・枚数・色が JSON と一致すれば OK.
 
+## 10. Web でチップを検出する用意 (WASM)
+
+Web の画面でチップを検出するために, core を WebAssembly にビルドする. 設計は [architecture.md](../architecture.md) の 10 にある.
+6 (モデル) が済んでいることが前提.
+
+```
+scripts/fetch_emsdk.sh          # Emscripten 6.0.13 を third_party/emsdk/ に入れる (約 1.7GB)
+scripts/build_opencv_wasm.sh    # OpenCV 4.14.0 を WASM 用にビルドし, third_party/opencv-4.14.0-wasm/ に入れる. 数分かかる
+scripts/build_wasm.sh           # core を WASM にし, モデルと一緒に web/src/client/public/detector/ に置く
+```
+
+- 1 と 2 は最初の 1 回だけ. 3 は core かモデルを変えたらやり直す.
+- どれも git の管理外に置く (`third_party/`, `build-wasm/`, `web/src/client/public/detector/`).
+- Linux と同じ結果になるかの確かめ方は [usage.md](../logic/usage.md) の「WASM」にある.
+- Web アプリの起動の手順は [running.md](../web/running.md) にある.
+
 ## トラブルシューティング
 
 | 症状 | 原因と対処 |
@@ -175,6 +191,7 @@ Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
 | `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. [usage.md](../logic/usage.md) の「モデルを更新したとき」を参照 |
 | Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
 | Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
+| `scripts/build_wasm.sh` で OpenCV が見つからない | `scripts/build_opencv_wasm.sh` をしていない. 10 を行う |
 | アプリで解析すると `chip_detector.onnx` が開けないというエラーになる | assets にモデルがない. `make model PT=...` をやり直す (`android/app/src/main/` がある状態で実行すると assets にもコピーされる) |
 | `adb devices` で端末が `no permissions` になる | udev のルールが ADB の端末を知らない (systemd が 258 より古い OS など). `sudo apt install android-sdk-platform-tools-common` でルールを入れ, 端末を挿し直す |
 | エミュレータが起動しない / 非常に遅い | KVM が使えていない. `ls -l /dev/kvm` と `groups` に `kvm` があるかを確認 |

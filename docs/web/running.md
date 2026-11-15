@@ -50,7 +50,15 @@ npm run dev
 3. `wrangler dev` で API と画面を起動する.
 
 起動したら, ブラウザで http://localhost:8787 を開く. 止めるときは `Ctrl+C`.
+チップを数える画面は http://localhost:8787/count にある.
 8787 番のポートが使われているときは `npm run dev -- --port 8788` のように別のポートを指定する.
+
+### チップの検出を使うとき
+
+画面でチップを検出するには, WASM とモデルが `web/src/client/public/detector/` に要る.
+ないと, 解析するときに「検出の仕組みを読み込めませんでした」と出る.
+リポジトリのルートで `scripts/build_wasm.sh` を流してから `npm run dev` をする.
+初めてなら Emscripten と WASM 用の OpenCV の用意も要る ([../environment/setup.md](../environment/setup.md) の 10).
 
 ### 試し方
 
@@ -58,6 +66,29 @@ npm run dev
 2. 出てきた URL を, 別のブラウザかプライベートウィンドウで開いて参加する.
    トークンはブラウザごとに保存されるので, 同じブラウザの同じウィンドウでは 2 人目になれない.
 3. リーダーの画面でラウンドを始め, それぞれの画面で持ち点を入れ, リーダーが確定する.
+
+## スマートフォンのブラウザから試す
+
+iPhone の Safari などから, 手元の `npm run dev` を同じ Wi-Fi (LAN) で開く.
+
+1. 外から開けるように起動する.
+
+   ```sh
+   cd web
+   npm run dev -- --ip 0.0.0.0
+   ```
+
+2. PC の住所を確かめる.
+
+   ```sh
+   hostname -I   # 最初に出る 192.168.x.x などが PC の住所
+   ```
+
+3. スマートフォンを PC と同じ Wi-Fi につなぎ, ブラウザで `http://<PC の住所>:8787/count` を開く.
+
+- `--ip 0.0.0.0` で起動すると, 同じネットワークの誰からでも開ける. 家などの信頼できるネットワークでだけ使う.
+- つながらないときは, PC のファイアウォールが 8787 番を通しているかを確かめる.
+- 解析の間は, 画面が数秒止まって見えることがある.
 
 ## Android アプリから試す
 
@@ -89,6 +120,7 @@ debug のビルドの接続先は `http://localhost:8787` で, `adb reverse` で
 |---|---|
 | API (`src/server/`, `src/rules/`) | 何もしなくてよい. `wrangler dev` が読み直す |
 | 画面 (`src/client/`) | 別の端末で `npm run build` を実行し, ブラウザを読み直す |
+| core, `wasm/`, モデル | リポジトリのルートで `scripts/build_wasm.sh` を実行してから `npm run build` をし, ブラウザを読み直す |
 | DB の定義 (`migrations/` に足した) | `Ctrl+C` で止めて, もう一度 `npm run dev` |
 
 ## ローカルの DB
