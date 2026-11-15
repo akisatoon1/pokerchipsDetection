@@ -1,6 +1,7 @@
 import { MAX_PLAYER_NAME_LENGTH } from "../../rules/limits";
 import {
   deleteMatch,
+  deletePlayer,
   getMatch,
   joinMatch,
   renamePlayer,
@@ -45,7 +46,7 @@ export async function renderMatchPage(
     return;
   }
   const match = result.value;
-  const membership = loadMembership(matchId);
+  const membership = loadCurrentMembership(match);
   recordMatchOpened(matchId);
   const sections: HTMLElement[] = [
     // 参加中のマッチの一覧や, ほかのマッチに戻れるようにするため (docs/web/app.md).
@@ -88,6 +89,21 @@ export async function renderMatchPage(
     sections.push(renderDeleteSection(match, membership));
   }
   root.replaceChildren(...sections);
+}
+
+// 保存したトークンのうち, 今もこのマッチのプレイヤーであるものを返す.
+// リーダーに削除されていたら, 使えないトークンを消し, 参加していない人として扱う.
+// 最初のラウンドの前なら, 参加の欄から参加し直せるようにするため (docs/web/app.md).
+function loadCurrentMembership(match: MatchView): Membership | null {
+  const membership = loadMembership(match.id);
+  if (membership === null) {
+    return null;
+  }
+  if (!match.players.some((player) => player.id === membership.playerId)) {
+    removeMembership(match.id);
+    return null;
+  }
+  return membership;
 }
 
 // リーダーにだけ出す操作. 権限の確認はサーバーでも毎回行う.
@@ -346,6 +362,11 @@ function renderPlayersSection(
   membership: Membership | null,
   onChanged: () => void,
 ): HTMLElement {
+  // 削除はリーダーだけが, 最初のラウンドの前にできる. 人数 n はラウンドを始めると固まるため.
+  const canRemove =
+    membership !== null &&
+    membership.playerId === match.leaderPlayerId &&
+    match.rounds.length === 0;
   const items = match.players.map((player) => {
     const marks: string[] = [];
     if (player.id === match.leaderPlayerId) {
@@ -355,7 +376,13 @@ function renderPlayersSection(
       marks.push("あなた");
     }
     const suffix = marks.length > 0 ? ` (${marks.join(", ")})` : "";
-    return element("li", { text: `${player.name}${suffix}` });
+    const item = element("li", { text: `${player.name}${suffix}` });
+    if (canRemove && player.id !== match.leaderPlayerId) {
+      item.append(
+        renderDeletePlayerButton(match.id, player, membership, onChanged),
+      );
+    }
+    return item;
   });
   const section = element("section", {}, [
     element("h2", { text: `プレイヤー (${String(match.players.length)} 人)` }),
@@ -370,6 +397,68 @@ function renderPlayersSection(
     );
   }
   return section;
+}
+
+// プレイヤーの横に出す「削除」のボタン. 押すと, 確かめてから削除する.
+function renderDeletePlayerButton(
+  matchId: string,
+  player: MatchView["players"][number],
+  membership: Membership,
+  onChanged: () => void,
+): HTMLElement {
+  const button = element("button", {
+    className: "player-delete",
+    text: "削除",
+    attributes: { type: "button" },
+  });
+  button.addEventListener("click", () => {
+    openDeletePlayerDialog(matchId, player, membership, onChanged);
+  });
+  return button;
+}
+
+// 削除の前の確認. 削除された人は参加し直す必要があることを伝える.
+function openDeletePlayerDialog(
+  matchId: string,
+  player: MatchView["players"][number],
+  membership: Membership,
+  onChanged: () => void,
+): void {
+  const message = element("p", {
+    className: "error",
+    attributes: { role: "alert" },
+  });
+  const confirm = element("button", { className: "danger", text: "削除する" });
+  const cancel = element("button", { text: "やめる" });
+  const dialog = element("dialog", {}, [
+    element("h3", { text: `「${player.name}」を削除しますか` }),
+    element("p", {
+      text: "削除された人は, もう一度参加し直す必要があります.",
+    }),
+    element("div", { className: "dialog-buttons" }, [cancel, confirm]),
+    message,
+  ]);
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+  });
+  cancel.addEventListener("click", () => {
+    dialog.close();
+  });
+  confirm.addEventListener("click", () => {
+    confirm.disabled = true;
+    message.textContent = "";
+    void deletePlayer(matchId, player.id, membership.token).then((result) => {
+      if (!result.ok) {
+        message.textContent = result.error;
+        confirm.disabled = false;
+        return;
+      }
+      dialog.close();
+      onChanged();
+    });
+  });
+  document.body.append(dialog);
+  dialog.showModal();
 }
 
 // 自分の名前を変える欄. 本人ならいつでも変えられる.

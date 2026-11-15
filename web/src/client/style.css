@@ -207,3 +207,9 @@ dialog {
   margin: 0;
   font-size: 0.875rem;
 }
+
+.player-delete {
+  margin-left: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.875rem;
+}
