@@ -16,6 +16,7 @@ import {
   saveMembership,
   type Membership,
 } from "../membership";
+import { renderPrivateModeWarning } from "./storage-warning";
 import { formatDelta, renderRoundsSection } from "./rounds-section";
 
 /**
@@ -286,7 +287,11 @@ function renderJoinSection(root: HTMLElement, matchId: string): HTMLElement {
       void renderMatchPage(root, matchId);
     });
   });
-  return element("section", {}, [element("h2", { text: "参加する" }), form]);
+  return element("section", {}, [
+    element("h2", { text: "参加する" }),
+    ...renderPrivateModeWarning(),
+    form,
+  ]);
 }
 
 function renderShareSection(): HTMLElement {

@@ -6,6 +6,7 @@ import {
 import { createMatch } from "../api";
 import { element, labeledField } from "../dom";
 import { saveMembership } from "../membership";
+import { renderPrivateModeWarning } from "./storage-warning";
 
 /**
  * マッチを作る欄を作る. トップページに置く.
@@ -77,6 +78,7 @@ export function renderCreateSection(): HTMLElement {
   return element("section", {}, [
     element("h2", { text: "マッチを作る" }),
     element("p", { text: "マッチを作り, URL を仲間に送ってください." }),
+    ...renderPrivateModeWarning(),
     form,
   ]);
 }
