@@ -414,3 +414,15 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   - 結果: 34 枚すべてで box, count, peaks, colors が一致し, score の差も 0.001 以内だった.
   - 大きさ: `.wasm` は 5.1 MiB, `.js` は 0.1 MiB, モデルは 9.4 MiB. Workers の Static Assets の 1 ファイルの上限 (25 MiB) に収まる.
   - PC の Node での解析は 1 枚 (12MP) 0.35〜0.46 秒.
+
+## 2026-11-15: Web の依存を上げて npm audit の脆弱性を直す (ブランチ web-detection)
+
+`npm audit` が 15 件 (高 3, 中 12) を出し, Web のコミット前の検査 (`npm run check`) を通せなかったため, 依存を上げた.
+新しい依存は足していない.
+
+- `@cloudflare/vitest-plugin` 1.4.4 → 1.4.12, `wrangler` 4.151.1 → 4.156.1, `@cloudflare/workers-types` 5.20261018.1 → 5.20261101.1
+  (wrangler 4.156.1 が求める版), `eslint` 10.13.0 → 10.15.0, `typescript-eslint` 8.71.2 → 8.72.2, `hono` 4.13.13 → 4.13.18.
+  - vitest-plugin は, 直る版のうち 2 週間ほど前に出た 1.4.12 にした. 最新の 1.8.2 は出て 2 日で, 1.4.x からの変更も大きいため.
+- `typescript-eslint` は最新版でも `minimatch` 10.2.6 (11.0.1 未満に脆弱性) を使うので, `package.json` の `overrides` で
+  eslint と同じ 11.0.8 にそろえた. typescript-eslint が直したら `overrides` を消す.
+- `workerd` の版が変わったので, `allowScripts` の許可を `workerd@1.20261101.1` に替えた.
