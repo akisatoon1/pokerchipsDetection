@@ -204,5 +204,6 @@ dialog {
 }
 
 .back-link {
-  margin-top: 2rem;
+  margin: 0;
+  font-size: 0.875rem;
 }

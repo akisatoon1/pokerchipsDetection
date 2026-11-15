@@ -47,6 +47,10 @@ export async function renderMatchPage(
   const membership = loadMembership(matchId);
   recordMatchOpened(matchId);
   const sections: HTMLElement[] = [
+    // 参加中のマッチの一覧や, ほかのマッチに戻れるようにするため (docs/web/app.md).
+    element("p", { className: "back-link" }, [
+      element("a", { text: "← トップページへ", attributes: { href: "/" } }),
+    ]),
     element("h1", { text: match.name }),
     element("p", { text: `初期点数 ${String(match.initialPoints)}` }),
   ];
@@ -82,12 +86,6 @@ export async function renderMatchPage(
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
     sections.push(renderDeleteSection(match, membership));
   }
-  // 参加中のマッチの一覧や, ほかのマッチに戻れるようにするため (docs/web/app.md).
-  sections.push(
-    element("p", { className: "back-link" }, [
-      element("a", { text: "トップページへ", attributes: { href: "/" } }),
-    ]),
-  );
   root.replaceChildren(...sections);
 }
 
