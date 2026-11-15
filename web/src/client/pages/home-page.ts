@@ -1,5 +1,6 @@
 import { parseMatchUrl } from "../../rules/match-url";
 import { getMatch } from "../api";
+import { isInApp } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import {
   listSavedMatches,
@@ -23,7 +24,8 @@ function renderNoSavedMatches(): HTMLElement {
 }
 
 /**
- * トップページを出す. 参加中のマッチの一覧, URL を貼って参加する欄, マッチを作る欄を並べる.
+ * トップページを出す. 参加中のマッチの一覧, URL を貼って参加する欄, マッチを作る欄,
+ * チップの画面へのリンクを並べる.
  *
  * @param root 画面を入れる要素.
  */
@@ -34,6 +36,31 @@ export function renderHomePage(root: HTMLElement): void {
     renderPasteSection(),
     renderCreateSection(),
   );
+  // アプリの中では出さない. アプリは数えるだけの画面と設定画面を自分で持ち, メニューから開くため (docs/web/app.md).
+  if (!isInApp()) {
+    root.append(renderChipLinksSection());
+  }
+}
+
+// 数えるだけの画面と, 色と点数の設定画面へのリンク.
+function renderChipLinksSection(): HTMLElement {
+  return element("section", {}, [
+    element("h2", { text: "チップ" }),
+    element("ul", {}, [
+      element("li", {}, [
+        element("a", {
+          text: "チップを数える",
+          attributes: { href: "/count" },
+        }),
+      ]),
+      element("li", {}, [
+        element("a", {
+          text: "色と点数の設定",
+          attributes: { href: "/chips" },
+        }),
+      ]),
+    ]),
+  ]);
 }
 
 // 参加中のマッチの一覧. URL をなくしても, 参加したマッチに戻れるようにするため.

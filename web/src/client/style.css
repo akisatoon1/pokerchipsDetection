@@ -124,3 +124,36 @@ dialog {
   color: #888;
   font-size: 0.9rem;
 }
+
+.chip-values-form {
+  gap: 0.5rem;
+}
+
+.chip-value-row {
+  display: grid;
+  grid-template-columns: 1.75rem 4.5rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chip-value-row .error {
+  grid-column: 3;
+  font-size: 0.875rem;
+}
+
+.chip-value-row .error:empty {
+  display: none;
+}
+
+.chip-swatch {
+  width: 1.75rem;
+  height: 1.75rem;
+  /* 黒のチップの見本が背景に埋もれないよう枠を付ける. */
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.note {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
