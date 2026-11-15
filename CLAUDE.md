@@ -1,12 +1,12 @@
 # pokerchip
 
-ポーカーチップのスタックの写真から, チップの枚数と色を求める. Linux で実験し, 同じ C++ のロジックを Android アプリと Web (ブラウザ. WebAssembly) で動かす.
+ポーカーチップのスタックの写真から, チップの枚数と色を求める. Linux で実験し, 同じ C++ のロジックを Web (ブラウザ. WebAssembly) と Android アプリで動かす.
 求めたチップから持ち点を出し, みんなで遊んだときの点数を記録・計算する Web アプリ (点数計算アプリ) もある.
 
 | 場所 | 中身 |
 |---|---|
 | `core/`, `cli/`, `tests/` | チップの計数のロジック, それを Linux で動かす CLI, テスト (C++) |
-| `android/` | Android アプリ (Kotlin. core は JNI で呼ぶ) |
+| `android/` | core を実機で確かめる Android アプリ (Kotlin. core は JNI で呼ぶ) |
 | `wasm/` | core を WebAssembly にする殻 (C++. Web の画面から呼ぶ) |
 | `web/` | 点数計算アプリ (TypeScript. Web とバックエンド. チップの検出は WASM の core で行う) |
 | `research/` | 研究開発の試作 (git の管理外) |

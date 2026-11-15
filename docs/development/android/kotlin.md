@@ -18,10 +18,7 @@ TypeScript の規則 ([typescript.md](../web/typescript.md)) と同じ考えで�
 | 役割 | 使うもの |
 |---|---|
 | 言語 | Kotlin |
-| 画面 | Jetpack Compose. マッチの画面は WebView で Web を表示する |
-| WebView と Web の連絡 | `androidx.webkit` (`addWebMessageListener`) |
-| 下に引いて更新 | `androidx.swiperefreshlayout` |
-| 端末への保存 | SharedPreferences |
+| 画面 | Jetpack Compose |
 | テスト | JUnit (`src/test/`. JVM で動かす) |
 | 整形 | Android Studio の整形 (Kotlin の公式の書き方. `gradle.properties` の `kotlin.code.style=official`) |
 | lint | Android Lint (AGP に入っている) |
@@ -32,9 +29,8 @@ TypeScript の規則 ([typescript.md](../web/typescript.md)) と同じ考えで�
 
 | 場所 | 中身 |
 |---|---|
-| `com.pokerchip.app` | JNI のラッパー, 解析の結果, 画像の読み込み, ViewModel |
-| `com.pokerchip.app.chips` | 色と点数の対応と, チップから持ち点を求める規則. 規則の関数は Android の API に触れない |
-| `com.pokerchip.app.web` | WebView の設定, 開く URL の判定, Web との連絡 (bridge) |
+| `com.pokerchip.app` | JNI のラッパー, 解析の結果, 画像の読み込みと保存, ViewModel |
+| `com.pokerchip.app.chips` | チップの色の一覧. Android の API に触れない |
 | `com.pokerchip.app.ui` | Compose の画面 |
 
 ## 検査
@@ -54,7 +50,7 @@ export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入って�
 
 - Kotlin の普通の書き方に従う. 関数と変数は camelCase, 型は PascalCase.
 - 定数 (`const val` と, トップレベルや `companion object` の変わらない値) は UPPER_SNAKE_CASE.
-- ファイル名は, 中心になる型か関数の名前にする (`ChipPoints.kt`).
+- ファイル名は, 中心になる型か関数の名前にする (`ChipColor.kt`).
 
 ### コメント
 
@@ -66,9 +62,7 @@ export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入って�
 
 - `!!` を使わない. null になりうる値は `?.`, `?:`, `let` などで扱う.
 - 失敗すると例外になる `as` を使わない. 型を確かめるときは `is` か `as?` を使い, 違ったときの扱いを書く.
-- 外から来る値 (Web からのメッセージ, 端末に保存した値) は, 入口で検証してから使う. 知らない種類のメッセージは無視する.
-- Web と同じ上限 (持ち点の上限など) は定数にし, `web/src/rules/limits.ts` のどの値と同じかをコメントに書く.
-  言語が違って共有できないため. 最後はサーバーが確かめる.
+- 外から来る値 (選ばれた画像, native から返る JSON) は, 入口で検証してから使う.
 
 ### 失敗の伝え方
 
@@ -86,12 +80,4 @@ export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入って�
 ### 画面
 
 - 画面の状態は ViewModel に持ち, Compose の関数は状態を受けて描くだけにする.
-- 点数の増減と累計は計算しない. それは Web (とバックエンド) の役目で, アプリが求めるのはチップからの持ち点だけ.
-
-### WebView
-
-- WebView で開くのは, 接続先と同じ scheme, ホスト, ポートのページだけにする. ほかは外のブラウザに渡す.
-- bridge は, 接続先のページからのメッセージだけを受ける (`addWebMessageListener` の許すオリジン).
-  `addJavascriptInterface` は, どのサイトのページからでも呼べてしまうので使わない.
-- ファイルへのアクセス (`allowFileAccess`, `allowContentAccess`) は切る.
-- トークンを WebView の外に出さない. ログにも出さない.
+- 点数の計算 (持ち点, 増減, 累計) は持たない. アプリは core の検出を実機で確かめるためのもので, 点数計算は Web の役目 (docs/architecture.md の 8).
