@@ -45,6 +45,12 @@ const analyzedSchema = z.union([
 export interface Analysis {
   /** 解析の結果. */
   result: AnalysisResult;
+  /**
+   * 解析した画像. 向きを直し, 色空間を変換していないもの (core が見たとおりの色).
+   *
+   * 結果の座標はこの画像のピクセル. 使い終えたら呼んだ側が close する.
+   */
+  image: ImageBitmap;
   /** 画像の幅 (px). 向きを直したあとのもの. */
   width: number;
   /** 画像の高さ (px). 向きを直したあとのもの. */
@@ -88,14 +94,35 @@ export async function analyzeImage(file: Blob): Promise<RuleResult<Analysis>> {
   // 解析は画面を止めるので, 先に「解析中」を描かせてから始める.
   await nextFrame();
   const analyzeStarted = performance.now();
-  const analyzed = analyzedSchema.safeParse(
-    detector.value.analyze(
-      image.value.data,
-      image.value.width,
-      image.value.height,
-    ),
-  );
+  const result = runDetector(detector.value, image.value.pixels);
   const analyzeMilliseconds = performance.now() - analyzeStarted;
+  const { bitmap } = image.value;
+  if (!result.ok) {
+    bitmap.close();
+    return result;
+  }
+  return {
+    ok: true,
+    value: {
+      result: result.value,
+      image: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      loadMilliseconds,
+      decodeMilliseconds,
+      analyzeMilliseconds,
+    },
+  };
+}
+
+// WASM の core で画素を解析し, 返った JSON を読む.
+function runDetector(
+  detector: CoreDetector,
+  pixels: ImageData,
+): RuleResult<AnalysisResult> {
+  const analyzed = analyzedSchema.safeParse(
+    detector.analyze(pixels.data, pixels.width, pixels.height),
+  );
   if (!analyzed.success) {
     return { ok: false, reason: "解析の結果の形が違います" };
   }
@@ -105,21 +132,7 @@ export async function analyzeImage(file: Blob): Promise<RuleResult<Analysis>> {
       reason: `解析できませんでした: ${analyzed.data.error}`,
     };
   }
-  const result = parseAnalysisResult(analyzed.data.json);
-  if (!result.ok) {
-    return result;
-  }
-  return {
-    ok: true,
-    value: {
-      result: result.value,
-      width: image.value.width,
-      height: image.value.height,
-      loadMilliseconds,
-      decodeMilliseconds,
-      analyzeMilliseconds,
-    },
-  };
+  return parseAnalysisResult(analyzed.data.json);
 }
 
 // WASM の core とモデルを読み, 検出器を作る.
@@ -168,14 +181,21 @@ async function fetchModel(): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+/** 読み込んだ画像. 確認画像を描くための画像と, core に渡す画素. */
+interface DecodedImage {
+  bitmap: ImageBitmap;
+  pixels: ImageData;
+}
+
 /**
  * 画像を, 向きを直した RGBA の画素にする.
  *
  * EXIF の向きは反映する. Linux の cv::imread も反映するので, 同じ向きで解析するため.
  * 色空間は変換しない (colorSpaceConversion: "none"). cv::imread は ICC を無視して値をそのまま読み,
- * 基準色もその値から作っているため (docs/web/plans/2026-11-15-web-detection.md).
+ * 基準色もその値から作っているため (docs/architecture.md の 10).
+ * 確認画像にも同じ画像を使う. 読み込みを 1 回で済ませ, core が見たとおりの色を出すため.
  */
-async function decodeImage(file: Blob): Promise<RuleResult<ImageData>> {
+async function decodeImage(file: Blob): Promise<RuleResult<DecodedImage>> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file, {
@@ -194,11 +214,11 @@ async function decodeImage(file: Blob): Promise<RuleResult<ImageData>> {
     return { ok: false, reason: "画像を読めませんでした" };
   }
   context.drawImage(bitmap, 0, 0);
-  bitmap.close();
-  return {
-    ok: true,
-    value: context.getImageData(0, 0, canvas.width, canvas.height),
-  };
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  // 画素を取り出したら canvas は要らない. iPhone の Safari は canvas の使うメモリの合計にも上限があるため, すぐ手放す.
+  canvas.width = 0;
+  canvas.height = 0;
+  return { ok: true, value: { bitmap, pixels } };
 }
 
 function nextFrame(): Promise<void> {

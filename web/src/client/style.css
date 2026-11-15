@@ -157,3 +157,29 @@ dialog {
   font-size: 0.875rem;
   opacity: 0.8;
 }
+
+.result-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+}
+
+.result-total {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.stack-check h3 {
+  margin-bottom: 0;
+}
+
+.chip-points {
+  margin: 0.5rem 0;
+}
+
+.chip-points-total th,
+.chip-points-total td {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
