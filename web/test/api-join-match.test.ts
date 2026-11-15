@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { createMatch, send } from "./helpers";
 
@@ -20,6 +21,18 @@ describe("参加する", () => {
     expect((await join(matchId, "B")).status).toBe(201);
     expect((await join(matchId, "C")).status).toBe(201);
     expect(await playerNames(matchId)).toEqual(["A", "B", "C"]);
+  });
+
+  it("途中の人がいなくなったあとも参加でき, 参加した順に並ぶ", async () => {
+    const { matchId } = await createMatch({ leaderName: "A" });
+    await join(matchId, "B");
+    await join(matchId, "C");
+    // 2 番目の人を DB から直接消す. 削除の操作で起きる状態を作るため.
+    await env.DB.prepare("DELETE FROM players WHERE match_id = ? AND name = ?")
+      .bind(matchId, "B")
+      .run();
+    expect((await join(matchId, "D")).status).toBe(201);
+    expect(await playerNames(matchId)).toEqual(["A", "C", "D"]);
   });
 
   it("参加した人には, 他の人とは違うトークンが返る", async () => {

@@ -41,6 +41,8 @@ export type InsertPlayerOutcome =
  *
  * 参加できるかの判定は rules/players.ts で済ませておく. ここの条件は, 同時に参加や
  * ラウンドの開始が送られても決まりを破らないための最後の守り.
+ * 参加の順番は, 今いる人の最大の順番の次にする. 人数の次にすると, 途中の人が削除されたあとに
+ * 残っている人と順番が重なり, 参加できなくなるため.
  * @param db D1 のデータベース.
  * @param player 保存するプレイヤー.
  * @param maxPlayers 1 つのマッチのプレイヤーの上限.
@@ -57,7 +59,7 @@ export async function insertPlayerIfAllowed(
     const result = await db
       .prepare(
         `INSERT INTO players (id, match_id, name, token_hash, position)
-         SELECT ?, ?, ?, ?, COUNT(*) + 1 FROM players WHERE match_id = ?
+         SELECT ?, ?, ?, ?, COALESCE(MAX(position), 0) + 1 FROM players WHERE match_id = ?
          HAVING COUNT(*) < ?
            AND NOT EXISTS (SELECT 1 FROM rounds WHERE match_id = ?)`,
       )
