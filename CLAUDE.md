@@ -14,15 +14,9 @@
 
 ## コミット
 
-すべての作業 (C++, Web, Android, 文書) で, 次のとおりにコミットする.
+開発のルールは [docs/development/](docs/development/) にまとめる. すべての作業で, 次のコミットの決まりに従う.
 
-- 実装を頼まれたら, 基本的にコミットまで行う. 「コミットしないで」とはっきり言われたときだけコミットしない.
-- コミットは細かく分ける. 1 コミットには 1 つの論理的な変更だけを入れる.
-  関係のない変更 (機能の追加とついでのリファクタなど) は別のコミットにする.
-- メッセージは [Conventional Commits](https://www.conventionalcommits.org/) に従う.
-  type (`feat`, `fix`, `docs`, `refactor`, `test`, `chore` など) だけを英語にし, 説明文は日本語で書く.
-  例: `feat: 色と点数の設定画面を作る`, `fix: 下に引いて更新したあと, ぐるぐるが消えないのを直す`.
-  Conventional Commits にない type (`add` など) は使わない.
+@docs/development/commit.md
 
 ## コーディング規約
 

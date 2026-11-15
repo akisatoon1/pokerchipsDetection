@@ -367,3 +367,8 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - CLAUDE.md に「コミット」を足した. 実装を頼まれたら基本的にコミットまで行い, 1 コミットには 1 つの論理的な変更だけを入れる.
   メッセージは Conventional Commits に従い, type だけを英語, 説明文を日本語にする.
+
+## 2026-11-15: 開発のルールの置き場所を作る
+
+- 開発のルールをまとめる `docs/development/` を作った. 最初の文書はコミットの決まり `commit.md` で,
+  CLAUDE.md に直接書いていたものを移し, CLAUDE.md から読み込ませた.
