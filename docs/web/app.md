@@ -206,4 +206,4 @@ API は `/api` の下に置き, 画面のパス (`/`, `/m/{matchId}`) と分け�
 - 画面はフレームワークを使わず, Vite でビルドし, Workers の Static Assets で API と同じドメインから配る.
   同じドメインなので CORS を許す必要がない.
 - 無料枠で足り, 仲間内で使うには十分なため.
-- 書き方と検査のコマンドは [typescript.md](typescript.md) にまとめる.
+- 書き方と検査のコマンドは [development/web/typescript.md](../development/web/typescript.md) にまとめる.

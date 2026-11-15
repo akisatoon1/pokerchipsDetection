@@ -2,8 +2,8 @@
 
 新しいマシンでこのプロジェクトを使えるようにするまでの手順.
 Linux で実験・テストをする部分 (1〜6) と, Android アプリをビルドする部分 (7〜9) がある.
-セットアップが済んだ後の Linux マシンでの使い方 (ビルド, CLI の実行, テスト) は [usage.md](usage.md),
-設計の理由は [architecture.md](architecture.md) を参照.
+セットアップが済んだ後の Linux マシンでの使い方 (ビルド, CLI の実行, テスト) は [usage.md](../logic/usage.md),
+設計の理由は [architecture.md](../architecture.md) を参照.
 
 想定する環境は **Ubuntu 24.04** (作業記録の環境と同じ). 他のバージョンでも大きくは変わらないが,
 clang-format / clang-tidy のバージョンが違うと整形結果や指摘が変わることがある.
@@ -92,7 +92,7 @@ make run ARGS="--out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg"
 
 最後のコマンドで `chip count by peaks  = 4` と黄色 4 枚が出て, `debug.png` が保存されれば OK.
 
-ビルド, CLI のオプションや出力の見方, テスト, モデルを更新したときの手順などは [usage.md](usage.md) を参照.
+ビルド, CLI のオプションや出力の見方, テスト, モデルを更新したときの手順などは [usage.md](../logic/usage.md) を参照.
 
 ## 7. Android 用の外部ファイルを取得する
 
@@ -172,7 +172,7 @@ Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
 | `OpenCV error: ... The function is not implemented` (imshow など) | OpenCV が GUI なしでビルドされている. `libgtk-3-dev` を入れて `make opencv` をやり直す. それまでは `--out` / `--rect` を使う |
 | CMake で `Could not find a configuration file for package "OpenCV" that exactly matches requested version "4.14.0"` | `make opencv` (Linux) または `make android-deps` (Android) をしていない. または別のバージョンの OpenCV を掴んでいる |
 | `make test` で検出器のテストがスキップされる | `models/chip_detector.onnx` がない. 6 を行う |
-| `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. [usage.md](usage.md) の「モデルを更新したとき」を参照 |
+| `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. [usage.md](../logic/usage.md) の「モデルを更新したとき」を参照 |
 | Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
 | Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
 | アプリで解析すると `chip_detector.onnx` が開けないというエラーになる | assets にモデルがない. `make model PT=...` をやり直す (`android/app/src/main/` がある状態で実行すると assets にもコピーされる) |

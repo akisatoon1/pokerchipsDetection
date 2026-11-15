@@ -1,8 +1,8 @@
 # Linux マシンでの使い方
 
 Linux マシンでのビルド, CLI の実行, テスト, コードの検査の方法.
-環境構築 (apt, OpenCV, Python, モデルの用意) が済んでいることが前提で, その手順は [setup.md](setup.md) の 1〜6 にある.
-Android アプリのビルドは [setup.md](setup.md) の 7〜9 を参照.
+環境構築 (apt, OpenCV, Python, モデルの用意) が済んでいることが前提で, その手順は [setup.md](../environment/setup.md) の 1〜6 にある.
+Android アプリのビルドは [setup.md](../environment/setup.md) の 7〜9 を参照.
 
 コマンドはすべて **リポジトリのルートで** 実行する. CLI もテストも, モデル (`models/chip_detector.onnx`) や
 テスト画像をリポジトリのルートからの相対パスで探すため.
@@ -117,7 +117,7 @@ done > results.txt
 ### Android で保存した画像を取り出す
 
 Android アプリで「この画像を保存」を押すと, 解析した元の画像が端末の `Pictures/PokerChip/` に保存される.
-PC と端末を USB でつなぎ ([setup.md](setup.md) の 8 の 5), 次のコマンドで `testimages/android/` に取り出す.
+PC と端末を USB でつなぎ ([setup.md](../environment/setup.md) の 8 の 5), 次のコマンドで `testimages/android/` に取り出す.
 
 ```
 adb pull /sdcard/Pictures/PokerChip/. testimages/android/
@@ -191,7 +191,7 @@ make check         # 整形の確認 (format-check) と clang-tidy の検査. �
 | `make tidy` / `make tidy-fix` | clang-tidy で検査 / 自動修正 |
 | `make check` | `format-check` と `tidy` |
 | `make clean` | `build/` を削除 |
-| `make opencv` | OpenCV のビルド (環境構築. [setup.md](setup.md) の 3) |
-| `make model PT=...` | `.pt` を ONNX に変換 (環境構築. [setup.md](setup.md) の 6) |
-| `make android-deps` | OpenCV Android SDK と NDK の取得 ([setup.md](setup.md) の 7) |
+| `make opencv` | OpenCV のビルド (環境構築. [setup.md](../environment/setup.md) の 3) |
+| `make model PT=...` | `.pt` を ONNX に変換 (環境構築. [setup.md](../environment/setup.md) の 6) |
+| `make android-deps` | OpenCV Android SDK と NDK の取得 ([setup.md](../environment/setup.md) の 7) |
 | `make android-native` | core + JNI を NDK でビルドできるかの確認 |

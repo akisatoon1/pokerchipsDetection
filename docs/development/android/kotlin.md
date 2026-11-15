@@ -1,10 +1,10 @@
 # Android アプリの Kotlin の書き方
 
 Android アプリ (`android/app/src/main/java/`, `android/app/src/test/`) の Kotlin に固有の書き方をまとめる.
-言語によらない規則は [code-rules.md](code-rules.md) にあり, Kotlin でもそのまま守る.
-JNI の C++ (`android/app/src/main/cpp/`) は [../coding-style.md](../coding-style.md) に従う.
+言語によらない規則は [code-rules.md](../code-rules.md) にあり, Kotlin でもそのまま守る.
+JNI の C++ (`android/app/src/main/cpp/`) は [../cpp-coding-style.md](../cpp-coding-style.md) に従う.
 
-TypeScript の規則 ([typescript.md](typescript.md)) と同じ考えで決めている. 対応は次のとおり.
+TypeScript の規則 ([typescript.md](../web/typescript.md)) と同じ考えで決めている. 対応は次のとおり.
 
 | TypeScript の規則 | Kotlin での書き方 |
 |---|---|
