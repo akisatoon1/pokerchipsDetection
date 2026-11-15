@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCanJoin } from "../src/rules/players";
+import { checkCanJoin, checkCanRemovePlayer } from "../src/rules/players";
 import { checkCanStartRound } from "../src/rules/rounds";
 
 describe("参加できるか", () => {
@@ -19,6 +19,29 @@ describe("参加できるか", () => {
     expect(checkCanJoin({ playerCount: 2, hasRoundStarted: true }).ok).toBe(
       false,
     );
+  });
+});
+
+describe("プレイヤーを削除できるか", () => {
+  it("最初のラウンドの前なら, リーダー以外を削除できる", () => {
+    expect(
+      checkCanRemovePlayer({ hasRoundStarted: false, isLeaderTarget: false }),
+    ).toEqual({ ok: true, value: null });
+  });
+
+  it("最初のラウンドを始めたあとは拒否する", () => {
+    expect(
+      checkCanRemovePlayer({ hasRoundStarted: true, isLeaderTarget: false }),
+    ).toEqual({
+      ok: false,
+      reason: "ラウンドが始まったので, もうプレイヤーを削除できません",
+    });
+  });
+
+  it("リーダー自身の削除は拒否する", () => {
+    expect(
+      checkCanRemovePlayer({ hasRoundStarted: false, isLeaderTarget: true }),
+    ).toEqual({ ok: false, reason: "リーダーは削除できません" });
   });
 });
 
