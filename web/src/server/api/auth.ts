@@ -7,7 +7,7 @@ const TOKEN_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 /**
  * リクエストを送ったプレイヤーを, Authorization ヘッダのトークンから探す.
  *
- * 本人かリーダーかの確認は, 画面ではなく毎回ここで行う (docs/web/security.md).
+ * 本人かリーダーかの確認は, 画面ではなく毎回ここで行う (docs/development/web/security.md).
  * @param db D1 のデータベース.
  * @param request 届いたリクエスト.
  * @param matchId マッチの id. 別のマッチのトークンでは見つからない.

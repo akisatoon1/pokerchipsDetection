@@ -1,4 +1,4 @@
-// 識別子とトークンの作り方 (docs/web/security.md).
+// 識別子とトークンの作り方 (docs/development/web/security.md).
 
 /** 識別子とトークンの乱数のバイト数. 128 ビット. */
 const RANDOM_BYTES = 16;
