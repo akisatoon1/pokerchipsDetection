@@ -393,3 +393,24 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - Web のコードのコメント (`web/src/` の 4 か所) は, まだ古い文書のパスを指している. `npm audit` が通らず Web のコミット前の検査を通せないため, 後で直す.
 - Web の作業で変えてよい場所 (`process.md` の「してはいけないこと」) に `docs/development/web/` を足した.
 - 古いパスは, 過去の作業記録の文と承認済みの計画 (`docs/web/plans/`) にだけ残る. 書いた時点の記録なので直していない (作業記録のリンク先だけは直した).
+
+## 2026-11-15: core を WebAssembly にビルドする (ブランチ web-detection)
+
+計画は [web/plans/2026-11-15-web-detection.md](web/plans/2026-11-15-web-detection.md).
+ブラウザ (iPhone の Safari など) でもチップを検出できるよう, core を写さずに WASM にビルドする.
+
+- Emscripten 6.0.13 を `third_party/emsdk/` に入れた (`scripts/fetch_emsdk.sh`). 7.0.0 は出たばかり (2026-11-06) なので避けた.
+  OpenCV の手順書がすすめる 2.0.10 は 2020 年のもので古い.
+- OpenCV 4.14.0 を WASM 用にビルドし, `third_party/opencv-4.14.0-wasm/` に入れた (`scripts/build_opencv_wasm.sh`).
+  - 公式の opencv.js は使わない. JS の API でなく, core から C++ でリンクする静的ライブラリが要るため.
+  - モジュールは `core,imgproc,dnn` だけ. 1 スレッド (`WITH_PTHREADS_PF=OFF`).
+    スレッドを使うには SharedArrayBuffer と COOP/COEP のヘッダが要り, 配り方が複雑になるため.
+  - `-msimd128` (WASM の SIMD. Safari 16.4 以降) と `-fwasm-exceptions` (core の例外を殻で捕まえるため. Safari 15.2 以降) を付ける.
+    殻も同じ設定でビルドする.
+- `wasm/` に JS から core を呼ぶ薄い殻 (`bindings.cpp`, embind) を作った. JNI の殻と同じく, 型の変換と失敗の受け渡しだけを行う.
+  `scripts/build_wasm.sh` が `build-wasm/` でビルドし, `.js`, `.wasm`, モデルを `web/src/client/public/detector/` に置く (git の管理外).
+- `functional_tests/compare_wasm_cli.sh` で, testimages の全画像を WASM (Node) と CLI で解析して比べる.
+  WASM に渡す画素は, CLI と同じ `cv::imread` で読む小さな道具 (`decode_rgba.cpp`) で作る.
+  - 結果: 34 枚すべてで box, count, peaks, colors が一致し, score の差も 0.001 以内だった.
+  - 大きさ: `.wasm` は 5.1 MiB, `.js` は 0.1 MiB, モデルは 9.4 MiB. Workers の Static Assets の 1 ファイルの上限 (25 MiB) に収まる.
+  - PC の Node での解析は 1 枚 (12MP) 0.35〜0.46 秒.
