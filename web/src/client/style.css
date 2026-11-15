@@ -183,3 +183,22 @@ dialog {
   font-size: 1.25rem;
   font-weight: bold;
 }
+
+.chip-input-dialog {
+  max-width: 40rem;
+  max-height: calc(100% - 2rem);
+}
+
+.chip-input-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chip-input-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
