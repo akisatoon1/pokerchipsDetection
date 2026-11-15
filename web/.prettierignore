@@ -1,3 +1,5 @@
 dist/
 .wrangler/
 package-lock.json
+# scripts/build_wasm.sh が置く WASM とモデル (ビルドの結果)
+src/client/public/detector/

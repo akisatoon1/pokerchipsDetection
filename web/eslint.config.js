@@ -3,7 +3,15 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["dist/", ".wrangler/", "node_modules/"] },
+  // src/client/public/detector/ は scripts/build_wasm.sh が置くビルドの結果.
+  {
+    ignores: [
+      "dist/",
+      ".wrangler/",
+      "node_modules/",
+      "src/client/public/detector/",
+    ],
+  },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
