@@ -1,6 +1,5 @@
 package com.pokerchip.app.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,33 +13,26 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pokerchip.app.MainViewModel
-import com.pokerchip.app.chips.computeChipPoints
 
 /**
- * マッチに入らずにチップを数えるだけの画面. 撮影・ギャラリーのボタンと, 解析の結果を並べる.
+ * チップを数える画面. 撮影・ギャラリーのボタンと, 解析の結果を並べる.
  *
- * 検出の結果を実機で確かめるために残している (docs/web/app.md). 色と点数の対応を決めてあれば, 持ち点も出す.
- * @param onBack 戻るとき.
+ * アプリの唯一の画面. core のチップの検出を実機で確かめるために使う (docs/architecture.md).
  * @param vm 画像の読み込みと解析.
  */
 @Composable
-fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
+fun CountScreen(vm: MainViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
-    // 設定画面で対応を変えてから開いたときに, 新しい対応で持ち点を出すため.
-    LaunchedEffect(Unit) { vm.reloadChipValues() }
-    BackHandler(onBack = onBack)
 
     // edge-to-edge なので, Scaffold の padding でシステムバーとの重なりを避ける.
-    Scaffold(topBar = { AppTopBar(title = "数えるだけ", onBack = onBack) }) { padding ->
+    Scaffold(topBar = { AppTopBar(title = "チップを数える") }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -66,11 +58,6 @@ fun CountScreen(onBack: () -> Unit, vm: MainViewModel = viewModel()) {
             }
 
             val result = state.result
-            if (result != null && !state.chipValues.isEmpty) {
-                val points = remember(result, state.chipValues) { computeChipPoints(result, state.chipValues) }
-                ChipPointsSummary(points)
-            }
-
             state.bitmap?.let { bitmap ->
                 ResultImage(bitmap, result)
                 result?.let { ResultSummary(bitmap, it) }
