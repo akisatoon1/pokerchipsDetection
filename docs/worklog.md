@@ -362,3 +362,8 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - スタックの側面を囲む bounding box のラベル付けに labelme 7.9.1 を使う. リポジトリの根の専用の仮想環境 `.venv-label` に入れた (`.venv` に入れると固定している `onnxruntime` のバージョンが下がるため). 手順は `docs/labeling.md`.
 - ラベルの置き場所を `testimages/v2/single_color/labels/` (画像ごとに 1 つの JSON) にし, git で管理するよう `.gitignore` に足した.
+
+## 2026-11-15: コミットの決まりを決める
+
+- CLAUDE.md に「コミット」を足した. 実装を頼まれたら基本的にコミットまで行い, 1 コミットには 1 つの論理的な変更だけを入れる.
+  メッセージは Conventional Commits に従い, type だけを英語, 説明文を日本語にする.
