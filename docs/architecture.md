@@ -1,7 +1,7 @@
 # アーキテクチャ設計
 
 ポーカーチップの山 (スタック) を撮影した写真から, チップの枚数と各チップの色を求める.
-Linux で実験・テストし, 同じロジックを Android アプリと Web (ブラウザ. WebAssembly) で動かす.
+Linux で実験・テストし, 同じロジックを Web (ブラウザ. WebAssembly) と Android アプリ (実機での確認用) で動かす.
 
 ## 目的と制約
 
@@ -26,7 +26,7 @@ pokerchip/
 │   └── src/
 ├── cli/                    # Linux 専用の殻 (引数, 画像読込, 画面表示, 手動ROI選択)
 ├── tests/                  # GoogleTest (testimages を使う)
-├── android/                # Android アプリ (Kotlin + Jetpack Compose + JNI)
+├── android/                # Android アプリ (Kotlin + Jetpack Compose + JNI). core を実機で確かめる
 │   └── app/src/main/cpp/   # JNI の殻. core を add_subdirectory してビルド
 ├── wasm/                   # WASM の殻 (embind). core を add_subdirectory し, Emscripten でビルド
 ├── web/                    # 点数計算アプリ (TypeScript). 画面から WASM の core を呼ぶ
@@ -158,19 +158,14 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 - WASM も `wasm/CMakeLists.txt` から core を `add_subdirectory` し, `emcmake cmake` でビルドする (`scripts/build_wasm.sh`).
 - 既存の `make run` / `make tidy` / `make format` は Makefile から CMake を呼ぶ形で残す.
 
-### 8. Android アプリ
+### 8. Android アプリは, core を実機で確かめるためだけに使う
 
-- 最終的には Android も Web の検出 (10) を使い, 下の native と Kotlin の検出画面を消す方針にしている (今後の課題).
-- Kotlin + Jetpack Compose. 点数計算のマッチの画面は Web ([web/app.md](web/app.md)) を WebView で表示し,
-  アプリ自身は次の画面だけを持つ. 画面を Web と 2 重に作ると, 確認のダイアログなどの細かい振る舞いがずれるため.
-  - 数えるだけの画面: 「撮影 / ギャラリー選択 → 解析 → 結果の表示」. 検出の結果を実機で確かめるために残す.
-  - 検出画面と, 色と点数の設定画面: チップから持ち点を求め, Web の入力欄に入れる.
-- アプリの画面は, WebView の画面の上に重ねて出す. WebView は閉じずに残し, 画面の回転でも Activity を作り直さない
-  (`configChanges`). 検出画面から戻ったときに, 開いていたページと入力中の欄を保つため.
-- WebView で開くのは接続先 (`BuildConfig.WEB_BASE_URL`) と同じオリジンのページだけで, 他のサイトは外のブラウザに渡す.
-  Web とアプリの連絡 (bridge) は `androidx.webkit` の `addWebMessageListener` で, 接続先のページからだけ受ける.
-  メッセージは JSON の文字で, 読み取り (`BridgeMessage.kt`) と URL の判定 (`OriginPolicy.kt`) は Android の API に触れない関数にして,
-  JVM の単体テスト (`src/test/`) で確かめる.
+- アプリは, core のチップの検出を Android の実機で確かめるためのもの. 画面は「撮影 / ギャラリー選択 → 解析 → 結果の表示」の 1 つだけ.
+  - みんなで使う点数計算は Web ([web/app.md](web/app.md)) に集めた. ブラウザでも core (WASM) で検出できるので (10),
+    アプリに WebView や点数の機能を持たせる理由がなくなったため.
+  - アプリはネットにつながない. `INTERNET` の権限も持たない.
+- 解析した元の画像を端末の `Pictures/PokerChip/` に保存できる (`ImageSaver`). うまく検出できなかった画像をテスト画像に足すため.
+- Kotlin + Jetpack Compose.
 - 解析の結果は, 元画像に枠と枚数を重ねた全体画像と, その下にスタックごとの確認画像を並べる.
   確認画像は ROI を広げて切り出し, 合わせ目に横線を引き, 右にチップごとの色を並べたもので,
   ユーザが枚数と色の正しさを一目で確かめられるようにする. ROI を広げるのは, ROI 自体のずれにも気づけるようにするため.
@@ -192,14 +187,10 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 | `java/.../AnalysisResult.kt` | JSON → データクラス |
 | `java/.../ImageLoader.kt` | Uri → Bitmap (EXIF の回転を補正) |
 | `java/.../MainViewModel.kt` | 画像の読込と解析, 状態の保持 |
-| `java/.../MainActivity.kt` | 画面の切り替え (WebView の画面の上に, ほかの画面を重ねる) |
-| `java/.../web/` | WebView で開く URL の判定, 読み込みの様子, Web との連絡 (bridge) |
-| `java/.../ui/WebScreen.kt` | マッチの画面 (WebView). 上のバー, 下に引いて更新, つながらないときの画面 |
-| `java/.../ui/CountScreen.kt`, `ui/ResultViews.kt` | 数えるだけの画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
-| `java/.../chips/` | チップの色の一覧, 色ごとの点数の読み取りと保存, 解析の結果から持ち点を求める関数 |
-| `java/.../ChipValuesViewModel.kt`, `ui/ChipValuesScreen.kt` | 色と点数の設定画面 |
-| `java/.../ui/ChipInputScreen.kt`, `ui/ChipPointsViews.kt` | 検出画面 (持ち点の内訳と合計, 求められない理由) |
-| `debug/` | debug のビルドでだけ, 手元の `wrangler dev` (http://localhost) への平文の通信を許す |
+| `java/.../ImageSaver.kt` | 解析した元の画像を `Pictures/PokerChip/` に保存する |
+| `java/.../MainActivity.kt` | アプリの入口. チップを数える画面を出す |
+| `java/.../ui/CountScreen.kt`, `ui/ResultViews.kt` | チップを数える画面 (撮影 / ギャラリー, 全体画像, スタックごとの確認画像) |
+| `java/.../chips/ChipColor.kt` | チップの色の一覧 (確認画像の色の見本) |
 
 ### 9. 色の基準色は正解付きの画像から C++ の処理で求める
 
@@ -215,7 +206,7 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 
 ### 10. Web でも core を WASM にして動かす
 
-iPhone のように Android アプリを使えない端末でもチップを検出できるよう, core を Emscripten で WebAssembly にし,
+iPhone でも Android でも, アプリを入れずにブラウザでチップを検出できるよう, core を Emscripten で WebAssembly にし,
 ブラウザの中で動かす. 写真はサーバーに送らない. 仕様は [web/app.md](web/app.md) の「チップの検出」にある.
 
 - core のコードは写さず, JNI と同じ薄い殻 (`wasm/bindings.cpp`) から `add_subdirectory` で使う.
@@ -248,7 +239,6 @@ iPhone のように Android アプリを使えない端末でもチップを検�
 
 ## 今後の課題
 
-- Android も Web の検出を使い, native と Kotlin の検出画面を消す. WebView で写真を選べるようにする必要がある.
 - Android の `ImageLoader` は画像を sRGB に変換してから解析する. Display P3 の写真では, Linux と Web の結果とずれることがある.
 - リアルタイムプレビューでの解析 (CameraX).
 - 推論速度が足りない場合の高速化 (入力サイズ縮小, NNAPI 等).

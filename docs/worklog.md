@@ -438,3 +438,16 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   スマートフォンのブラウザから LAN で開く手順は `docs/web/running.md`.
 - `wasm/` を CLAUDE.md の表と, ロジックの地図 (`docs/logic/README.md`) に足した.
 - `make format` と `make check` は `wasm/` と `functional_tests/` の C++ を対象にしていない (Makefile はこの計画で触らない). 整形は `clang-format -i` で行う.
+
+## 2026-11-15: Android アプリを, core を実機で確かめるためだけのアプリにする
+
+計画は [web/plans/2026-11-15-android-detection-only.md](web/plans/2026-11-15-android-detection-only.md).
+みんなで使う点数計算は Web に集め, ブラウザでも core (WASM) で検出できるようになったため, 構成を変えた.
+
+- Android アプリは「撮影 / ギャラリー → 解析 → 結果の表示」の画面 1 つだけにした. WebView, Web との連絡 (bridge), 色と点数の設定, 持ち点の表示を消した.
+  - 消したファイル: `ui/WebScreen.kt`, `web/` (4 ファイル), `ui/ChipInputScreen.kt`, `ui/ChipPointsViews.kt`, `ui/ChipValuesScreen.kt`,
+    `ChipValuesViewModel.kt`, `chips/ChipPoints.kt`, `chips/ChipValues.kt`, `chips/ChipValuesStore.kt`, `src/debug/` と, それらのテスト.
+  - 色の一覧は `chips/ChipColor.kt` に残した (確認画像の色の見本).
+- `INTERNET` の権限, `configChanges`, `BuildConfig.WEB_BASE_URL`, debug のビルドで平文の http を許す設定を消した.
+- 依存から `androidx.webkit` 1.17.1, `androidx.swiperefreshlayout` 1.2.0, テスト用の `org.json` 20260814 を外した.
+- Web から Android アプリ向けの連絡口 `web/src/client/app-bridge.ts` を消した. 「チップから入力」はいつも Web の検出画面を, 「URL をコピー」はいつもブラウザのコピーを使う.

@@ -90,30 +90,6 @@ iPhone の Safari などから, 手元の `npm run dev` を同じ Wi-Fi (LAN) �
 - つながらないときは, PC のファイアウォールが 8787 番を通しているかを確かめる.
 - 解析の間は, 画面が数秒止まって見えることがある.
 
-## Android アプリから試す
-
-Android アプリは, マッチの画面として手元の `npm run dev` を WebView で開く ([app.md](app.md)).
-debug のビルドの接続先は `http://localhost:8787` で, `adb reverse` で端末の localhost:8787 を PC に届ける.
-エミュレータでも, USB でつないだ実機でも同じ手順で動く.
-
-1. 上の「3. 起動する」で `npm run dev` を起動しておく.
-2. Android の環境を用意する ([../environment/setup.md](../environment/setup.md) の Android Studio の節). エミュレータを起動するか, 実機をつなぐ.
-3. アプリを入れ, `adb reverse` を張る.
-
-   ```sh
-   cd android
-   export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入っている JDK. 場所は入れ方で変わる
-   ./gradlew installDebug
-   adb reverse tcp:8787 tcp:8787
-   ```
-
-4. アプリを開くと, トップページが出る. ブラウザ (http://localhost:8787) と組み合わせると, 2 人で試せる.
-
-- `adb reverse` は, エミュレータを起動し直したり, 実機をつなぎ直したりすると外れる. そのときは張り直す.
-- アプリに「つながりません」と出るときは, `npm run dev` が動いているか, `adb reverse --list` に `tcp:8787` があるかを確かめる.
-- debug のビルドでは, PC の Chrome で `chrome://inspect` を開くと, アプリの WebView の中を調べられる.
-- 画面 (`src/client/`) を変えたら `npm run build` をし直し, アプリの「更新」で読み直す.
-
 ## コードを変えたとき
 
 | 変えたもの | すること |
