@@ -27,3 +27,32 @@ export function checkCanJoin(state: JoinState): RuleResult<null> {
   }
   return { ok: true, value: null };
 }
+
+/** プレイヤーを削除できるかを決めるための, マッチの今の様子. */
+export interface RemoveState {
+  hasRoundStarted: boolean;
+  /** 削除しようとしている人がリーダーか. */
+  isLeaderTarget: boolean;
+}
+
+/**
+ * リーダーがプレイヤーを削除できるかを判定する.
+ *
+ * 最初のラウンドを始めたあとは削除できない. 人数 n はそこで固まり, 合計の検査 (Σp = S × n) と
+ * 確定したラウンドの増減は n で成り立つため (docs/web/app.md).
+ * リーダー自身は削除できない. マッチにリーダーがいなくなるため.
+ * @param state ラウンドを始めたかと, 削除しようとしている人がリーダーか.
+ * @returns 削除できれば ok: true. できなければ理由.
+ */
+export function checkCanRemovePlayer(state: RemoveState): RuleResult<null> {
+  if (state.hasRoundStarted) {
+    return {
+      ok: false,
+      reason: "ラウンドが始まったので, もうプレイヤーを削除できません",
+    };
+  }
+  if (state.isLeaderTarget) {
+    return { ok: false, reason: "リーダーは削除できません" };
+  }
+  return { ok: true, value: null };
+}
