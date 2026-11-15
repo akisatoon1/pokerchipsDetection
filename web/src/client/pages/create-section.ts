@@ -78,7 +78,7 @@ export function renderCreateSection(): HTMLElement {
   return element("section", {}, [
     element("h2", { text: "マッチを作る" }),
     element("p", { text: "マッチを作り, URL を仲間に送ってください." }),
-    ...renderPrivateModeWarning(),
+    renderPrivateModeWarning(),
     form,
   ]);
 }

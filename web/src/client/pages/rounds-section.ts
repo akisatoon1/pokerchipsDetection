@@ -6,7 +6,6 @@ import {
   type MatchView,
   type RoundView,
 } from "../api";
-import { requestChipPoints } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import type { Membership } from "../membership";
 import { openChipInputDialog } from "./chip-input-dialog";
@@ -273,8 +272,6 @@ function renderEntryForm(
 
 // 「チップから入力」のボタン. 求めた持ち点を欄に入れるだけで, 送らない.
 // 検出は間違うことがあるので, 人が確かめてから「保存する」を押すため.
-// アプリの中ではアプリの検出画面を, ブラウザでは Web の検出画面を使う.
-// 今の WebView では写真を選ぶ画面を開けないため, アプリの中では当面 native の検出を使う (docs/web/app.md).
 function renderChipInputControl(points: HTMLInputElement): HTMLElement {
   const status = element("p", { attributes: { role: "status" } });
   const button = element("button", {
@@ -288,9 +285,7 @@ function renderChipInputControl(points: HTMLInputElement): HTMLElement {
   };
   button.addEventListener("click", () => {
     status.textContent = "";
-    if (!requestChipPoints(fill)) {
-      openChipInputDialog(fill);
-    }
+    openChipInputDialog(fill);
   });
   return element("div", { className: "chip-input" }, [button, status]);
 }

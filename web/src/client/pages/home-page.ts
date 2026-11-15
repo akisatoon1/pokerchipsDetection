@@ -1,6 +1,5 @@
 import { parseMatchUrl } from "../../rules/match-url";
 import { getMatch } from "../api";
-import { isInApp } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import {
   listSavedMatches,
@@ -35,11 +34,8 @@ export function renderHomePage(root: HTMLElement): void {
     renderSavedMatchesSection(),
     renderPasteSection(),
     renderCreateSection(),
+    renderChipLinksSection(),
   );
-  // アプリの中では出さない. アプリは数えるだけの画面と設定画面を自分で持ち, メニューから開くため (docs/web/app.md).
-  if (!isInApp()) {
-    root.append(renderChipLinksSection());
-  }
 }
 
 // 数えるだけの画面と, 色と点数の設定画面へのリンク.
@@ -145,7 +141,7 @@ function forgetSavedMatch(item: HTMLLIElement, matchId: string): void {
   }
 }
 
-// 送られた URL を貼ってマッチの画面に移る欄. Android アプリには URL の欄がないので, その代わりになる.
+// 送られた URL を貼ってマッチの画面に移る欄. アドレス欄を使わずに, 送られたマッチを開けるようにするため.
 // 参加はマッチの画面で行う.
 function renderPasteSection(): HTMLElement {
   const url = element("input", {
