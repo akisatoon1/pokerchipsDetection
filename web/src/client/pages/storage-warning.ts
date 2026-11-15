@@ -16,7 +16,7 @@ export function renderPrivateModeWarning(): HTMLElement[] {
   return [
     element("p", {
       className: "warning",
-      text: "シークレット (プライベート) モードでは開かないでください. タブやブラウザを閉じると, このマッチの本人として戻れなくなります.",
+      text: "シークレット (プライベート) モードでは開かないでください.",
     }),
   ];
 }
