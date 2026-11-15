@@ -82,6 +82,12 @@ export async function renderMatchPage(
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
     sections.push(renderDeleteSection(match, membership));
   }
+  // 参加中のマッチの一覧や, ほかのマッチに戻れるようにするため (docs/web/app.md).
+  sections.push(
+    element("p", { className: "back-link" }, [
+      element("a", { text: "トップページへ", attributes: { href: "/" } }),
+    ]),
+  );
   root.replaceChildren(...sections);
 }
 
