@@ -1,16 +1,17 @@
 # pokerchip
 
-ポーカーチップのスタックの写真から, チップの枚数と色を求める. Linux で実験し, 同じ C++ のロジックを Android アプリで動かす.
+ポーカーチップのスタックの写真から, チップの枚数と色を求める. Linux で実験し, 同じ C++ のロジックを Android アプリと Web (ブラウザ. WebAssembly) で動かす.
 求めたチップから持ち点を出し, みんなで遊んだときの点数を記録・計算する Web アプリ (点数計算アプリ) もある.
 
 | 場所 | 中身 |
 |---|---|
 | `core/`, `cli/`, `tests/` | チップの計数のロジック, それを Linux で動かす CLI, テスト (C++) |
 | `android/` | Android アプリ (Kotlin. core は JNI で呼ぶ) |
-| `web/` | 点数計算アプリ (TypeScript. Web とバックエンド) |
+| `wasm/` | core を WebAssembly にする殻 (C++. Web の画面から呼ぶ) |
+| `web/` | 点数計算アプリ (TypeScript. Web とバックエンド. チップの検出は WASM の core で行う) |
 | `research/` | 研究開発の試作 (git の管理外) |
 | `testimages/` | テスト画像と正解, ラベル |
-| `pyscript/`, `scripts/`, `tools/`, `functional_tests/` | Python の補助, 環境構築とモデルの変換, 画像の変換, 機能テスト |
+| `pyscript/`, `scripts/`, `tools/`, `functional_tests/` | Python の補助, 環境構築とモデルの変換と WASM のビルド, 画像の変換, 機能テスト |
 | `docs/` | 文書. 下の「文書の地図」 |
 
 ## 作業の始め方

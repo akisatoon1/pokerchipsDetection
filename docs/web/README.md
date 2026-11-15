@@ -17,5 +17,6 @@
 
 ## 要るときに読む
 
-- [running.md](running.md) 手元での起動の手順
-- [../architecture.md](../architecture.md) Android アプリとの関係
+- [running.md](running.md) 手元での起動の手順. スマートフォンのブラウザから LAN で開く手順
+- [../architecture.md](../architecture.md) Android アプリとの関係. ブラウザでのチップの検出 (「10. Web でも core を WASM にして動かす」)
+- [../logic/usage.md](../logic/usage.md) の「WASM」 WASM のビルドと, CLI と結果が同じかの確かめ方

@@ -1,13 +1,13 @@
 # アーキテクチャ設計
 
 ポーカーチップの山 (スタック) を撮影した写真から, チップの枚数と各チップの色を求める.
-Linux で実験・テストし, 同じロジックを Android アプリで動かす.
+Linux で実験・テストし, 同じロジックを Android アプリと Web (ブラウザ. WebAssembly) で動かす.
 
 ## 目的と制約
 
-- **ロジックは1つ**: Linux (実験・テスト) と Android (アプリ) で, 検出・計数・色判定のコードを共有する.
+- **ロジックは1つ**: Linux (実験・テスト), Android (アプリ), Web (ブラウザ) で, 検出・計数・色判定のコードを共有する.
   Linux で調整したパラメータがそのままアプリに反映される状態にする.
-- **YOLO と OpenCV を両環境で使う**: YOLO はスタック領域 (ROI) の検出, OpenCV は計数・色判定.
+- **YOLO と OpenCV をどの環境でも使う**: YOLO はスタック領域 (ROI) の検出, OpenCV は計数・色判定.
 - **YOLO のモデルは別リポジトリで管理**: このリポジトリは学習済みモデル (ONNX) を受け取って使うだけ.
 - **最初のアプリは静止画のみ**: 撮影 or ギャラリーから1枚選んで解析する. リアルタイム解析は後回し.
 
@@ -16,7 +16,7 @@ Linux で実験・テストし, 同じロジックを Android アプリで動か
 ```
 pokerchip/
 ├── CMakeLists.txt          # Linux ビルドの入口 (core + cli + tests)
-├── core/                   # ★共通ロジック. Linux/Android で同一ソース
+├── core/                   # ★共通ロジック. Linux/Android/Web で同一ソース
 │   ├── include/pokerchip/  # 公開ヘッダ
 │   │   ├── pipeline.hpp    # analyzeImage: 画像 → 検出 → 計数 → 色判定
 │   │   ├── detector.hpp    # YoloDetector: cv::dnn で ONNX を推論
@@ -28,26 +28,29 @@ pokerchip/
 ├── tests/                  # GoogleTest (testimages を使う)
 ├── android/                # Android アプリ (Kotlin + Jetpack Compose + JNI)
 │   └── app/src/main/cpp/   # JNI の殻. core を add_subdirectory してビルド
+├── wasm/                   # WASM の殻 (embind). core を add_subdirectory し, Emscripten でビルド
+├── web/                    # 点数計算アプリ (TypeScript). 画面から WASM の core を呼ぶ
+├── functional_tests/       # 機能テスト (WASM と CLI の結果の比べ)
 ├── models/                 # ONNX モデル置き場 (git 管理外)
 ├── pyscript/               # Python 側の補助 (ultralytics での推論・比較, 色の基準色の計算)
-├── scripts/                # 環境構築・モデル取得のスクリプト
-└── third_party/            # ソースビルドした OpenCV (git 管理外)
+├── scripts/                # 環境構築・モデル取得・WASM のビルドのスクリプト
+└── third_party/            # ソースビルドした OpenCV (Linux 用, WASM 用), emsdk (git 管理外)
 ```
 
 ### 依存の向き
 
 ```
  cli (Linux)  ─┐
-               ├─▶ core ─▶ OpenCV (core, imgproc, dnn)
- android JNI ──┘
+ android JNI ──┼─▶ core ─▶ OpenCV (core, imgproc, dnn)
+ wasm (Web) ───┘
 ```
 
 - **core は OpenCV の `core` / `imgproc` / `dnn` だけに依存する.**
   `highgui` (imshow, selectROI), `imgcodecs` (imread), `popen`, 環境変数, ファイルパスは core に持ち込まない.
-  - 入力は `cv::Mat` (BGR). 画像の読み込みは殻 (CLI なら imread, Android なら Bitmap) の仕事.
+  - 入力は `cv::Mat` (BGR). 画像の読み込みは殻 (CLI なら imread, Android なら Bitmap, Web なら canvas) の仕事.
   - モデルはファイルパスでもメモリ上のバイト列でも渡せるようにする.
-    Android の assets はファイルパスを持たないため, バイト列で渡す.
-- **cli と android は薄い殻に徹する.** ロジックを殻側に書くと両環境で挙動がずれるため.
+    Android の assets とブラウザはファイルパスを持たないため, バイト列で渡す.
+- **cli, android, wasm は薄い殻に徹する.** ロジックを殻側に書くと環境ごとに挙動がずれるため.
 
 ## 処理の流れ
 
@@ -67,9 +70,9 @@ classifyChipColors(roi)   … 白い縞で照明を補正し, ピーク間の区
 AnalysisResult { stacks: [ { box, score, count, colors } ... ] }   … 左のスタックから順
 ```
 
-- `analyzeImage(detector, bgr)` が上の流れ全体. CLI と JNI はこれを呼ぶ.
+- `analyzeImage(detector, bgr)` が上の流れ全体. CLI, JNI, WASM の殻はこれを呼ぶ.
 - 手動で ROI を選ぶ場合 (Linux の実験用) は `analyzeRegion(bgr, rect)` で検出をスキップする.
-- `toJson(result)` で JSON にする. Android への受け渡しと, 環境間の結果比較に使う.
+- `toJson(result)` で JSON にする. Android と Web への受け渡しと, 環境間の結果比較に使う.
 
 ## 設計判断と理由
 
@@ -90,9 +93,9 @@ AnalysisResult { stacks: [ { box, score, count, colors } ... ] }   … 左のス
 従来の「C++ から `popen` で Python (ultralytics) を呼ぶ」方式は Android で使えないため廃止する.
 ultralytics との比較は `pyscript/make_yolo_reference.py` で行う (5 を参照). 旧方式で使っていた `pyscript/getroi.py` は削除した.
 
-### 3. OpenCV は Linux/Android とも 4.14.0 に揃える
+### 3. OpenCV は Linux/Android/Web とも 4.14.0 に揃える
 
-推論も OpenCV が担うので, **バージョンが違うと検出結果が変わりうる**. 両環境で同じバージョンを使う.
+推論も OpenCV が担うので, **バージョンが違うと検出結果が変わりうる**. どの環境でも同じバージョンを使う.
 
 モデル (yolo26n ベース, クラスは `stack` のみ) を ONNX 化し, OpenCV の各バージョンで読めるか確かめた
 (2026-10-12, 詳細は [worklog.md](worklog.md)).
@@ -106,6 +109,7 @@ ultralytics との比較は `pyscript/make_yolo_reference.py` で行う (5 を�
 
 - apt の 4.6 は使えないため, Linux はソースビルドする (`scripts/build_opencv.sh`, `third_party/` に入れる).
 - 4.14.0 は 4.x 系の最新で, Android SDK (GitHub Releases) と Maven (`org.opencv:opencv`) の両方がある.
+- Web 用は同じソースを Emscripten でビルドする (`scripts/build_opencv_wasm.sh`, 10 を参照).
 - 5.0 は出たばかりで API の変更があるため, 当面は 4.x 系にとどめる.
 
 ### 4. 検出器は2種類の出力形式を受け付け, どちらにも NMS をかける
@@ -141,6 +145,7 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
   クラスが増えたり入力サイズが変わったりしたら, メタ情報ファイルを導入する.
 - `models/VERSION` に変換元の `.pt` の sha256 を記録し, どの重みから作ったかを追えるようにする.
 - Android では `android/app/src/main/assets/` にコピーして APK に同梱する.
+- Web では `scripts/build_wasm.sh` が `web/src/client/public/detector/` にコピーし, Static Assets で配る.
 
 ### 7. ビルドは CMake に統一する
 
@@ -150,10 +155,12 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
   1か所だけ書く. どちらの環境でも違うバージョンを掴むと configure の時点で失敗する.
 - Android の OpenCV は SDK の静的ライブラリをリンクする. APK に `libopencv_java4.so` を入れずに済む.
 - Android Studio なしでも `make android-native` で core + JNI を NDK でクロスコンパイルできる.
+- WASM も `wasm/CMakeLists.txt` から core を `add_subdirectory` し, `emcmake cmake` でビルドする (`scripts/build_wasm.sh`).
 - 既存の `make run` / `make tidy` / `make format` は Makefile から CMake を呼ぶ形で残す.
 
 ### 8. Android アプリ
 
+- 最終的には Android も Web の検出 (10) を使い, 下の native と Kotlin の検出画面を消す方針にしている (今後の課題).
 - Kotlin + Jetpack Compose. 点数計算のマッチの画面は Web ([web/app.md](web/app.md)) を WebView で表示し,
   アプリ自身は次の画面だけを持つ. 画面を Web と 2 重に作ると, 確認のダイアログなどの細かい振る舞いがずれるため.
   - 数えるだけの画面: 「撮影 / ギャラリー選択 → 解析 → 結果の表示」. 検出の結果を実機で確かめるために残す.
@@ -206,8 +213,43 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
 - `tests/test_color.cpp` が `answers.txt` での正答率を確かめる. 基準色を同じ画像から作っているので,
   この正答率は初見の画像での性能より高く出る.
 
+### 10. Web でも core を WASM にして動かす
+
+iPhone のように Android アプリを使えない端末でもチップを検出できるよう, core を Emscripten で WebAssembly にし,
+ブラウザの中で動かす. 写真はサーバーに送らない. 仕様は [web/app.md](web/app.md) の「チップの検出」にある.
+
+- core のコードは写さず, JNI と同じ薄い殻 (`wasm/bindings.cpp`) から `add_subdirectory` で使う.
+  殻は embind で JS に `createDetector(モデルのバイト列)` と `Detector.analyze(RGBA の画素, 幅, 高さ)` を見せ,
+  型の変換と失敗の受け渡しだけを行う. 結果は JNI と同じく `toJson` の JSON の文字で返す.
+- 殻は例外を JS に投げず, `{ok: true, json}` / `{ok: false, error}` を返す. WASM の例外は JS から中身を読めないため.
+- Emscripten は 6.0.13 に固定する (`scripts/fetch_emsdk.sh`). OpenCV は公式の opencv.js でなく,
+  `core,imgproc,dnn` だけを静的ライブラリにビルドする (`scripts/build_opencv_wasm.sh`). core から C++ でリンクするため.
+  - 1 スレッドにする. スレッドを使うには SharedArrayBuffer と COOP/COEP のヘッダが要り, 配り方が複雑になるため.
+  - `-msimd128` (WASM の SIMD. Safari 16.4 以降) と `-fwasm-exceptions` (core の例外を殻で捕まえるため. Safari 15.2 以降) を,
+    OpenCV と殻の両方に付ける.
+- 画像の読み込みは画面 (`web/src/client/detector.ts`) が `createImageBitmap` と canvas で行い, RGBA の画素を渡す.
+  - EXIF の向きは反映する (`imageOrientation: "from-image"`). Linux の `cv::imread` も反映するため.
+  - 色空間は変換しない (`colorSpaceConversion: "none"`). テスト画像の多くは Display P3 で, `cv::imread` は ICC を無視して値をそのまま読み,
+    色の基準色 (9) もその値から作っているため.
+  - iPhone の Safari は 1 つの canvas の画素数におよそ 1,677 万の上限がある. 12MP の写真は収まるが, それより大きい写真は読めないことがある.
+- WASM (約 5 MiB) とモデル (約 9.4 MiB) は Workers の Static Assets で配る. 1 ファイルの上限 (25 MiB) に収まる.
+  初めて解析するときに読み込み, ページを開いている間は検出器を使い回す.
+- 解析は画面のスレッドで行うので, 解析の間 (数秒) は画面が止まる.
+- 正しさは `functional_tests/compare_wasm_cli.sh` で確かめる. testimages の全画像を Node の WASM と CLI で解析し,
+  box, count, peaks, colors が一致し, score の差が 0.001 以内であることを見る. WASM に渡す画素は CLI と同じ `cv::imread` で作る.
+
+| ファイル | 役割 |
+|---|---|
+| `wasm/CMakeLists.txt` | core + 殻のビルド (Emscripten) |
+| `wasm/bindings.cpp` | RGBA の画素 → `cv::Mat`, `analyzeImage` の呼び出し, 失敗の受け渡し |
+| `scripts/build_wasm.sh` | 殻をビルドし, `.js`, `.wasm`, モデルを `web/src/client/public/detector/` に置く |
+| `web/src/client/detector.ts` | WASM とモデルの読み込み, 画像 → RGBA の画素, 解析の呼び出し |
+| `web/src/rules/analysis-result.ts` | JSON → 解析の結果 (Android の `AnalysisResult.kt` に当たる) |
+
 ## 今後の課題
 
+- Android も Web の検出を使い, native と Kotlin の検出画面を消す. WebView で写真を選べるようにする必要がある.
+- Android の `ImageLoader` は画像を sRGB に変換してから解析する. Display P3 の写真では, Linux と Web の結果とずれることがある.
 - リアルタイムプレビューでの解析 (CameraX).
 - 推論速度が足りない場合の高速化 (入力サイズ縮小, NNAPI 等).
 - 複数スタックの結果の見せ方.
