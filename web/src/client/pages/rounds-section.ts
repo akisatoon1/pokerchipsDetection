@@ -6,9 +6,10 @@ import {
   type MatchView,
   type RoundView,
 } from "../api";
-import { isInApp, requestChipPoints } from "../app-bridge";
+import { requestChipPoints } from "../app-bridge";
 import { element, labeledField } from "../dom";
 import type { Membership } from "../membership";
+import { openChipInputDialog } from "./chip-input-dialog";
 
 /**
  * ラウンドの一覧を出す. 新しいラウンドを上に出す.
@@ -248,11 +249,7 @@ function renderEntryForm(
   const form = element("form", { className: "entry-form" }, [
     labeledField("あなたの持ち点", points),
   ]);
-  // チップの検出は Android アプリにしかないので, アプリの中でだけ出す (docs/web/app.md).
-  if (isInApp()) {
-    form.append(renderChipInputControl(points));
-  }
-  form.append(submit, message);
+  form.append(renderChipInputControl(points), submit, message);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     submit.disabled = true;
@@ -274,21 +271,26 @@ function renderEntryForm(
   return form;
 }
 
-// 「チップから入力」のボタン. アプリが求めた持ち点を欄に入れるだけで, 送らない.
+// 「チップから入力」のボタン. 求めた持ち点を欄に入れるだけで, 送らない.
 // 検出は間違うことがあるので, 人が確かめてから「保存する」を押すため.
+// アプリの中ではアプリの検出画面を, ブラウザでは Web の検出画面を使う.
+// 今の WebView では写真を選ぶ画面を開けないため, アプリの中では当面 native の検出を使う (docs/web/app.md).
 function renderChipInputControl(points: HTMLInputElement): HTMLElement {
   const status = element("p", { attributes: { role: "status" } });
   const button = element("button", {
     text: "チップから入力",
     attributes: { type: "button" },
   });
+  const fill = (chipPoints: number): void => {
+    points.value = String(chipPoints);
+    status.textContent =
+      "チップから求めた持ち点を入れました. 確かめて「保存する」を押してください.";
+  };
   button.addEventListener("click", () => {
     status.textContent = "";
-    requestChipPoints((chipPoints) => {
-      points.value = String(chipPoints);
-      status.textContent =
-        "チップから求めた持ち点を入れました. 確かめて「保存する」を押してください.";
-    });
+    if (!requestChipPoints(fill)) {
+      openChipInputDialog(fill);
+    }
   });
   return element("div", { className: "chip-input" }, [button, status]);
 }
