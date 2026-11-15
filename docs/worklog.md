@@ -1,7 +1,7 @@
 # 作業記録
 
 大まかな記録. 設計の結論は [architecture.md](architecture.md), 環境構築の手順は
-[setup.md](setup.md), Linux マシンでの使い方は [usage.md](usage.md) にまとめている.
+[environment/setup.md](environment/setup.md), Linux マシンでの使い方は [logic/usage.md](logic/usage.md) にまとめている.
 
 環境構築, アーキテクチャ, ファイル構造など, 環境に関する変更だけを記録する.
 ロジック, アルゴリズム, パラメータの変更やバグの修正は記録しない (コミットメッセージを見る).
@@ -116,7 +116,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - Android アプリのビルドは, Windows 側の Android Studio ではなく **Ubuntu の実機** で行うことにした.
   WSL では sudo が使えず (GUI なしの OpenCV), Windows の Android Studio から WSL 上のプロジェクトを
-  開くと NDK ビルドが UNC パスで失敗しやすいため. 理由の詳細は [migration.md](migration.md).
+  開くと NDK ビルドが UNC パスで失敗しやすいため. 理由の詳細は [migration.md](environment/migration.md).
 - `docs/prerequisites.md` を `docs/setup.md` に改名し, 新しいマシンでゼロから使えるまでの手順に書き直した
   (apt, OpenCV, Python, モデル, Android Studio, 実機・エミュレータ, トラブルシューティング).
 - 移行のときだけ必要な作業 (移行元での準備, 持っていくもの, 移行後の確認項目) を `docs/migration.md` に書いた.
@@ -142,7 +142,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 ## 2026-10-16: Python パッケージのバージョン固定
 
-- `pyscript/requirements.txt` のバージョンを固定した ([migration.md](migration.md) の「移行元でやること」の項目).
+- `pyscript/requirements.txt` のバージョンを固定した ([migration.md](environment/migration.md) の「移行元でやること」の項目).
   移行元の `.venv` で動いている組み合わせ (ultralytics 8.4.150, torch 2.14.0, torchvision 0.29.0,
   onnx 1.23.2, onnxslim 0.1.98, onnxruntime 1.31.0, numpy 2.5.3) にした.
 - 一覧になかった `opencv-python` (5.0.0.93) も固定した. ultralytics の前処理 (letterbox など) が使うため,
@@ -152,7 +152,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 ## 2026-10-16: 移行の手順の見直し
 
-- 移行元から持っていくのは `best.pt` だけにした. [migration.md](migration.md) から,
+- 移行元から持っていくのは `best.pt` だけにした. [migration.md](environment/migration.md) から,
   移行元での結果 (`results.txt`) の保存と送付, Claude Code の設定の送付の項目を消した.
 - そのため移行後の確認の 3 は「移行元と結果が一致する」から「testimages で CLI が動く」に変えた.
   ここで保存した結果は, 7 で Android の結果と比べるのに使う.
@@ -161,7 +161,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - `docs/usage.md` を作った. 環境構築の後の Linux マシンでの使い方 (ビルド, CLI の実行, 出力の見方,
   デバッグ画像, testimages をまとめて解析する方法, テスト, モデルを更新したとき, 整形と検査, make のターゲット) を書いた.
-  環境構築は [setup.md](setup.md) を参照する形にした.
+  環境構築は [setup.md](environment/setup.md) を参照する形にした.
 - `docs/setup.md` にあった「モデルを更新したとき」「CLI の使い方」「make のターゲット一覧」は usage.md に移した.
 - 書いたコマンド (`--json --out`, `--rect`, `ctest -R`) は実際に動かして, 出力の例と合っていることを確認した.
   `--roi user` は GUI なしの OpenCV のため確認できていない (キー操作は OpenCV の `selectROI` の説明に従った).
@@ -233,7 +233,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   解析した元の画像を端末の `Pictures/PokerChip/` (MediaStore) にコピーする.
   検出がうまくいかなかった画像を Linux の CLI でデバッグするため.
 - PC への取り出しは `adb pull` で行う. adb は Android Studio の標準 SDK の `platform-tools/` に入っているが
-  PATH が通っていなかったので, [setup.md](setup.md) の 8 の 5 に PATH を通す手順を足した.
+  PATH が通っていなかったので, [setup.md](environment/setup.md) の 8 の 5 に PATH を通す手順を足した.
 - setup.md から udev のルールを入れる手順 (`android-sdk-platform-tools-common` と plugdev への追加) を消した.
   Ubuntu 26.04 の systemd 259 は ADB の端末に `uaccess` を付けるルールを持っており, ログイン中のユーザが
   そのまま使えるため. 古い OS で `no permissions` になったときの対処はトラブルシューティングに残した.
@@ -246,7 +246,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `pyscript/make_color_references.py` を追加した. `answers.txt` の画像を CLI で解析し, 基準色の C++ の定数表を出力する.
   チップごとの代表色を出させるため, CLI に `--lab` を足した (core に `measureChipLab` を追加).
 - `tests/test_color.cpp` を追加した. 人工の画像で照明の補正が効くことと, `answers.txt` での正答率 (95% 以上) を確かめる.
-  テストは 9 件になった. 手順は [usage.md](usage.md) の「テスト」.
+  テストは 9 件になった. 手順は [usage.md](logic/usage.md) の「テスト」.
 
 ## 2026-10-18: 点数計算の仕様を書く
 
@@ -331,7 +331,7 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - 接続先を `BuildConfig.WEB_BASE_URL` にした. debug は `http://localhost:8787` で, `adb reverse tcp:8787 tcp:8787` で
   PC の `wrangler dev` に届ける. release はデプロイするときに替える仮の値. `android/app/src/debug/` に,
   debug でだけ localhost への平文の http を許す設定を置いた. INTERNET の権限を足した.
-- Android の検査を `./gradlew assembleDebug testDebugUnitTest lintDebug` にした ([web/kotlin.md](web/kotlin.md)).
+- Android の検査を `./gradlew assembleDebug testDebugUnitTest lintDebug` にした ([development/android/kotlin.md](development/android/kotlin.md)).
 - Web では, トップページ (`web/src/client/pages/home-page.ts`) を足し, マッチを作る画面を
   その中の欄 (`create-page.ts` → `create-section.ts`) にした. アプリとの連絡口を `web/src/client/app-bridge.ts` に置いた.
 - 手順を `docs/web/running.md` の「Android アプリから試す」に書いた.
@@ -372,3 +372,24 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - 開発のルールをまとめる `docs/development/` を作った. 最初の文書はコミットの決まり `commit.md` で,
   CLAUDE.md に直接書いていたものを移し, CLAUDE.md から読み込ませた.
+
+## 2026-11-15: docs/ を整理し, 文書の地図を CLAUDE.md から読み込ませる
+
+- 文書を, ルール (守るもの) と資料 (読むもの) に分けた.
+  - ルールは `docs/development/` に集めた. すべてに当てはまるものは直下 (`commit.md`, `code-rules.md`, `cpp-coding-style.md`, `research.md`),
+    分野だけのものは `web/` (`process.md`, `layers.md`, `security.md`, `typescript.md`) と `android/` (`kotlin.md`) に置く.
+    ルールは分野をまたぐ (code-rules.md はすべての言語, cpp-coding-style.md は JNI にも当てはまる) ため, 資料と混ぜると置き場に困る.
+  - 資料は分野ごとに `environment/` (`setup.md`, `migration.md`), `logic/` (`usage.md`, `labeling.md`), `web/` (`app.md`, `scoring.md`, `running.md`, `plans/`) に置く.
+  - 移したもの: `coding-style.md` → `development/cpp-coding-style.md`, `web/code-rules.md` → `development/code-rules.md`,
+    `web/development.md` → `development/web/process.md`, `web/security.md`, `web/typescript.md` → `development/web/`,
+    `web/kotlin.md` → `development/android/kotlin.md`, `setup.md`, `migration.md` → `environment/`, `usage.md`, `labeling.md` → `logic/`.
+- `code-rules.md` を C++, Kotlin, TypeScript のすべてで守る言語によらない規則に書き直し, Web の層と用語の部分を `development/web/layers.md` に分けた.
+- 文書の地図を作った. `docs/README.md` が全体の地図で, 分野の地図 `docs/logic/README.md`, `docs/android/README.md`, `docs/web/README.md` を `@` で読み込む.
+  地図には, 分野の作業の前に読むルールと資料, 要るときに読む資料を並べる. 地図からは本文を `@` で読み込まない.
+  分野のルールまで毎回読み込むと約 650 行になり, 大事な指示が埋もれるため.
+  分野ごとの CLAUDE.md や `.claude/rules/` は, そのディレクトリのファイルを読むまで読み込まれず, 依頼を受けた時点では間に合わないため使わない.
+- ルートの CLAUDE.md は, 概要, 作業の始め方, すべての作業で守ること (返答の言語, 文書を最新に保つ, 作業記録, コミット, コードの書き方) だけにし,
+  `@docs/README.md` で地図を読み込ませる. 研究開発の方針は `development/research.md` に移した.
+- Web のコードのコメント (`web/src/` の 4 か所) は, まだ古い文書のパスを指している. `npm audit` が通らず Web のコミット前の検査を通せないため, 後で直す.
+- Web の作業で変えてよい場所 (`process.md` の「してはいけないこと」) に `docs/development/web/` を足した.
+- 古いパスは, 過去の作業記録の文と承認済みの計画 (`docs/web/plans/`) にだけ残る. 書いた時点の記録なので直していない (作業記録のリンク先だけは直した).

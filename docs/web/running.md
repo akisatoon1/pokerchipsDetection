@@ -66,7 +66,7 @@ debug のビルドの接続先は `http://localhost:8787` で, `adb reverse` で
 エミュレータでも, USB でつないだ実機でも同じ手順で動く.
 
 1. 上の「3. 起動する」で `npm run dev` を起動しておく.
-2. Android の環境を用意する ([../setup.md](../setup.md) の Android Studio の節). エミュレータを起動するか, 実機をつなぐ.
+2. Android の環境を用意する ([../environment/setup.md](../environment/setup.md) の Android Studio の節). エミュレータを起動するか, 実機をつなぐ.
 3. アプリを入れ, `adb reverse` を張る.
 
    ```sh
@@ -110,7 +110,7 @@ cd web
 npm run check
 ```
 
-書き方と検査の詳しいことは [typescript.md](typescript.md) にある.
+書き方と検査の詳しいことは [development/web/typescript.md](../development/web/typescript.md) にある.
 
 ## うまくいかないとき
 
@@ -121,4 +121,4 @@ npm run check
 
 ## デプロイ
 
-本番 (Cloudflare) へのデプロイの手順は, まだ書いていない. デプロイは人に指示されたときだけ行う ([development.md](development.md)).
+本番 (Cloudflare) へのデプロイの手順は, まだ書いていない. デプロイは人に指示されたときだけ行う ([development/web/process.md](../development/web/process.md)).

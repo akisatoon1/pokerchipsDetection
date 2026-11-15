@@ -1,64 +1,53 @@
 # pokerchip
 
 ポーカーチップのスタックの写真から, チップの枚数と色を求める. Linux で実験し, 同じ C++ のロジックを Android アプリで動かす.
+求めたチップから持ち点を出し, みんなで遊んだときの点数を記録・計算する Web アプリ (点数計算アプリ) もある.
 
-- 設計: [docs/architecture.md](docs/architecture.md)
-- Linux での使い方 (ビルド, CLI, テスト): [docs/usage.md](docs/usage.md)
-- 点数計算アプリ (Web, バックエンド): [docs/web/app.md](docs/web/app.md), 点数計算のルール: [docs/web/scoring.md](docs/web/scoring.md)
-- 点数計算アプリの起動: [docs/web/running.md](docs/web/running.md)
+| 場所 | 中身 |
+|---|---|
+| `core/`, `cli/`, `tests/` | チップの計数のロジック, それを Linux で動かす CLI, テスト (C++) |
+| `android/` | Android アプリ (Kotlin. core は JNI で呼ぶ) |
+| `web/` | 点数計算アプリ (TypeScript. Web とバックエンド) |
+| `research/` | 研究開発の試作 (git の管理外) |
+| `testimages/` | テスト画像と正解, ラベル |
+| `pyscript/`, `scripts/`, `tools/`, `functional_tests/` | Python の補助, 環境構築とモデルの変換, 画像の変換, 機能テスト |
+| `docs/` | 文書. 下の「文書の地図」 |
 
-## 返答の言語
+## 作業の始め方
+
+作業を頼まれたら, 下の「文書の地図」で分野を決め, その分野の地図にある文書を, 作業を始める前に Read で読む.
+とくに `web/` の作業では, 計画を示して承認を得るまでコードを書かない.
+
+## すべての作業で守ること
+
+### 返答の言語
 
 人への返答は, すべて日本語で書く. 作業の途中に出す短い進み具合の報告や, 最後のまとめも日本語にする.
 コード, コマンド, ファイル名, ライブラリ名などの固有の名前は, 元の表記のままでよい.
 
-## コミット
+### 文書を最新に保つ
 
-開発のルールは [docs/development/](docs/development/) にまとめる. すべての作業で, 次のコミットの決まりに従う.
+- 構成 (分野の関係, 処理の流れ, 設計の判断) を変えたら, [docs/architecture.md](docs/architecture.md) を直す.
+- 文書を足す・移す・消すときは, その分野の地図 (`docs/<分野>/README.md`) も直す.
 
-@docs/development/commit.md
-
-## コーディング規約
-
-C++ のコードを書く・直すときは次の規約に従う.
-
-@docs/coding-style.md
-
-## 作業記録 (docs/worklog.md)
+### 作業記録 (docs/worklog.md)
 
 docs/worklog.md には環境に関する変更だけを記録する.
 
 - 記録する: 環境構築 (ツールやライブラリの導入・更新, 手順の変更), アーキテクチャ, ファイル構造 (ディレクトリやファイルの追加・移動・削除), ビルドの設定.
 - 記録しない: ロジック, アルゴリズム, パラメータの変更, バグの修正, リファクタ. これらはコミットメッセージに書く.
 
-## 研究開発
+### コミット
 
-チップの計数の研究開発 (試作) をするときは, 次の方針に従う.
+@docs/development/commit.md
 
-- 目的は 2 つある. 色別計数 (色と枚数が両方合う) を正確に行うことと, それを目指す中で知見を得ること.
-  正答率が上がらなくても, なぜ誤るか, 何が効かないかが分かれば成果として残す.
-- 研究者として自由に探索してよい. 好奇心に従って目標からそれてもよい.
-- 試行錯誤のためにロジックやアルゴリズムを変えるのは自由. ただし既存のコード (`core/`, `cli/`, `android/` など) は変えない.
-  変えたいときは `research/` に写すか, 別のスクリプトを書いて試す. 言語や道具 (Python, C++ など) も自由に選んでよい.
-- 試作は `research/YYYY-MM-DD-<内容>/` に置く. `research/` は `.gitignore` で除外していて, git の履歴に残さない.
-  中の README.md に, 流し方, 結果, 分かったこと, 効かなかったこと, 次の一手を書く.
-- 評価はスタック単位 (1 スタック抜き) で行う. 画像単位で分けると同じスタックが学習とテストにまたがり, 甘くなるため.
-- 「N 分続けて」と言われたら, その時間いっぱい研究を続けてから報告する.
+### コードの書き方
 
-## Web アプリの開発
+C++, Kotlin, TypeScript のどのコードを書く・直すときも, 次の言語によらない規則に従う.
+言語や分野に固有の規則は, 分野の地図にある.
 
-`web/` の作業をするときは, 次の流れ, コードの書き方, セキュリティの規則, TypeScript の書き方に従う.
+@docs/development/code-rules.md
 
-@docs/web/development.md
+## 文書の地図
 
-@docs/web/code-rules.md
-
-@docs/web/security.md
-
-@docs/web/typescript.md
-
-## Android アプリの Kotlin
-
-`android/` の Kotlin を書く・直すときは, 上のコードの書き方 (code-rules.md) と次の Kotlin の書き方に従う.
-
-@docs/web/kotlin.md
+@docs/README.md

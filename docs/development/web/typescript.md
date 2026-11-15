@@ -1,7 +1,7 @@
 # Web アプリの TypeScript の書き方
 
 Web アプリ (`web/`) の TypeScript に固有の書き方をまとめる.
-言語によらない規則は [code-rules.md](code-rules.md) にある.
+言語によらない規則は [code-rules.md](../code-rules.md) に, 層の分け方は [layers.md](layers.md) にある.
 
 ## 技術
 
@@ -41,7 +41,7 @@ npm run dev      # 画面をビルドし, ローカルの D1 に migrations を�
 ```
 
 Node は `~/.local/node` に入っている. PATH が通っていないシェルでは `export PATH="$HOME/.local/node/bin:$PATH"` を先に実行する.
-Node の入れ方と起動の手順は [running.md](running.md) にある.
+Node の入れ方と起動の手順は [running.md](../../web/running.md) にある.
 
 ## 書き方
 

@@ -175,7 +175,7 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
   Linux の `cv::imread` も EXIF の向きを反映するので, 両環境で同じ向きの画像を解析する.
 - 解析はバックグラウンドスレッドで行う. `cv::dnn::Net` はスレッドセーフでないので,
   Kotlin 側で `Mutex` を使って native の呼び出しを直列化する.
-- Kotlin の書き方は [web/kotlin.md](web/kotlin.md) にまとめる.
+- Kotlin の書き方は [development/android/kotlin.md](development/android/kotlin.md) にまとめる.
 
 | ファイル (`android/app/src/main/`) | 役割 |
 |---|---|
