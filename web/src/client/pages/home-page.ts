@@ -100,12 +100,7 @@ async function fillSavedMatchItem(
   if (!result.ok) {
     // 削除されたマッチには戻る意味がないので, 一覧からもトークンからも消す.
     if (result.status === 404) {
-      removeMembership(saved.matchId);
-      const list = item.parentElement;
-      item.remove();
-      if (list !== null && list.childElementCount === 0) {
-        list.replaceWith(renderNoSavedMatches());
-      }
+      forgetSavedMatch(item, saved.matchId);
       return;
     }
     // つながらないなどのときは消さない. あとで読めるかもしれないため.
@@ -123,15 +118,31 @@ async function fillSavedMatchItem(
   const self = result.value.players.find(
     (player) => player.id === saved.membership.playerId,
   );
+  // リーダーに削除されていたら, このトークンでは戻れないので, 一覧からもトークンからも消す.
+  // 最初のラウンドの前なら, マッチの URL から参加し直せる.
+  if (self === undefined) {
+    forgetSavedMatch(item, saved.matchId);
+    return;
+  }
   link.textContent = result.value.name;
   item.replaceChildren(
     link,
     element("span", {
       className: "saved-match-detail",
-      text: `あなた: ${self?.name ?? "(見つかりません)"}`,
+      text: `あなた: ${self.name}`,
     }),
     openedAt,
   );
+}
+
+// 戻る意味のなくなったマッチを, 一覧と保存したトークンから消す.
+function forgetSavedMatch(item: HTMLLIElement, matchId: string): void {
+  removeMembership(matchId);
+  const list = item.parentElement;
+  item.remove();
+  if (list !== null && list.childElementCount === 0) {
+    list.replaceWith(renderNoSavedMatches());
+  }
 }
 
 // 送られた URL を貼ってマッチの画面に移る欄. Android アプリには URL の欄がないので, その代わりになる.

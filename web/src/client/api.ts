@@ -269,3 +269,23 @@ export function deleteMatch(
     token,
   });
 }
+
+/**
+ * プレイヤーを削除する. リーダーだけが, 最初のラウンドの前に, リーダー以外を削除できる.
+ *
+ * @param matchId マッチの id.
+ * @param playerId 削除するプレイヤーの id.
+ * @param token リーダーのトークン.
+ * @returns 消せたら null. リーダーでない, ラウンドが始まった, 見つからないなどで失敗なら説明.
+ */
+export function deletePlayer(
+  matchId: string,
+  playerId: string,
+  token: string,
+): Promise<ApiResult<null>> {
+  return request(
+    `/api/matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`,
+    noContent,
+    { method: "DELETE", token },
+  );
+}
