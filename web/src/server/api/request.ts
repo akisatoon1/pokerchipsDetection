@@ -7,7 +7,7 @@ export type ParsedBody<T> =
 /**
  * リクエストの本文を JSON として読み, スキーマで形を確かめる.
  *
- * 外から来る入力は API の入口で確かめ, 内側には検証済みの値だけを渡すため (docs/web/code-rules.md).
+ * 外から来る入力は API の入口で確かめ, 内側には検証済みの値だけを渡すため (docs/development/code-rules.md).
  * @param request 届いたリクエスト.
  * @param schema 本文の形. 知らない項目を拒否するよう strict にしておく.
  * @returns 形を満たした値. JSON でないときや形が違うときは ok: false と説明.

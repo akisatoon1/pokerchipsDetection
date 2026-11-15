@@ -1,7 +1,7 @@
 /** 要素を作るときに付けるもの. */
 export interface ElementOptions {
   className?: string;
-  // 文字は必ず textContent で入れる. 利用者が入れた文字を HTML として解釈させないため (docs/web/security.md).
+  // 文字は必ず textContent で入れる. 利用者が入れた文字を HTML として解釈させないため (docs/development/web/security.md).
   text?: string;
   attributes?: Record<string, string>;
 }
