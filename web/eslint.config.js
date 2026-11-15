@@ -29,24 +29,24 @@ export default defineConfig(
         "error",
         {
           property: "innerHTML",
-          message: "textContent を使う (docs/web/security.md).",
+          message: "textContent を使う (docs/development/web/security.md).",
         },
         {
           property: "outerHTML",
-          message: "textContent を使う (docs/web/security.md).",
+          message: "textContent を使う (docs/development/web/security.md).",
         },
         {
           object: "Math",
           property: "random",
           message:
-            "暗号用の乱数 crypto.getRandomValues を使う (docs/web/security.md).",
+            "暗号用の乱数 crypto.getRandomValues を使う (docs/development/web/security.md).",
         },
       ],
       "no-restricted-syntax": [
         "error",
         {
           selector: "CallExpression[callee.property.name='insertAdjacentHTML']",
-          message: "textContent を使う (docs/web/security.md).",
+          message: "textContent を使う (docs/development/web/security.md).",
         },
       ],
     },
