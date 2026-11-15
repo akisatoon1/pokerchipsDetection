@@ -178,3 +178,14 @@ export function deleteMatch(matchId: string, token?: string) {
     ...(token === undefined ? {} : { token }),
   });
 }
+
+export function deletePlayer(
+  matchId: string,
+  playerId: string,
+  token?: string,
+) {
+  return send(`/api/matches/${matchId}/players/${playerId}`, {
+    method: "DELETE",
+    ...(token === undefined ? {} : { token }),
+  });
+}

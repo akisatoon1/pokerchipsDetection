@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { MAX_PLAYERS } from "../../rules/limits";
 import { normalizeMatchName, normalizePlayerName } from "../../rules/names";
-import { checkCanJoin } from "../../rules/players";
+import { checkCanJoin, checkCanRemovePlayer } from "../../rules/players";
 import { validateInitialPoints } from "../../rules/points";
 import { checkCanStartRound } from "../../rules/rounds";
 import { listEntries } from "../db/entries";
@@ -12,6 +12,7 @@ import {
   insertMatchWithLeader,
 } from "../db/matches";
 import {
+  deletePlayerIfAllowed,
   insertPlayerIfAllowed,
   listPlayers,
   renamePlayer,
@@ -216,4 +217,41 @@ matchesApi.patch("/:matchId/players/:playerId", async (c) => {
     return c.json({ error: "その名前はもう使われています" }, 409);
   }
   return c.json({ name: name.value });
+});
+
+// プレイヤーを削除する. リーダーだけが, 最初のラウンドの前に, リーダー以外を削除できる (docs/web/app.md).
+// 削除された人のトークンは, それ以降使えなくなる.
+matchesApi.delete("/:matchId/players/:playerId", async (c) => {
+  const { matchId, playerId } = c.req.param();
+  const match = await findMatch(c.env.DB, matchId);
+  if (match === null) {
+    return c.json({ error: "マッチが見つかりません" }, 404);
+  }
+  const requester = await findRequestingPlayer(c.env.DB, c.req.raw, matchId);
+  if (requester === null) {
+    return c.json({ error: "このマッチのプレイヤーだと確かめられません" }, 401);
+  }
+  if (requester.id !== match.leaderPlayerId) {
+    return c.json({ error: "プレイヤーを削除できるのはリーダーだけです" }, 403);
+  }
+  const players = await listPlayers(c.env.DB, matchId);
+  if (!players.some((player) => player.id === playerId)) {
+    return c.json({ error: "プレイヤーが見つかりません" }, 404);
+  }
+  const rounds = await listRounds(c.env.DB, matchId);
+  const canRemove = checkCanRemovePlayer({
+    hasRoundStarted: rounds.length > 0,
+    isLeaderTarget: playerId === match.leaderPlayerId,
+  });
+  if (!canRemove.ok) {
+    return c.json({ error: canRemove.reason }, 409);
+  }
+  if (!(await deletePlayerIfAllowed(c.env.DB, matchId, playerId))) {
+    // 判定のあとに, ラウンドの開始や, 同じ人の削除が割り込んだとき.
+    return c.json(
+      { error: "同時に操作した人がいました. 画面を読み直してください" },
+      409,
+    );
+  }
+  return c.body(null, 204);
 });

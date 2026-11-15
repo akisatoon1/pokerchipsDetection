@@ -138,6 +138,34 @@ export async function renamePlayer(
 }
 
 /**
+ * プレイヤーを, 最初のラウンドの前で, リーダーでないときだけ消す.
+ *
+ * 削除できるかの判定は rules/players.ts で済ませておく. ここの条件は, 判定のあとに
+ * ラウンドの開始が割り込んでも決まりを破らないための最後の守り.
+ * 最初のラウンドの前なので持ち点 (entries) はなく, players の行だけを消せばよい.
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id. 別のマッチのプレイヤーは消さない.
+ * @param playerId 消すプレイヤーの id.
+ * @returns 消せたら true. 条件を満たさない, またはそのプレイヤーがいなければ false.
+ * @throws DB に届かないとき.
+ */
+export async function deletePlayerIfAllowed(
+  db: D1Database,
+  matchId: string,
+  playerId: string,
+): Promise<boolean> {
+  const result = await db
+    .prepare(
+      `DELETE FROM players WHERE id = ? AND match_id = ?
+         AND id <> (SELECT leader_player_id FROM matches WHERE id = ?)
+         AND NOT EXISTS (SELECT 1 FROM rounds WHERE match_id = ?)`,
+    )
+    .bind(playerId, matchId, matchId, matchId)
+    .run();
+  return result.meta.changes === 1;
+}
+
+/**
  * D1 の例外が, 指定した列の UNIQUE 制約に反したものかを調べる.
  *
  * D1 は制約の違反を例外の文言でしか伝えないため, 文言を見る.
