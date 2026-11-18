@@ -4,7 +4,9 @@ import {
   findChipColor,
   parseChipValue,
   readStoredChipValues,
+  toChipValuesRecord,
   toStoredChipValues,
+  validateChipValues,
   type ChipColorName,
 } from "../src/rules/chip-values";
 
@@ -66,6 +68,46 @@ describe("色の欄の文字を読む", () => {
     for (const text of ["1.5", "+1", "-1", "1e3", "１００", "1,000", "abc"]) {
       expect(parseChipValue(text).ok, text).toBe(false);
     }
+  });
+});
+
+describe("送られた色ごとの点数を確かめる", () => {
+  it("1 色だけでも受け付け, 色の一覧の順に並べる", () => {
+    const result = validateChipValues({ green: 25, red: 100 });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect([...result.value]).toEqual([
+        ["red", 100],
+        ["green", 25],
+      ]);
+    }
+    expect(validateChipValues({ blue: 500 }).ok).toBe(true);
+  });
+
+  it("1 と 1,000,000,000 は受け付ける", () => {
+    expect(validateChipValues({ red: 1, blue: 1_000_000_000 }).ok).toBe(true);
+  });
+
+  it("1 色もなければ拒否する", () => {
+    expect(validateChipValues({}).ok).toBe(false);
+  });
+
+  it("0, 1,000,000,001, 小数, 負の数は拒否する", () => {
+    for (const value of [0, 1_000_000_001, 1.5, -100, Number.NaN]) {
+      expect(validateChipValues({ red: 100, blue: value }).ok).toBe(false);
+    }
+  });
+});
+
+describe("色ごとの点数を, 送る形にする", () => {
+  it("色の一覧の順に並べ, 使わない色は入れない", () => {
+    const values = new Map<ChipColorName, number>([
+      ["green", 25],
+      ["red", 100],
+    ]);
+    const record = toChipValuesRecord(values);
+    expect(record).toEqual({ red: 100, green: 25 });
+    expect(Object.keys(record)).toEqual(["red", "green"]);
   });
 });
 
