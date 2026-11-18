@@ -116,7 +116,7 @@ Web アプリの作業では, 次のことをしない.
 - 決めた技術 (言語, フレームワーク, DB など) を勝手に変えない.
 - 検査を飛ばさない. `git commit --no-verify` や, lint・型検査を黙らせる注記 (`@ts-ignore`, `eslint-disable` など) を使わない.
   テストを変えることは許すが, 検査そのものを外すとコミット前の関門がなくなるため.
-- 秘密情報 (API キー, Cloudflare などのトークン, `.env`) をコミットしない. 履歴に残ると消せないため.
+- 秘密情報と個人情報をコミットしない. 何を上げないかは [../security.md](../security.md) にある.
 - デプロイや, 本番の DB の変更・削除は, 人に指示されたときだけ行う. 取り返しがつかないため.
 - `git push` をしない. push は人が行う.
 - git の履歴を書き換えない (`git reset --hard`, `git rebase`, `git commit --amend`, `git push --force` など).

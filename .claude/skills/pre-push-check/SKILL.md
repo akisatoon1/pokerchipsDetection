@@ -7,6 +7,7 @@ description: GitHub に push する前に, まだ push していないコミッ�
 
 まだ push していないコミットに, GitHub に上げてはいけないものが入っていないかを調べて, 人に報告する.
 push は人が行うので, このスキルは調べて報告するところまでにする.
+何を上げないかの規則は `docs/development/security.md` にある.
 
 ## 見る範囲
 

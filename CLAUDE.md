@@ -49,6 +49,12 @@ C++, Kotlin, TypeScript のどのコードを書く・直すときも, 次の言
 
 @docs/development/code-rules.md
 
+### セキュリティと個人情報
+
+コード, 文書, 設定, 画像のどれを足す・直すときも, 次の規則に従う. 分野に固有の規則は, 分野の地図にある.
+
+@docs/development/security.md
+
 ## 文書の地図
 
 @docs/README.md

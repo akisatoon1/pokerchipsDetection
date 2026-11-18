@@ -451,3 +451,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `INTERNET` の権限, `configChanges`, `BuildConfig.WEB_BASE_URL`, debug のビルドで平文の http を許す設定を消した.
 - 依存から `androidx.webkit` 1.17.1, `androidx.swiperefreshlayout` 1.2.0, テスト用の `org.json` 20260814 を外した.
 - Web から Android アプリ向けの連絡口 `web/src/client/app-bridge.ts` を消した. 「チップから入力」はいつも Web の検出画面を, 「URL をコピー」はいつもブラウザのコピーを使う.
+
+## 2026-11-18: セキュリティと個人情報の規則を, すべての分野の規則にする
+
+- `docs/development/security.md` を追加し, CLAUDE.md から読み込ませた. リポジトリを GitHub で公開している前提で,
+  上げないもの (秘密情報, 手元だけの設定, 手元の絶対パスや写真の位置情報などの個人情報), push の前の確認 (`pre-push-check`),
+  上げてしまったときの対処, 外から取るもの (版の固定, sha256 の確認, 脆弱性の検査), CI やデプロイのトークンの扱いを決めた.
+- `docs/development/web/security.md` は Web に固有の規則 (id とトークン, 権限の確認, 入力, XSS, 漏らさない, CORS, 大量のデータ) だけにした.
+  依存ライブラリの節は汎用の規則に移した. `docs/development/web/process.md` の秘密情報の項目は, 汎用の規則へのリンクにした.
