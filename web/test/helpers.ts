@@ -46,6 +46,7 @@ export async function createMatch(
       matchName: "金曜の会",
       initialPoints: 100,
       leaderName: "リーダー",
+      chipValues: { red: 100, blue: 500 },
       ...overrides,
     },
   });

@@ -7,6 +7,7 @@ const validBody = {
   matchName: "金曜の会",
   initialPoints: 100,
   leaderName: "リーダー",
+  chipValues: { red: 100, blue: 500 },
 };
 
 function postMatch(body: unknown) {
@@ -23,6 +24,7 @@ describe("マッチを作る", () => {
       name: "金曜の会",
       initialPoints: 100,
       leaderPlayerId: created.playerId,
+      chipValues: { red: 100, blue: 500 },
       isJoinOpen: true,
       canStartRound: false,
       players: [{ id: created.playerId, name: "リーダー" }],
@@ -143,6 +145,84 @@ describe("マッチを作る", () => {
       rawBody: "{",
     });
     expect(response.status).toBe(400);
+  });
+});
+
+describe("マッチを作るときに色ごとの点数を決める", () => {
+  async function chipValuesOf(matchId: string) {
+    const response = await send(`/api/matches/${matchId}`);
+    const match = await response.json<{
+      chipValues: Record<string, number>;
+    }>();
+    return match.chipValues;
+  }
+
+  it("入れた点数が色の一覧の順に返り, 入れていない色は返らない", async () => {
+    const created = await createMatch({
+      chipValues: { green: 25, gray: 1000, red: 100 },
+    });
+    const chipValues = await chipValuesOf(created.matchId);
+    expect(chipValues).toEqual({ red: 100, gray: 1000, green: 25 });
+    expect(Object.keys(chipValues)).toEqual(["red", "gray", "green"]);
+  });
+
+  it("1 色だけでも, 1 と 1,000,000,000 でも作れる", async () => {
+    for (const chipValues of [
+      { blue: 1 },
+      { black: 1_000_000_000 },
+      { red: 1, yellow: 1_000_000_000 },
+    ]) {
+      expect((await postMatch({ ...validBody, chipValues })).status).toBe(201);
+    }
+  });
+
+  it.each([
+    ["1 色もない", {}],
+    ["0", { red: 0 }],
+    ["1,000,000,001", { red: 1_000_000_001 }],
+    ["小数", { red: 1.5 }],
+    ["負の数", { red: -100 }],
+    ["文字列", { red: "100" }],
+    ["null", { red: null }],
+    ["知らない色", { red: 100, white: 100 }],
+    ["unknown の色", { red: 100, unknown: 100 }],
+  ])("点数が%sなら拒否する", async (_label, chipValues) => {
+    const response = await postMatch({ ...validBody, chipValues });
+    expect(response.status).toBe(400);
+  });
+
+  it("点数が対応でなければ拒否する", async () => {
+    for (const chipValues of [[100, 500], 100, "red", null]) {
+      expect((await postMatch({ ...validBody, chipValues })).status).toBe(400);
+    }
+  });
+
+  it("点数がなければ拒否する", async () => {
+    const response = await postMatch({
+      matchName: "金曜の会",
+      initialPoints: 100,
+      leaderName: "リーダー",
+    });
+    expect(response.status).toBe(400);
+  });
+
+  it("拒否したときはマッチを作らない", async () => {
+    const before = await env.DB.prepare(
+      "SELECT COUNT(*) AS count FROM matches",
+    ).first<{ count: number }>();
+    await postMatch({ ...validBody, chipValues: { red: 0 } });
+    const after = await env.DB.prepare(
+      "SELECT COUNT(*) AS count FROM matches",
+    ).first<{ count: number }>();
+    expect(after?.count).toBe(before?.count);
+  });
+
+  it("点数の表に行がないマッチ (この表より前に作ったもの) では, 空の点数が返る", async () => {
+    const created = await createMatch();
+    await env.DB.prepare("DELETE FROM match_chip_values WHERE match_id = ?")
+      .bind(created.matchId)
+      .run();
+    expect(await chipValuesOf(created.matchId)).toEqual({});
   });
 });
 

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { CHIP_COLOR_NAMES, validateChipValues } from "../../rules/chip-values";
 import { MAX_PLAYERS } from "../../rules/limits";
 import { normalizeMatchName, normalizePlayerName } from "../../rules/names";
 import { checkCanJoin, checkCanRemovePlayer } from "../../rules/players";
@@ -10,6 +11,7 @@ import {
   deleteMatchWithEverything,
   findMatch,
   insertMatchWithLeader,
+  listChipValues,
 } from "../db/matches";
 import {
   deletePlayerIfAllowed,
@@ -23,11 +25,15 @@ import { findRequestingPlayer } from "./auth";
 import { buildMatchView } from "./match-view";
 import { parseJsonBody } from "./request";
 
+// 色の名前から点数への対応. 知らない色の名前は拒否する. 点数の範囲は規則で確かめる.
+const chipValuesBody = z.partialRecord(z.enum(CHIP_COLOR_NAMES), z.number());
+
 const createMatchBody = z
   .object({
     matchName: z.string(),
     initialPoints: z.number(),
     leaderName: z.string(),
+    chipValues: chipValuesBody,
   })
   .strict();
 
@@ -59,6 +65,10 @@ matchesApi.post("/", async (c) => {
   if (!leaderName.ok) {
     return c.json({ error: leaderName.reason }, 400);
   }
+  const chipValues = validateChipValues(body.value.chipValues);
+  if (!chipValues.ok) {
+    return c.json({ error: chipValues.reason }, 400);
+  }
 
   const matchId = createRandomId();
   const playerId = createRandomId();
@@ -70,6 +80,7 @@ matchesApi.post("/", async (c) => {
     leaderPlayerId: playerId,
     leaderName: leaderName.value,
     leaderTokenHash: await hashToken(token),
+    chipValues: chipValues.value,
   });
   return c.json({ matchId, playerId, token }, 201);
 });
@@ -81,12 +92,15 @@ matchesApi.get("/:matchId", async (c) => {
   if (match === null) {
     return c.json({ error: "マッチが見つかりません" }, 404);
   }
-  const [players, rounds, entries] = await Promise.all([
+  const [players, rounds, entries, chipValues] = await Promise.all([
     listPlayers(c.env.DB, matchId),
     listRounds(c.env.DB, matchId),
     listEntries(c.env.DB, matchId),
+    listChipValues(c.env.DB, matchId),
   ]);
-  return c.json(buildMatchView({ match, players, rounds, entries }));
+  return c.json(
+    buildMatchView({ match, players, rounds, entries, chipValues }),
+  );
 });
 
 // マッチを削除する. リーダーだけができる. 入力中のラウンドがあっても消せ, 元に戻せない (docs/web/app.md).
