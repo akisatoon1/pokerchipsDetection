@@ -136,33 +136,41 @@ push も, migration のワークフローの起動も, 人だけが行う ([deve
 
 ### 最初の 1 回
 
-1. Cloudflare のアカウントを作り (無料プラン), 手元でログインする.
+手元の `wrangler` にはログインしない (`wrangler login` を使わない). Cloudflare の操作は画面で行い, 本番に触るのは CI だけにする.
+手元に本番の権限を残さないため.
 
-   ```sh
-   cd web
-   npx wrangler login
-   ```
-
-2. 本番の D1 を作る. 出てきた `database_id` を `web/wrangler.toml` に入れてコミットする (秘密ではない).
-
-   ```sh
-   npx wrangler d1 create pokerchip-score
-   ```
-
-3. Cloudflare の画面 (My Profile → API Tokens → Create Token → Custom token) で API トークンを作る.
+1. Cloudflare のアカウントを作る (無料プラン).
+2. 画面の Workers & Pages を開き, workers.dev のサブドメインを決める.
+   URL (`https://pokerchip-score.<サブドメイン>.workers.dev`) として公開されるので, 本名など個人が分かる名前にしない.
+3. 画面の Storage & databases → D1 → Create で, 名前を `pokerchip-score` にして D1 を作る.
+   表示される Database ID を `web/wrangler.toml` の `database_id` に入れてコミットする (秘密ではない).
+4. 画面の My Profile → API Tokens → Create Token → Custom token で, CI 用の API トークンを作る.
    - 権限: Account の「Workers Scripts: Edit」と「D1: Edit」だけ.
    - 対象 (Account Resources): このアカウントだけ.
-4. GitHub のリポジトリの Settings → Secrets and variables → Actions に, 次の 2 つを登録する.
-   - `CLOUDFLARE_API_TOKEN`: 3 で作ったトークン.
-   - `CLOUDFLARE_ACCOUNT_ID`: アカウントの id (`npx wrangler whoami` で出る).
-5. 検出器の Release を作り, `web/detector.lock` をコミットする ([../logic/usage.md](../logic/usage.md) の「Web に出す」).
-6. push する. デプロイのワークフローは「未適用の migration があります」で止まる (本番の D1 はまだ空のため).
-7. GitHub の Actions → migrate → Run workflow で migration を当てる.
-8. 止まったデプロイのワークフローを Re-run jobs で再実行する. 最後の手順のログに URL (`https://pokerchip-score.<サブドメイン>.workers.dev`) が出る.
-9. ブラウザで, マッチを作る, 別のブラウザで参加する, `/count` でチップを検出する, を確かめる.
+   - トークンは作ったときに一度だけ表示される. 5 で登録したら, ほかの場所に残さない.
+5. GitHub のリポジトリの Settings → Secrets and variables → Actions → New repository secret で, 次の 2 つを登録する.
+   - `CLOUDFLARE_API_TOKEN`: 4 で作ったトークン.
+   - `CLOUDFLARE_ACCOUNT_ID`: アカウントの id (画面のアカウントのホームか Workers & Pages の右側にある Account ID).
+6. 検出器の Release を作り, `web/detector.lock` をコミットする ([../logic/usage.md](../logic/usage.md) の「Web に出す」).
+7. push する. デプロイのワークフローは「未適用の migration があります」で止まる (本番の D1 はまだ空のため).
+8. GitHub の Actions → migrate → Run workflow で migration を当てる. migrate は push して GitHub に載ってから起動できる.
+9. 止まったデプロイのワークフローを Re-run jobs で再実行する. 最後の手順のログに URL が出る.
+10. ブラウザで, マッチを作る, 別のブラウザで参加する, `/count` でチップを検出する, を確かめる.
 
-- 最初のデプロイが権限のエラー (Worker を作れない) で止まったら, 手元で 1 回だけ `npm run build && npx wrangler deploy` を流して Worker を作る.
-  Worker を新しく作るには, 3 のトークンより強い権限が要ることがあるため. 2 回目からは CI でデプロイできる.
+- 最初のデプロイが権限のエラー (Worker を作れない) で止まったら, 下の「手元から本番に触るとき」の形で, 1 回だけ手元からデプロイして Worker を作る.
+  Worker を新しく作るには, 4 のトークンより強い権限が要ることがあるため. 2 回目からは CI でデプロイできる.
+
+### 手元から本番に触るとき
+
+戻すとき (下の「戻し方」) や, 最初のデプロイを手元で行うときだけ, 期限付き (例: 1 日) の API トークンを画面で別に作り, 環境変数で渡す.
+使い終わったら画面で消す. CI 用のトークンを手元に写して使い回さない.
+
+```sh
+cd web
+export CLOUDFLARE_API_TOKEN=<そのときだけのトークン>
+export CLOUDFLARE_ACCOUNT_ID=<アカウントの id>
+npm run build && npx wrangler deploy     # 例: 最初のデプロイ
+```
 
 ### ふだんの流れ
 
@@ -190,9 +198,10 @@ core, `wasm/`, モデルを変えたときだけ要る. 手順は [../logic/usag
 
 ### 戻し方
 
-- コード: 前のコミットに戻すコミットを作って push する. 急ぐときは手元で `cd web && npx wrangler rollback` (直前の版に戻す).
+- コード: 前のコミットに戻すコミットを作って push する. 急ぐときは「手元から本番に触るとき」の形でトークンを渡し, `npx wrangler rollback` (直前の版に戻す) を流す.
   `wrangler rollback` で戻しても, 次の push で main の内容が出る.
 - DB: migration のワークフローのログに出た bookmark で, 当てる前に戻す. 無料プランで戻せるのは 7 日前まで.
+  「手元から本番に触るとき」の形でトークンを渡してから流す.
 
   ```sh
   cd web
