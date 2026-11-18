@@ -12,6 +12,7 @@ add_library(pokerchip_core STATIC
   src/counting.cpp
   src/detector.cpp
   src/pipeline.cpp
+  src/tilt.cpp
   src/visualize.cpp
 )
 target_include_directories(pokerchip_core PUBLIC include)
