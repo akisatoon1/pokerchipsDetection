@@ -1,3 +1,4 @@
+import { chipValuesFromRecord } from "../../rules/chip-values";
 import { MAX_POINTS } from "../../rules/limits";
 import {
   closeRound,
@@ -52,7 +53,7 @@ function renderRound(
     }),
   ];
   if (isOpen && membership !== null) {
-    children.push(renderEntryForm(round, membership, onChanged));
+    children.push(renderEntryForm(match, round, membership, onChanged));
   }
   children.push(renderScoreTable(round, namesById));
   if (round.hasTotalMismatch) {
@@ -217,6 +218,7 @@ export function formatDelta(delta: number): string {
 }
 
 function renderEntryForm(
+  match: MatchView,
   round: RoundView,
   membership: Membership,
   onChanged: () => void,
@@ -248,7 +250,7 @@ function renderEntryForm(
   const form = element("form", { className: "entry-form" }, [
     labeledField("あなたの持ち点", points),
   ]);
-  form.append(renderChipInputControl(points), submit, message);
+  form.append(renderChipInputControl(match, points), submit, message);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     submit.disabled = true;
@@ -272,12 +274,22 @@ function renderEntryForm(
 
 // 「チップから入力」のボタン. 求めた持ち点を欄に入れるだけで, 送らない.
 // 検出は間違うことがあるので, 人が確かめてから「保存する」を押すため.
-function renderChipInputControl(points: HTMLInputElement): HTMLElement {
+// 押したらマッチを読み直し, 最新の点数で検出画面を開く. リーダーが点数を変えても
+// 他の人の画面はポーリングしないので, 開いたままの画面が古い点数で換算しないようにするため (docs/web/app.md).
+function renderChipInputControl(
+  match: MatchView,
+  points: HTMLInputElement,
+): HTMLElement {
   const status = element("p", { attributes: { role: "status" } });
   const button = element("button", {
     text: "チップから入力",
     attributes: { type: "button" },
   });
+  if (chipValuesFromRecord(match.chipValues).size === 0) {
+    button.disabled = true;
+    status.textContent = NO_CHIP_VALUES_MESSAGE;
+    return element("div", { className: "chip-input" }, [button, status]);
+  }
   const fill = (chipPoints: number): void => {
     points.value = String(chipPoints);
     status.textContent =
@@ -285,7 +297,23 @@ function renderChipInputControl(points: HTMLInputElement): HTMLElement {
   };
   button.addEventListener("click", () => {
     status.textContent = "";
-    openChipInputDialog(fill);
+    button.disabled = true;
+    void getMatch(match.id).then((result) => {
+      button.disabled = false;
+      if (!result.ok) {
+        status.textContent = result.error;
+        return;
+      }
+      const values = chipValuesFromRecord(result.value.chipValues);
+      if (values.size === 0) {
+        status.textContent = NO_CHIP_VALUES_MESSAGE;
+        return;
+      }
+      openChipInputDialog(values, fill);
+    });
   });
   return element("div", { className: "chip-input" }, [button, status]);
 }
+
+const NO_CHIP_VALUES_MESSAGE =
+  "チップの点数がまだ決まっていないので, チップから入力できません. リーダーが点数を決めると使えます.";
