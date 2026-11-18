@@ -132,6 +132,7 @@ export interface MatchView {
   id: string;
   isJoinOpen: boolean;
   canStartRound: boolean;
+  chipValues: Record<string, number>;
   players: { id: string; name: string }[];
   rounds: RoundView[];
   totals: { playerId: string; total: number }[];
@@ -169,6 +170,18 @@ export function renamePlayer(
   return send(`/api/matches/${matchId}/players/${playerId}`, {
     method: "PATCH",
     body: { name },
+    ...(token === undefined ? {} : { token }),
+  });
+}
+
+export function updateChipValues(
+  matchId: string,
+  chipValues: unknown,
+  token?: string,
+) {
+  return send(`/api/matches/${matchId}/chip-values`, {
+    method: "PUT",
+    body: { chipValues },
     ...(token === undefined ? {} : { token }),
   });
 }
