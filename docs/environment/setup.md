@@ -142,7 +142,18 @@ make android-deps    # = scripts/fetch_android_deps.sh
    Gradle の同期が走り, `android/local.properties` (SDK の場所) が自動で作られる.
 3. 実機かエミュレータ (Android 15 以上, x86_64 のシステムイメージ) を選んで Run.
 
-コマンドラインでビルドする場合:
+Android Studio を開かずに, 繋いだ実機に入れて起動するには, リポジトリのルートで次を実行する.
+「Run」と同じく, ビルド, インストール, 起動までを行う (`scripts/run_android.sh`).
+
+```
+make android-run
+```
+
+- `JAVA_HOME` が空なら `/usr/local/android-studio/jbr` を使う. 違う場所なら `JAVA_HOME` を入れてから実行する.
+- `adb` は PATH から探し, なければ `android/local.properties` の `sdk.dir` の下を使う.
+- 端末が複数繋がっているときは, `ANDROID_SERIAL=<adb devices の番号> make android-run` で 1 台を選ぶ.
+
+コマンドラインでビルドだけする場合:
 
 ```
 cd android

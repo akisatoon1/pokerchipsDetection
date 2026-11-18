@@ -218,3 +218,4 @@ make check         # 整形の確認 (format-check) と clang-tidy の検査. �
 | `make model PT=...` | `.pt` を ONNX に変換 (環境構築. [setup.md](../environment/setup.md) の 6) |
 | `make android-deps` | OpenCV Android SDK と NDK の取得 ([setup.md](../environment/setup.md) の 7) |
 | `make android-native` | core + JNI を NDK でビルドできるかの確認 |
+| `make android-run` | アプリをビルドして USB で繋いだ端末に入れ, 起動する ([setup.md](../environment/setup.md) の 9) |
