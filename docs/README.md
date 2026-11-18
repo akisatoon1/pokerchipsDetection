@@ -9,7 +9,7 @@
 2. その分野の地図の「作業の前に必ず読む」と「作業の前に読む」を, 作業を始める前に Read で読む. 読み終えるまでコードを書かない.
 3. 「要るときに読む」は, その話題に触れたときに読む.
 
-すべての作業で守るルール (返答の言語, コミット, コードの書き方, 作業記録) は CLAUDE.md が読み込み済みなので, 読み直さなくてよい.
+すべての作業で守るルール (返答の言語, コミット, コードの書き方, セキュリティと個人情報, 作業記録) は CLAUDE.md が読み込み済みなので, 読み直さなくてよい.
 
 ## 文書の置き方
 
@@ -37,6 +37,7 @@
 | [worklog.md](worklog.md) | 環境やファイル構造を変えたとき (記録を足す) | 作業記録 |
 | [development/commit.md](development/commit.md) | (CLAUDE.md が読み込み済み) | コミットの決まり |
 | [development/code-rules.md](development/code-rules.md) | (CLAUDE.md が読み込み済み) | 言語によらないコードの書き方 |
+| [development/security.md](development/security.md) | (CLAUDE.md が読み込み済み) | セキュリティと個人情報 (上げないもの, push の前の確認, 外から取るもの) |
 
 ## 研究開発
 

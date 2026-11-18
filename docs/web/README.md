@@ -6,7 +6,7 @@
 
 - [../development/web/process.md](../development/web/process.md) 開発の流れ. 計画を示して承認を得るまでコードを書かない
 - [../development/web/layers.md](../development/web/layers.md) 層の分け方 (画面, API, 規則, DB アクセス)
-- [../development/web/security.md](../development/web/security.md) セキュリティの規則
+- [../development/web/security.md](../development/web/security.md) Web に固有のセキュリティの規則 (id とトークン, 権限の確認, XSS など)
 - [../development/web/typescript.md](../development/web/typescript.md) TypeScript の書き方と検査のコマンド
 
 ## 作業の前に読む (文脈)
