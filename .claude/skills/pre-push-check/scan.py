@@ -49,7 +49,8 @@ TEXT_RULES = [
     (r"\bAKIA[0-9A-Z]{16}\b", "AWS のアクセスキー", "NG"),
     (r"\bAIza[0-9A-Za-z_-]{35}\b", "Google の API キー", "NG"),
     (r"\bxox[abprs]-[A-Za-z0-9-]{10,}", "Slack のトークン", "NG"),
-    (r"\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CLOUDFLARE_API_KEY)\s*[=:]\s*\S{8,}", "Cloudflare のトークン", "NG"),
+    # 値が < や $ で始まるものは, 文書の例 (<トークン>) や変数の参照 (${{ secrets... }}) なので当てない.
+    (r"\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CLOUDFLARE_API_KEY)\s*[=:]\s*(?![<$])\S{8,}", "Cloudflare のトークン", "NG"),
     (
         r"(?i)\b(api[_-]?key|secret|password|passwd|access[_-]?token|auth[_-]?token)\b[\"']?\s*[:=]\s*[\"'][^\"'\s]{12,}[\"']",
         "秘密情報らしい代入",
