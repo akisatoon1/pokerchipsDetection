@@ -1,5 +1,5 @@
 # main への push で, 点数計算アプリ (web/) を Cloudflare にデプロイする.
-# 流れと理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/running.md の「デプロイ」.
+# 流れと理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/deploy.md.
 #
 # 本番の D1 の migration はここでは当てない. 未適用のものがあれば止まるので,
 # migrate のワークフローを手で起動してから, このワークフローを再実行する.

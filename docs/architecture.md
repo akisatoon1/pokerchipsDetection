@@ -240,7 +240,7 @@ iPhone でも Android でも, アプリを入れずにブラウザでチップ�
 ### 11. デプロイは GitHub Actions で行い, 検出器は Release から取る
 
 点数計算アプリ (`web/`) は, Cloudflare Workers (無料プラン) の `pokerchip-score.<サブドメイン>.workers.dev` に出す.
-人が main に push すると, GitHub Actions がデプロイする. 手順は [web/running.md](web/running.md) の「デプロイ」にある.
+人が main に push すると, GitHub Actions がデプロイする. 手順は [web/deploy.md](web/deploy.md) にある.
 
 ```
 人が手元で: build_wasm.sh → compare_wasm_cli.sh → release_detector.sh ─→ GitHub Release (検出器の 3 ファイル)

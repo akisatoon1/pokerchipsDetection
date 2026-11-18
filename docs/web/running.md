@@ -2,7 +2,7 @@
 
 点数計算の Web アプリ (`web/`) を, 手元の Linux で起動する手順をまとめる.
 API, 画面, DB (D1) はすべてローカルで動く. Cloudflare のアカウントは要らない.
-本番 (Cloudflare) へのデプロイは, 最後の「デプロイ」にある.
+本番 (Cloudflare) へのデプロイは [deploy.md](deploy.md) にある.
 
 ## 1. Node.js を入れる (最初の 1 回)
 
@@ -130,87 +130,4 @@ npm run check
 
 ## デプロイ
 
-人が main に push すると, GitHub Actions (`.github/workflows/deploy.yml`) が Cloudflare Workers にデプロイする.
-仕組みと理由は [architecture.md](../architecture.md) の「11. デプロイ」にある.
-push も, migration のワークフローの起動も, 人だけが行う ([development/web/process.md](../development/web/process.md)).
-
-### 最初の 1 回
-
-手元の `wrangler` にはログインしない (`wrangler login` を使わない). Cloudflare の操作は画面で行い, 本番に触るのは CI だけにする.
-手元に本番の権限を残さないため.
-
-1. Cloudflare のアカウントを作る (無料プラン).
-2. 画面の Workers & Pages を開き, workers.dev のサブドメインを決める.
-   URL (`https://pokerchip-score.<サブドメイン>.workers.dev`) として公開されるので, 本名など個人が分かる名前にしない.
-3. 画面の Storage & databases → D1 → Create で, 名前を `pokerchip-score` にして D1 を作る.
-   表示される Database ID を `web/wrangler.toml` の `database_id` に入れてコミットする (秘密ではない).
-4. 画面の My Profile → API Tokens → Create Token → Custom token で, CI 用の API トークンを作る.
-   - 権限: Account の「Workers Scripts: Edit」と「D1: Edit」だけ.
-   - 対象 (Account Resources): このアカウントだけ.
-   - トークンは作ったときに一度だけ表示される. 5 で登録したら, ほかの場所に残さない.
-5. GitHub のリポジトリの Settings → Secrets and variables → Actions → New repository secret で, 次の 2 つを登録する.
-   - `CLOUDFLARE_API_TOKEN`: 4 で作ったトークン.
-   - `CLOUDFLARE_ACCOUNT_ID`: アカウントの id (画面のアカウントのホームか Workers & Pages の右側にある Account ID).
-6. 検出器の Release を作り, `web/detector.lock` をコミットする ([../logic/usage.md](../logic/usage.md) の「Web に出す」).
-7. push する. デプロイのワークフローは「未適用の migration があります」で止まる (本番の D1 はまだ空のため).
-8. GitHub の Actions → migrate → Run workflow で migration を当てる. migrate は push して GitHub に載ってから起動できる.
-9. 止まったデプロイのワークフローを Re-run jobs で再実行する. 最後の手順のログに URL が出る.
-10. ブラウザで, マッチを作る, 別のブラウザで参加する, `/count` でチップを検出する, を確かめる.
-
-- 最初のデプロイが権限のエラー (Worker を作れない) で止まったら, 下の「手元から本番に触るとき」の形で, 1 回だけ手元からデプロイして Worker を作る.
-  Worker を新しく作るには, 4 のトークンより強い権限が要ることがあるため. 2 回目からは CI でデプロイできる.
-
-### 手元から本番に触るとき
-
-戻すとき (下の「戻し方」) や, 最初のデプロイを手元で行うときだけ, 期限付き (例: 1 日) の API トークンを画面で別に作り, 環境変数で渡す.
-使い終わったら画面で消す. CI 用のトークンを手元に写して使い回さない.
-
-```sh
-cd web
-export CLOUDFLARE_API_TOKEN=<そのときだけのトークン>
-export CLOUDFLARE_ACCOUNT_ID=<アカウントの id>
-npm run build && npx wrangler deploy     # 例: 最初のデプロイ
-```
-
-### ふだんの流れ
-
-`web/`, `scripts/fetch_detector.sh`, `deploy.yml` のどれかを変えたコミットを push すると, デプロイされる.
-C++ や文書だけのコミットではデプロイされない.
-
-デプロイのワークフローは, 次のどれかで止まり, そのときはデプロイしない.
-
-- `npm run check` が通らない.
-- 検出器の sha256 が `web/detector.lock` と合わない.
-- 本番の D1 に未適用の migration がある.
-
-### migration を足したとき
-
-1. migration を足したコミットを push する. デプロイのワークフローは「未適用の migration があります」で止まる.
-2. Actions → migrate → Run workflow で当てる. ログの最初に, 当てる前の戻し先 (Time Travel の bookmark) が出る.
-3. 止まったデプロイのワークフローを再実行する.
-
-migration は, 古いコードのまま当てても壊れない形 (表や列を足すだけ) にする. 消す・名前を変えるときは, コードを先に出してから別の migration で消す.
-
-### 検出器を出し直すとき
-
-core, `wasm/`, モデルを変えたときだけ要る. 手順は [../logic/usage.md](../logic/usage.md) の「Web に出す」.
-`web/detector.lock` を変えたコミットを push すると, その検出器でデプロイされる.
-
-### 戻し方
-
-- コード: 前のコミットに戻すコミットを作って push する. 急ぐときは「手元から本番に触るとき」の形でトークンを渡し, `npx wrangler rollback` (直前の版に戻す) を流す.
-  `wrangler rollback` で戻しても, 次の push で main の内容が出る.
-- DB: migration のワークフローのログに出た bookmark で, 当てる前に戻す. 無料プランで戻せるのは 7 日前まで.
-  「手元から本番に触るとき」の形でトークンを渡してから流す.
-
-  ```sh
-  cd web
-  npx wrangler d1 time-travel restore DB --bookmark=<bookmark>
-  ```
-
-  戻した時点より後に入った持ち点などは消える. 人が判断してから行う.
-
-### 本番のログ
-
-Cloudflare の画面の Workers & Pages → pokerchip-score → Logs で見る (Workers Logs. 無料プランでは 3 日分).
-「サーバーで問題が起きました」が出たら, ここにエラーの名前と内容が出る (トークンは出さない).
+本番 (Cloudflare) へのデプロイ, 検出器の Release の作り方, 戻し方は [deploy.md](deploy.md) にある.

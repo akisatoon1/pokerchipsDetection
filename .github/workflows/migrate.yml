@@ -1,6 +1,6 @@
 # 本番の D1 に, まだ当てていない migration (web/migrations/) を当てる.
 # 人が GitHub の Actions の画面から手で起動したときだけ動く. 本番の DB を変えるのは人の指示のときだけという決まりのため.
-# 理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/running.md の「デプロイ」.
+# 理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/deploy.md.
 
 name: migrate
 

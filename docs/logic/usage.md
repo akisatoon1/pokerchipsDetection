@@ -188,19 +188,8 @@ functional_tests/compare_wasm_cli.sh testimages/v1/yoko/stack/multicolor_jpg/IMG
 
 ### Web に出す
 
-デプロイの CI は検出器をビルドせず, GitHub Release から取ってくる (理由は [architecture.md](../architecture.md) の「11. デプロイ」).
-core, `wasm/`, モデルを変えて Web に出すときは, 次の順に行う.
-
-```
-scripts/build_wasm.sh                     # ビルドする
-functional_tests/compare_wasm_cli.sh      # CLI と結果が同じかを確かめる
-scripts/release_detector.sh               # GitHub Release を作り, web/detector.lock を書き換える (gh が要る)
-```
-
-- `web/detector.lock` をコミットして push すると, 次のデプロイでその検出器が出る.
-- `release_detector.sh` は, `core/` か `wasm/` に未コミットの変更があると止まる. Release にビルドしたコミットを書くため.
-- Release は公開される. 置くのは, デプロイしたサイトから誰でも取れるものと同じ 3 ファイル (`.js`, `.wasm`, モデル) だけ.
-- 手元で `scripts/build_wasm.sh` の代わりに `scripts/fetch_detector.sh` を流すと, `web/detector.lock` の検出器を取ってきて置く.
+デプロイの CI は検出器をビルドせず, GitHub Release から取ってくる. core, `wasm/`, モデルを変えて Web に出すときは,
+手元でビルドして Release を作る. 手順は [../web/deploy.md](../web/deploy.md) の「検出器の Release を作る」にある.
 
 ## コードの整形と検査
 
