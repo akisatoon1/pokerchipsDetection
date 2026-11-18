@@ -488,3 +488,16 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   ふだんの流れ, migration を足したとき, 戻し方, うまくいかないときをまとめた.
 - `docs/web/running.md` の「デプロイ」と `docs/logic/usage.md` の「Web に出す」は, `deploy.md` へのリンクにした. 手順を 1 か所に置くため.
 - 最初の検出器の Release `detector-20261118-5460ef4` を作り, `web/detector.lock` に入れた.
+
+## 2026-11-18: 見下ろし角の推定を core に入れる
+
+仕組みと理由は `docs/architecture.md` の「12. 見下ろし角を推定し, 角度が大きい写真は数えない」.
+
+- `core/include/pokerchip/tilt.hpp`, `core/src/tilt.cpp` を足した. 見下ろし角の推定と, 合わせ目の弧を水平に戻す処理.
+- `core/src/working_scale.hpp` を足した. 角度の推定と計数で使う, 解析用の縮小の決まり (core の中だけで使う).
+- `core/src/counting.cpp` の数え方を, 角度を使う方法に置き換えた. `countChips` の引数が `(roi)` から `(bgr, box, tilt)` に変わった.
+- `toJson` の JSON に `status` と `tilt` を足した. CLI に `--features` を足した.
+- `pyscript/fit_count_model.py` を足した. 見当の式の係数を当てはめ, 1 スタック抜きで評価する.
+- `tests/test_tilt.cpp` と, 人工の弧の画像を作る `tests/arc_stack.hpp` を足した.
+- Android に `SeamArc.kt` を足し, 確認画像で合わせ目を弧で描き, 角度が大きすぎるスタックを知らせるようにした.
+

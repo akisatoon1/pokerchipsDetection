@@ -40,6 +40,7 @@ make run ARGS="[オプション] <画像のパス>"     # ビルドしてから�
 | `--out PATH` | デバッグ画像をファイルに保存する. 省略時は画面に表示する (GUI 必須) |
 | `--json` | 結果を JSON でも出力する (Android と同じ形式) |
 | `--lab` | チップごとの代表色 (照明を補正したあとの Lab) も出力する. 色の基準色を作り直すときと, 色の誤りを調べるとき用 |
+| `--features` | 見下ろし角と, 枚数の見当に使う特徴を `features {...}` の 1 行の JSON で出力する. 見当の式の係数を当てはめ直すとき用 |
 
 GUI なしでビルドした OpenCV では, `--out` を付けずに実行したり `--roi user` を使ったりするとエラーになる.
 
@@ -61,24 +62,28 @@ GUI なしでビルドした OpenCV では, `--out` を付けずに実行した�
 スタックごとに, 解析の途中の値と結果が出る. スタックが複数あるときは左のスタックから順に `[stack 0]`, `[stack 1]`, ... となる.
 
 ```
-[stack 0] ROI: [916 x 831 from (1089, 1246)], score = 0.969136
-  autocorrelation: period = 81 px
-  profile length = 831 px
-  detected seams = 11
-  chip count by peaks  = 10
-  chip colors (top -> bottom) = yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow, yellow
-{"stacks":[{"box":[1089,1246,916,831],"score":0.969136,"count":10,"peaks":[6,92,174,258,340,420,501,582,667,745,821],"colors":["yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow"]}]}
+[stack 0] ROI: [1074 x 1141 from (1187, 1855)], score = 0.986797
+  tilt: sin = 0.589784 (36.1417 deg)
+  period = 77.494 px
+  estimate by shape = 8.26841
+  detected seams = 9
+  chip count = 8
+  chip colors (top -> bottom) = black, black, black, black, black, black, black, black
+{"stacks":[{"box":[1187,1855,1074,1141],"score":0.986797,"status":"counted","tilt":0.589784,"count":8,"peaks":[553,621,684,755,831,913,995,1072,1138],"colors":["black","black","black","black","black","black","black","black"]}]}
 Saved debug view: debug.png
 ```
+
+`testimages/v2/single_color/PXL_20261028_125542723.jpg` を `--json --out debug.png` で解析した例.
 
 | 行 | 意味 |
 |---|---|
 | `ROI` | スタックの領域. 幅 x 高さ と左上の座標 (元画像のピクセル) |
 | `score` | YOLO の検出スコア. `--roi user` と `--rect` では 1 |
-| `autocorrelation: period` | 縦方向のプロファイルの自己相関から求めた, チップ 1 枚あたりの高さの目安 |
-| `profile length` | プロファイルの長さ (= ROI の高さ) |
-| `detected seams` | 見つかったチップの境目の数 |
-| `chip count by peaks` | 枚数 (境目と境目の間の数) |
+| `tilt` | 合わせ目の弧のたわみから推定した sin(見下ろし角) と, その角度 (0 が真横) |
+| `period` | 弧を水平に戻した信号の自己相関から求めた, チップ 1 枚あたりの高さ (元画像の px) |
+| `estimate by shape` | 箱の縦横比と周期から出した枚数の見当. ここから ±1 の中で, 上の面との境目がもっともらしい枚数を選ぶ |
+| `detected seams` | チップの境目の数 (一番上のチップの上の縁と, 一番下の縁を含む) |
+| `chip count` | 枚数 |
 | `chip colors` | 上のチップから順の色. `red`, `blue`, `yellow`, `black`, `gray`, `purple`, `green` のいずれか |
 | `chip lab` | `--lab` を付けたときだけ出る. 上のチップから順の代表色 `(L, a, b)` |
 
@@ -89,16 +94,19 @@ Saved debug view: debug.png
 | `stacks` | スタックの配列 (左から順) |
 | `box` | `[x, y, 幅, 高さ]` (元画像のピクセル) |
 | `score` | 検出スコア |
-| `count` | 枚数 |
-| `peaks` | チップの合わせ目の y. 元画像でなく ROI の上端からのピクセル. Android で区切り線を描くのに使う |
+| `status` | `counted` (数えた), `tilt_too_large` (見下ろし角が大きすぎて数えなかった), `count_failed` (数えられなかった) |
+| `tilt` | sin(見下ろし角). 0 が真横. 推定できなかったら `null` |
+| `count` | 枚数. 数えなかったら `null` |
+| `peaks` | チップの合わせ目の y. 元画像でなく ROI の上端からのピクセル. Android で区切り線を描くのに使う. 合わせ目は弧に写るので, ROI の横の中央での位置 |
 | `colors` | 上のチップから順の色 |
 
-枚数を数えられなかったスタックは `Failed to count chips.` と出て, デバッグ画像も作られない.
+見下ろし角が大きすぎる (sin が 0.6 以上. 約 37° 以上) スタックは `Tilt is too large to count` と出て, 数えない.
+枚数を数えられなかったスタックは `Failed to count chips.` と出る. どちらもデバッグ画像は作られない.
 スタックが 1 つも検出されなかった場合は `Error: ROI was not selected.` と出て終了コード 1 で終わる.
 
 ### デバッグ画像
 
-左から順に, ROI の切り出し, 縦方向のプロファイルのグラフ, チップごとの色のラベルが並ぶ.
+左から順に, ROI の切り出し (合わせ目の弧を水平に戻したもの), 合わせ目を追った縦の信号のグラフ, チップごとの色のラベルが並ぶ.
 横線 (オレンジ) が見つかった境目. 高さが 900px を超える場合は縮小される.
 
 `--out` でスタックが複数あるときは, ファイル名に番号が付く (`debug_0.png`, `debug_1.png`, ...).
@@ -156,9 +164,22 @@ make build
 `kReferences` の初期化子 (C++) を出力する. これを `core/src/color.cpp` に貼り付けてから `make test` で確かめる.
 検出できなかった画像や枚数が正解と合わない画像は, チップと色の対応が取れないので使わない (標準エラー出力に出る).
 
+### 枚数の見当の式を当てはめ直すとき
+
+チップセット, 検出器, 角度や特徴の測り方を変えたときは, 見当の式の係数 (`core/src/counting.cpp` の `kShape*`, `kPeriod*`) を当てはめ直す.
+
+```
+make build
+python3 pyscript/fit_count_model.py
+```
+
+`testimages/v2/single_color/answers.jsonl` の画像を CLI の `--features` で解析し, 数える角度 (sin 0.6 未満) の画像で係数を最小二乗で当てはめる.
+1 スタック抜き (LOSO) の正答率と, `counting.cpp` に貼る係数を出力する. 貼ってから `make build` し, もう一度流して CLI の正答率を確かめる.
+
 ### モデルを更新したとき
 
 モデルを更新したら基準を作り直し, テストが通ることを確かめてからコミットする.
+見当の式の係数は箱の形から決まるので, あわせて当てはめ直す (上の節).
 
 ```
 make model PT=path/to/new/best.pt
