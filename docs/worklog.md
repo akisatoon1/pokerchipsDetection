@@ -501,3 +501,9 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `tests/test_tilt.cpp` と, 人工の弧の画像を作る `tests/arc_stack.hpp` を足した.
 - Android に `SeamArc.kt` を足し, 確認画像で合わせ目を弧で描き, 角度が大きすぎるスタックを知らせるようにした.
 
+
+## 2026-11-18: Android Studio を開かずに実機で動かす make android-run を足す
+
+- `scripts/run_android.sh` と, それを呼ぶ Makefile の `android-run` を足した. USB で繋いだ端末に `./gradlew installDebug` で入れ,
+  `adb shell am start` で起動する. 端末がない・複数あるときは理由を出して止める.
+- `docs/environment/setup.md` の 9 と `docs/logic/usage.md` の Makefile の表に足した.

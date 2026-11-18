@@ -1,7 +1,7 @@
 # CMake のラッパー. よく使う操作を短く呼べるようにする.
 # ビルドの本体は CMakeLists.txt (Linux) と android/ (Android).
 
-.PHONY: all build run test opencv model android-deps android-native tidy tidy-fix format format-check check clean
+.PHONY: all build run test opencv model android-deps android-native android-run tidy tidy-fix format format-check check clean
 
 ARGS ?= testimages/yoko/stack/singlecolor/IMG_5587.jpg
 PT ?= best.pt
@@ -44,6 +44,10 @@ android-deps:
 # core + JNI が Android 向けにビルドできるかを確かめる (Android Studio 不要).
 android-native:
 	scripts/check_android_native.sh
+
+# アプリをビルドして USB で繋いだ端末に入れ, 起動する (Android Studio 不要).
+android-run:
+	scripts/run_android.sh
 
 #
 # コードスタイルとフォーマットについて
