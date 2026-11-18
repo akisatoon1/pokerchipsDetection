@@ -81,6 +81,28 @@ export async function listChipValues(
   return results;
 }
 
+/**
+ * マッチの色ごとの点数を, 1 つのトランザクションで入れ替える.
+ *
+ * 前の点数を消してから入れる. 途中で失敗して点数が消えたままにならないよう, batch でまとめる.
+ * @param db D1 のデータベース.
+ * @param matchId マッチの id. あることは確かめてあるもの.
+ * @param chipValues 新しい色ごとの点数. 検証済みのもの.
+ * @throws DB の制約に反したときや, DB に届かないとき.
+ */
+export async function replaceChipValues(
+  db: D1Database,
+  matchId: string,
+  chipValues: ChipValues,
+): Promise<void> {
+  await db.batch([
+    db
+      .prepare("DELETE FROM match_chip_values WHERE match_id = ?")
+      .bind(matchId),
+    ...insertChipValueStatements(db, matchId, chipValues),
+  ]);
+}
+
 function insertChipValueStatements(
   db: D1Database,
   matchId: string,
