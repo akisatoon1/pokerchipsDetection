@@ -175,6 +175,24 @@ def check_text(rev_range: str) -> list[Finding]:
     return findings
 
 
+def check_commit_emails(rev_range: str) -> list[Finding]:
+    """コミットの作者とコミッターのメールアドレスが, git に登録したもの (user.email) かを調べる.
+
+    コミットのメールアドレスは GitHub で誰でも読めるので, 公開してよいと決めた登録済みのものだけを許す.
+    登録がなければ, どのコミットも NG にする.
+    """
+    registered = try_git("config", "user.email")
+    out = git("log", "--format=%h%x00%ae%x00%ce", rev_range)
+    findings = []
+    for line in out.splitlines():
+        commit, *emails = line.split("\x00")
+        for role, email in zip(("作者", "コミッター"), emails):
+            if email != registered:
+                detail = f"{role}のアドレスが git に登録したものと違う: {mask(email)}"
+                findings.append(Finding("NG", "コミットのメールアドレス", commit, detail))
+    return findings
+
+
 def match_text(line: str, where: str) -> list[Finding]:
     """1 行を TEXT_RULES に当て, 当たったものを返す."""
     findings = []
@@ -258,7 +276,14 @@ def main() -> int:
 
     blobs = new_blobs(rev_range)
     image_findings, image_note = check_images(blobs)
-    findings = check_paths(rev_range) + check_text(rev_range) + check_large(blobs) + image_findings + check_ignored()
+    findings = (
+        check_paths(rev_range)
+        + check_text(rev_range)
+        + check_commit_emails(rev_range)
+        + check_large(blobs)
+        + image_findings
+        + check_ignored()
+    )
 
     if image_note:
         print(f"注意: {image_note}")

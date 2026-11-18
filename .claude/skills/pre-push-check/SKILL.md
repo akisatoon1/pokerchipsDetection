@@ -42,6 +42,7 @@ python3 -I .claude/skills/pre-push-check/scan.py
 |---|---|
 | 置いてはいけないファイル | `.env`, `.dev.vars`, 鍵, `local.properties`, `.claude/settings.local.json`, `node_modules/` や `build/` などのビルド結果, `*.onnx` などのモデル |
 | 秘密情報らしい文字列 | 追加した行とコミットメッセージにある API キー, トークン, 秘密鍵, 本番の D1 の id, 手元の絶対パス, メールアドレス |
+| コミットのメールアドレス | 作者とコミッターのアドレスが, git に登録したもの (`git config user.email`) と違えば NG |
 | 大きいファイル | 5 MB を超えるファイル. 50 MB を超えるものは NG (GitHub は 100 MB で拒否する) |
 | 画像の位置情報 | 新しく上がる画像の EXIF に GPS の情報があるか |
 | 無視するはずのファイル | `.gitignore` に当たるのに追跡しているファイル |
