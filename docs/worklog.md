@@ -465,3 +465,19 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `testimages/v1/` (画像 34 枚と正解の txt 2 つ) の追跡をやめた. 手元のファイルは残る.
   10 月 28 日に `.gitignore` を `testimages/*` (v2 の一部だけを戻す) に変えたあとも, それより前に入れた v1 が追跡されたままだったため.
 - push 済みの履歴には残る. 公開前に中身 (位置情報, 写っているもの) は確かめてあり, 問題はない.
+
+## 2026-11-18: GitHub Actions で Cloudflare にデプロイする
+
+計画は [web/plans/2026-11-18-deploy-cd.md](web/plans/2026-11-18-deploy-cd.md). 仕組みと理由は `docs/architecture.md` の「11. デプロイ」,
+手順は `docs/web/running.md` の「デプロイ」.
+
+- `.github/workflows/deploy.yml` を足した. main への push のうち `web/`, `scripts/fetch_detector.sh`, `deploy.yml` が変わったときに,
+  検出器を Release から取り, `npm run check` を通し, 本番の D1 に未適用の migration がないことを確かめてから `wrangler deploy` する.
+  action は SHA で固定した (`actions/checkout` v7.0.1, `actions/setup-node` v7.1.0).
+- `.github/workflows/migrate.yml` を足した. 人が手で起動したときだけ, 本番の D1 に migration を当てる.
+- `scripts/release_detector.sh` と `scripts/fetch_detector.sh` を足した. 検出器 (WASM とモデル) は手元でビルドして GitHub Release に置き,
+  CI は `web/detector.lock` (タグと sha256) のとおりに取ってくる. `web/detector.lock` は最初の Release を作るときにできる.
+- `web/wrangler.toml` で Workers Logs (`[observability]`) を有効にした.
+- `web/package.json` の `check` の `npm audit` を, 本番の依存だけで止め, 全体は表示だけにした.
+  開発の道具が使う picomatch に, 直った版のない ReDoS (GHSA-fc5q-39xc-vjpf) があるため.
+- GitHub CLI (`gh` 2.46.0) を, Ubuntu のパッケージで入れた (人が行った). Release を作るのに使う.

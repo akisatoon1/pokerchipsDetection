@@ -2,6 +2,7 @@
 
 点数計算の Web アプリ (`web/`) を, 手元の Linux で起動する手順をまとめる.
 API, 画面, DB (D1) はすべてローカルで動く. Cloudflare のアカウントは要らない.
+本番 (Cloudflare) へのデプロイは, 最後の「デプロイ」にある.
 
 ## 1. Node.js を入れる (最初の 1 回)
 
@@ -129,4 +130,78 @@ npm run check
 
 ## デプロイ
 
-本番 (Cloudflare) へのデプロイの手順は, まだ書いていない. デプロイは人に指示されたときだけ行う ([development/web/process.md](../development/web/process.md)).
+人が main に push すると, GitHub Actions (`.github/workflows/deploy.yml`) が Cloudflare Workers にデプロイする.
+仕組みと理由は [architecture.md](../architecture.md) の「11. デプロイ」にある.
+push も, migration のワークフローの起動も, 人だけが行う ([development/web/process.md](../development/web/process.md)).
+
+### 最初の 1 回
+
+1. Cloudflare のアカウントを作り (無料プラン), 手元でログインする.
+
+   ```sh
+   cd web
+   npx wrangler login
+   ```
+
+2. 本番の D1 を作る. 出てきた `database_id` を `web/wrangler.toml` に入れてコミットする (秘密ではない).
+
+   ```sh
+   npx wrangler d1 create pokerchip-score
+   ```
+
+3. Cloudflare の画面 (My Profile → API Tokens → Create Token → Custom token) で API トークンを作る.
+   - 権限: Account の「Workers Scripts: Edit」と「D1: Edit」だけ.
+   - 対象 (Account Resources): このアカウントだけ.
+4. GitHub のリポジトリの Settings → Secrets and variables → Actions に, 次の 2 つを登録する.
+   - `CLOUDFLARE_API_TOKEN`: 3 で作ったトークン.
+   - `CLOUDFLARE_ACCOUNT_ID`: アカウントの id (`npx wrangler whoami` で出る).
+5. 検出器の Release を作り, `web/detector.lock` をコミットする ([../logic/usage.md](../logic/usage.md) の「Web に出す」).
+6. push する. デプロイのワークフローは「未適用の migration があります」で止まる (本番の D1 はまだ空のため).
+7. GitHub の Actions → migrate → Run workflow で migration を当てる.
+8. 止まったデプロイのワークフローを Re-run jobs で再実行する. 最後の手順のログに URL (`https://pokerchip-score.<サブドメイン>.workers.dev`) が出る.
+9. ブラウザで, マッチを作る, 別のブラウザで参加する, `/count` でチップを検出する, を確かめる.
+
+- 最初のデプロイが権限のエラー (Worker を作れない) で止まったら, 手元で 1 回だけ `npm run build && npx wrangler deploy` を流して Worker を作る.
+  Worker を新しく作るには, 3 のトークンより強い権限が要ることがあるため. 2 回目からは CI でデプロイできる.
+
+### ふだんの流れ
+
+`web/`, `scripts/fetch_detector.sh`, `deploy.yml` のどれかを変えたコミットを push すると, デプロイされる.
+C++ や文書だけのコミットではデプロイされない.
+
+デプロイのワークフローは, 次のどれかで止まり, そのときはデプロイしない.
+
+- `npm run check` が通らない.
+- 検出器の sha256 が `web/detector.lock` と合わない.
+- 本番の D1 に未適用の migration がある.
+
+### migration を足したとき
+
+1. migration を足したコミットを push する. デプロイのワークフローは「未適用の migration があります」で止まる.
+2. Actions → migrate → Run workflow で当てる. ログの最初に, 当てる前の戻し先 (Time Travel の bookmark) が出る.
+3. 止まったデプロイのワークフローを再実行する.
+
+migration は, 古いコードのまま当てても壊れない形 (表や列を足すだけ) にする. 消す・名前を変えるときは, コードを先に出してから別の migration で消す.
+
+### 検出器を出し直すとき
+
+core, `wasm/`, モデルを変えたときだけ要る. 手順は [../logic/usage.md](../logic/usage.md) の「Web に出す」.
+`web/detector.lock` を変えたコミットを push すると, その検出器でデプロイされる.
+
+### 戻し方
+
+- コード: 前のコミットに戻すコミットを作って push する. 急ぐときは手元で `cd web && npx wrangler rollback` (直前の版に戻す).
+  `wrangler rollback` で戻しても, 次の push で main の内容が出る.
+- DB: migration のワークフローのログに出た bookmark で, 当てる前に戻す. 無料プランで戻せるのは 7 日前まで.
+
+  ```sh
+  cd web
+  npx wrangler d1 time-travel restore DB --bookmark=<bookmark>
+  ```
+
+  戻した時点より後に入った持ち点などは消える. 人が判断してから行う.
+
+### 本番のログ
+
+Cloudflare の画面の Workers & Pages → pokerchip-score → Logs で見る (Workers Logs. 無料プランでは 3 日分).
+「サーバーで問題が起きました」が出たら, ここにエラーの名前と内容が出る (トークンは出さない).
