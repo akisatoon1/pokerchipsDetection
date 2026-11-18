@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -33,7 +34,10 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.pokerchip.app.AnalysisResult
 import com.pokerchip.app.StackResult
+import com.pokerchip.app.StackStatus
 import com.pokerchip.app.chips.ChipColor
+import com.pokerchip.app.seamArcRise
+import com.pokerchip.app.tiltDegrees
 import kotlin.math.roundToInt
 
 /** 画像に検出したスタックの枠と枚数を重ねて表示する. */
@@ -63,7 +67,7 @@ fun ResultImage(bitmap: Bitmap, result: AnalysisResult?) {
                     )
                     drawText(
                         textMeasurer = textMeasurer,
-                        text = "#${i + 1}: ${s.count ?: "?"}枚",
+                        text = "#${i + 1}: ${shortCountLabel(s)}",
                         topLeft = Offset(topLeft.x, (topLeft.y - 22.dp.toPx()).coerceAtLeast(0f)),
                         style = TextStyle(
                             color = Color.White,
@@ -87,6 +91,13 @@ fun ResultSummary(bitmap: Bitmap, result: AnalysisResult) {
 
     val total = result.stacks.sumOf { it.count ?: 0 }
     Text("合計: ${total}枚", style = MaterialTheme.typography.titleLarge)
+    if (result.stacks.any { it.status == StackStatus.TILT_TOO_LARGE }) {
+        // 角度が大きい写真は誤った枚数になりやすいので, core は数えない (docs/architecture.md の 12).
+        Text(
+            "見下ろす角度が大きすぎるスタックは数えていません. もっと横から撮ってください.",
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
 
     result.stacks.forEachIndexed { i, s -> StackCheckView(bitmap, s, i) }
 }
@@ -111,10 +122,8 @@ private fun StackCheckView(bitmap: Bitmap, stack: StackResult, index: Int) {
     val viewHeight = (stack.y + stack.height + marginY).coerceAtMost(bitmap.height) - viewTop
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            "スタック #${index + 1}: ${stack.count?.let { "${it}枚" } ?: "数えられませんでした"}",
-            style = MaterialTheme.typography.titleMedium,
-        )
+        Text("スタック #${index + 1}: ${countLabel(stack)}", style = MaterialTheme.typography.titleMedium)
+        stack.tiltSin?.let { Text("見下ろす角度: 約${tiltDegrees(it).roundToInt()}°") }
         if (stack.colors.isNotEmpty()) {
             val breakdown = stack.colors.groupingBy { it }.eachCount()
                 .entries.sortedByDescending { it.value }
@@ -159,10 +168,15 @@ private fun StackCheckView(bitmap: Bitmap, stack: StackResult, index: Int) {
                     topLeft = Offset(labelLeft, 0f),
                     size = Size(labelWidth, size.height),
                 )
+                // 画像の上の線は, 合わせ目の写り方に合わせて弧にする. peaks は横の中央での位置.
                 val seamYs = stack.peaks.map { roiTop + it * scale }
+                val stroke = 1.5.dp.toPx()
                 for (y in seamYs) {
-                    val stroke = 1.5.dp.toPx()
-                    drawLine(SEAM_COLOR, Offset(roiLeft, y), Offset(roiLeft + roiWidth, y), stroke)
+                    drawPath(
+                        seamArcPath(roiLeft, roiWidth, y, stack.tiltSin ?: 0.0),
+                        SEAM_COLOR,
+                        style = Stroke(width = stroke),
+                    )
                     drawLine(SEAM_COLOR, Offset(labelLeft, y), Offset(labelLeft + labelWidth, y), stroke)
                 }
 
@@ -197,6 +211,42 @@ private fun StackCheckView(bitmap: Bitmap, stack: StackResult, index: Int) {
         }
     }
 }
+
+/** 全体画像の枠に添える, 短い枚数の表示. */
+private fun shortCountLabel(stack: StackResult): String = when (stack.status) {
+    StackStatus.COUNTED -> "${stack.count ?: "?"}枚"
+    StackStatus.TILT_TOO_LARGE -> "角度が大きい"
+    StackStatus.COUNT_FAILED -> "?"
+}
+
+/** 確認画像の見出しの, 枚数か数えなかった理由. */
+private fun countLabel(stack: StackResult): String = when (stack.status) {
+    StackStatus.COUNTED -> stack.count?.let { "${it}枚" } ?: "数えられませんでした"
+    StackStatus.TILT_TOO_LARGE -> "見下ろす角度が大きすぎて数えられません"
+    StackStatus.COUNT_FAILED -> "数えられませんでした"
+}
+
+/**
+ * 合わせ目の弧を, 折れ線で近似した Path にする.
+ *
+ * @param left スタックの左端 (表示の座標).
+ * @param width スタックの幅 (表示の座標).
+ * @param centerY 横の中央での合わせ目の y (表示の座標).
+ * @param tiltSin sin(見下ろす角度).
+ */
+private fun seamArcPath(left: Float, width: Float, centerY: Float, tiltSin: Double): Path {
+    val half = width / 2f
+    val path = Path()
+    for (i in 0..ARC_SEGMENTS) {
+        val x = left + width * i / ARC_SEGMENTS
+        val y = centerY - seamArcRise(x - (left + half), half, tiltSin)
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    return path
+}
+
+/** 合わせ目の弧を近似する折れ線の区間の数. 確認画像の大きさで滑らかに見える数. */
+private const val ARC_SEGMENTS = 32
 
 /** 確認画像で ROI の外に広げる量. ROI の幅・高さに対する割合. */
 private const val DISPLAY_MARGIN = 0.2f
