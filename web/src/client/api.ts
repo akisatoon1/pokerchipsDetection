@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { CHIP_COLOR_NAMES, type ChipValuesRecord } from "../rules/chip-values";
+import { MAX_POINTS } from "../rules/limits";
 
 // API を呼ぶ処理. 応答は zod で形を確かめてから使う.
 
@@ -24,6 +26,11 @@ const matchView = z.object({
   name: z.string(),
   initialPoints: z.number(),
   leaderPlayerId: z.string(),
+  // 色ごとの点数. 決めていない (この仕様より前に作った) マッチなら空.
+  chipValues: z.partialRecord(
+    z.enum(CHIP_COLOR_NAMES),
+    z.number().int().min(1).max(MAX_POINTS),
+  ),
   isJoinOpen: z.boolean(),
   canStartRound: z.boolean(),
   players: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -78,6 +85,7 @@ export interface NewMatchInput {
   matchName: string;
   initialPoints: number;
   leaderName: string;
+  chipValues: ChipValuesRecord;
 }
 
 interface RequestOptions {

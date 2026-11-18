@@ -16,6 +16,7 @@ import {
   saveMembership,
   type Membership,
 } from "../membership";
+import { renderChipValuesSection } from "./chip-values-section";
 import { renderPrivateModeWarning } from "./storage-warning";
 import { formatDelta, renderRoundsSection } from "./rounds-section";
 
@@ -82,6 +83,7 @@ export async function renderMatchPage(
     renderRoundsSection(match, membership, () => {
       void renderMatchPage(root, matchId);
     }),
+    renderChipValuesSection(match),
   );
   // 削除は取り返しがつかないので, ほかの操作から離して最後に置く (docs/web/app.md).
   if (membership !== null && membership.playerId === match.leaderPlayerId) {

@@ -1,9 +1,11 @@
+import { toChipValuesRecord } from "../../rules/chip-values";
 import {
   MAX_MATCH_NAME_LENGTH,
   MAX_PLAYER_NAME_LENGTH,
   MAX_POINTS,
 } from "../../rules/limits";
 import { createMatch } from "../api";
+import { createChipValueFields } from "../chip-values-fields";
 import { element, labeledField } from "../dom";
 import { saveMembership } from "../membership";
 import { renderPrivateModeWarning } from "./storage-warning";
@@ -31,6 +33,7 @@ export function renderCreateSection(): HTMLElement {
   const leaderName = element("input", {
     attributes: { required: "", maxlength: String(MAX_PLAYER_NAME_LENGTH) },
   });
+  const chipValues = createChipValueFields(new Map());
   const message = element("p", {
     className: "error",
     attributes: { role: "alert" },
@@ -44,18 +47,28 @@ export function renderCreateSection(): HTMLElement {
     labeledField("マッチ名", matchName),
     labeledField("初期点数", initialPoints),
     labeledField("あなたの名前", leaderName),
+    chipValues.container,
+    element("p", {
+      className: "note",
+      text: "チップの点数は, マッチを作ったあともリーダーが変えられます.",
+    }),
     submit,
     message,
   ]);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    submit.disabled = true;
     message.textContent = "";
+    const values = chipValues.read();
+    if (values === null) {
+      return;
+    }
+    submit.disabled = true;
     void createMatch({
       matchName: matchName.value,
       initialPoints: initialPoints.valueAsNumber,
       leaderName: leaderName.value,
+      chipValues: toChipValuesRecord(values),
     }).then((result) => {
       if (!result.ok) {
         message.textContent = result.error;
