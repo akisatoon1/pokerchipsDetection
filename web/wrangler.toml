@@ -9,11 +9,12 @@ directory = "./dist"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
-# database_id はデプロイするときに本物の値に替える. ローカルでは使われない.
+# database_id は本番の D1 の id. 秘密ではない (読み書きには API トークンが要る) のでコミットする.
+# 手元の wrangler dev とテストは, この id を使わず手元の SQLite を使う.
 [[d1_databases]]
 binding = "DB"
 database_name = "pokerchip-score"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "364b948b-c8cf-45f3-aed4-9d2392d4c484"
 migrations_dir = "migrations"
 
 # Workers Logs. 本番で 500 が出たとき, 原因を追えるのはこのログだけのため.
