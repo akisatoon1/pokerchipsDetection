@@ -499,3 +499,9 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - ブラウザに保存する設定を消した. 消したファイル: `web/src/client/chip-values-store.ts`, `web/src/client/pages/chip-values-page.ts`.
   画面のパス `/chips` もなくした.
 - 作業はブランチ `feat/match-chip-values` で行った (人の指示による).
+
+## 2026-11-18: Android Studio を開かずに実機で動かす make android-run を足す
+
+- `scripts/run_android.sh` と, それを呼ぶ Makefile の `android-run` を足した. USB で繋いだ端末に `./gradlew installDebug` で入れ,
+  `adb shell am start` で起動する. 端末がない・複数あるときは理由を出して止める.
+- `docs/environment/setup.md` の 9 と `docs/logic/usage.md` の Makefile の表に足した.
