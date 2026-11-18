@@ -21,16 +21,18 @@ const createdMatch = z.object({
   token: z.string(),
 });
 
+// 色ごとの点数. 決めていない (この仕様より前に作った) マッチなら空.
+const chipValues = z.partialRecord(
+  z.enum(CHIP_COLOR_NAMES),
+  z.number().int().min(1).max(MAX_POINTS),
+);
+
 const matchView = z.object({
   id: z.string(),
   name: z.string(),
   initialPoints: z.number(),
   leaderPlayerId: z.string(),
-  // 色ごとの点数. 決めていない (この仕様より前に作った) マッチなら空.
-  chipValues: z.partialRecord(
-    z.enum(CHIP_COLOR_NAMES),
-    z.number().int().min(1).max(MAX_POINTS),
-  ),
+  chipValues,
   isJoinOpen: z.boolean(),
   canStartRound: z.boolean(),
   players: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -58,6 +60,8 @@ const matchView = z.object({
 const closedRound = z.object({ status: z.literal("closed") });
 
 const renamedPlayer = z.object({ name: z.string() });
+
+const updatedChipValues = z.object({ chipValues });
 
 const savedEntry = z.object({ points: z.number() });
 
@@ -236,6 +240,26 @@ export function closeRound(
     `/api/rounds/${encodeURIComponent(roundId)}/close`,
     closedRound,
     { method: "POST", body: {}, token },
+  );
+}
+
+/**
+ * マッチの色ごとの点数を変える. リーダーだけができる.
+ *
+ * @param matchId マッチの id.
+ * @param values 新しい色ごとの点数.
+ * @param token リーダーのトークン.
+ * @returns 保存した色ごとの点数. 決まりを満たさない, リーダーでないなどで失敗なら説明.
+ */
+export function updateChipValues(
+  matchId: string,
+  values: ChipValuesRecord,
+  token: string,
+): Promise<ApiResult<{ chipValues: ChipValuesRecord }>> {
+  return request(
+    `/api/matches/${encodeURIComponent(matchId)}/chip-values`,
+    updatedChipValues,
+    { method: "PUT", body: { chipValues: values }, token },
   );
 }
 

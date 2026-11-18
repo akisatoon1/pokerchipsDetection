@@ -83,7 +83,9 @@ export async function renderMatchPage(
     renderRoundsSection(match, membership, () => {
       void renderMatchPage(root, matchId);
     }),
-    renderChipValuesSection(match),
+    renderChipValuesSection(match, membership, () => {
+      void renderMatchPage(root, matchId);
+    }),
   );
   // 削除は取り返しがつかないので, ほかの操作から離して最後に置く (docs/web/app.md).
   if (membership !== null && membership.playerId === match.leaderPlayerId) {
