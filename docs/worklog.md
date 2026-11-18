@@ -481,3 +481,10 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `web/package.json` の `check` の `npm audit` を, 本番の依存だけで止め, 全体は表示だけにした.
   開発の道具が使う picomatch に, 直った版のない ReDoS (GHSA-fc5q-39xc-vjpf) があるため.
 - GitHub CLI (`gh` 2.46.0) を, Ubuntu のパッケージで入れた (人が行った). Release を作るのに使う.
+
+## 2026-11-18: デプロイの手順を docs/web/deploy.md にまとめる
+
+- `docs/web/deploy.md` を追加し, Web の地図に足した. 最初の 1 回の Cloudflare と GitHub の設定 (画面の操作), 検出器の Release の作り方,
+  ふだんの流れ, migration を足したとき, 戻し方, うまくいかないときをまとめた.
+- `docs/web/running.md` の「デプロイ」と `docs/logic/usage.md` の「Web に出す」は, `deploy.md` へのリンクにした. 手順を 1 か所に置くため.
+- 最初の検出器の Release `detector-20261118-5460ef4` を作り, `web/detector.lock` に入れた.
