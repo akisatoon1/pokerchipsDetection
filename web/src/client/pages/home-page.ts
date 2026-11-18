@@ -38,7 +38,7 @@ export function renderHomePage(root: HTMLElement): void {
   );
 }
 
-// 数えるだけの画面と, 色と点数の設定画面へのリンク.
+// 数えるだけの画面へのリンク.
 function renderChipLinksSection(): HTMLElement {
   return element("section", {}, [
     element("h2", { text: "チップ" }),
@@ -47,12 +47,6 @@ function renderChipLinksSection(): HTMLElement {
         element("a", {
           text: "チップを数える",
           attributes: { href: "/count" },
-        }),
-      ]),
-      element("li", {}, [
-        element("a", {
-          text: "色と点数の設定",
-          attributes: { href: "/chips" },
         }),
       ]),
     ]),

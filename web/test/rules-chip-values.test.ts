@@ -3,9 +3,7 @@ import {
   CHIP_COLORS,
   findChipColor,
   parseChipValue,
-  readStoredChipValues,
   toChipValuesRecord,
-  toStoredChipValues,
   validateChipValues,
   type ChipColorName,
 } from "../src/rules/chip-values";
@@ -108,34 +106,5 @@ describe("色ごとの点数を, 送る形にする", () => {
     const record = toChipValuesRecord(values);
     expect(record).toEqual({ red: 100, green: 25 });
     expect(Object.keys(record)).toEqual(["red", "green"]);
-  });
-});
-
-describe("保存した点数を読む", () => {
-  it("保存した形に戻せる", () => {
-    const values = new Map<ChipColorName, number>([
-      ["red", 100],
-      ["gray", 1_000_000_000],
-    ]);
-    expect(readStoredChipValues(toStoredChipValues(values))).toEqual(values);
-  });
-
-  it("範囲外の値, 整数でない値, 知らない色は決めていないものとして読む", () => {
-    const stored = {
-      red: 0,
-      blue: 1_000_000_001,
-      yellow: 1.5,
-      black: "100",
-      gray: null,
-      purple: 500,
-      unknown: 100,
-    };
-    expect(readStoredChipValues(stored)).toEqual(new Map([["purple", 500]]));
-  });
-
-  it("オブジェクトでなければ空として読む", () => {
-    for (const stored of [null, 100, "red", undefined]) {
-      expect(readStoredChipValues(stored).size).toBe(0);
-    }
   });
 });
