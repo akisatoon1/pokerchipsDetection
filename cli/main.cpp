@@ -1,6 +1,7 @@
 // 指定した画像のチップの数を検出する. Linuxでの実験用のCLI.
 // 解析そのものは core (Androidと共通) が行い, ここでは入出力だけを扱う.
 
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <opencv2/highgui.hpp>
@@ -12,6 +13,7 @@
 
 #include "pokerchip/detector.hpp"
 #include "pokerchip/pipeline.hpp"
+#include "pokerchip/tilt.hpp"
 #include "pokerchip/visualize.hpp"
 #include "roi.hpp"
 
@@ -41,6 +43,10 @@ struct Options {
 
   //! チップごとの代表色 (Lab) も出力するか. 色判定の基準色を作り直すときに使う.
   bool lab = false;
+
+  //! 枚数の見当に使う特徴も JSON で出力するか.
+  //! 見当の式を当てはめ直すときに使う.
+  bool features = false;
 };
 
 /**
@@ -51,13 +57,15 @@ void printUsage(const char *prog) {
   std::cerr
       << "Usage: " << prog
       << " [--roi yolo|user] [--rect X,Y,W,H] [--model PATH] [--out PATH] "
-         "[--json] [--lab] <image_file_path>\n"
+         "[--json] [--lab] [--features] <image_file_path>\n"
       << "  --roi    ROIの選び方. yolo: YOLOで検出 (既定), user: 手動\n"
       << "  --rect   ROIを数値で指定する. 同じROIで実験を繰り返すとき用\n"
       << "  --model  ONNXモデルのパス (既定: models/chip_detector.onnx)\n"
       << "  --out    デバッグ画像を保存するパス. 省略時は画面に表示\n"
       << "  --json   結果をJSONでも出力する\n"
-      << "  --lab    チップごとの代表色 (補正後の Lab) も出力する" << std::endl;
+      << "  --lab    チップごとの代表色 (補正後の Lab) も出力する\n"
+      << "  --features 角度と, 枚数の見当に使う特徴を JSON で出力する"
+      << std::endl;
 }
 
 /**
@@ -101,6 +109,8 @@ std::optional<Options> parseArgs(int argc, char *argv[]) {
       opt.json = true;
     } else if (a == "--lab") {
       opt.lab = true;
+    } else if (a == "--features") {
+      opt.features = true;
     } else if (!a.empty() && a[0] != '-' && opt.imagePath.empty()) {
       opt.imagePath = a;
     } else {
@@ -123,18 +133,25 @@ void printStack(size_t index, const StackResult &s,
                 const std::vector<cv::Vec3f> &labs) {
   std::cout << "[stack " << index << "] ROI: " << s.box
             << ", score = " << s.score << std::endl;
+  if (s.tilt.has_value()) {
+    std::cout << "  tilt: sin = " << s.tilt->sin << " ("
+              << std::asin(s.tilt->sin) * 180.0 / CV_PI << " deg)" << std::endl;
+  }
+  if (s.status == StackStatus::kTiltTooLarge) {
+    std::cout << "  Tilt is too large to count (sin >= " << kMaxCountableTiltSin
+              << "). Take the photo from a lower angle." << std::endl;
+    return;
+  }
   if (!s.count.has_value()) {
     std::cout << "  Failed to count chips. "
               << "ROI may be too small or lack visible seams." << std::endl;
     return;
   }
 
-  std::cout << "  autocorrelation: period = " << s.count->period << " px"
-            << std::endl;
-  std::cout << "  profile length = " << s.count->signal.size() << " px"
-            << std::endl;
+  std::cout << "  period = " << s.count->period << " px" << std::endl;
+  std::cout << "  estimate by shape = " << s.count->estimate << std::endl;
   std::cout << "  detected seams = " << s.count->peaks.size() << std::endl;
-  std::cout << "  chip count by peaks  = " << s.count->count << std::endl;
+  std::cout << "  chip count = " << s.count->count << std::endl;
   std::cout << "  chip colors (top -> bottom) =";
   for (size_t i = 0; i < s.colors.size(); ++i) {
     std::cout << (i == 0 ? " " : ", ") << chipColorName(s.colors[i]);
@@ -152,10 +169,46 @@ void printStack(size_t index, const StackResult &s,
 }
 
 /**
+ * @brief 角度と, 枚数の見当に使う特徴を 1 行の JSON で書く.
+ *
+ * pyscript/fit_count_model.py が読み, 見当の式の係数を当てはめる.
+ * @param index スタックの番号.
+ * @param s スタックの解析結果.
+ */
+void printFeatures(size_t index, const StackResult &s) {
+  std::ostringstream os;
+  os << std::setprecision(9) << "{\"stack\":" << index << ",\"box\":["
+     << s.box.x << "," << s.box.y << "," << s.box.width << "," << s.box.height
+     << "],\"status\":\"" << stackStatusName(s.status) << "\"";
+  if (s.tilt.has_value()) {
+    const TiltEstimate &t = s.tilt.value();
+    os << ",\"tilt\":{\"sin\":" << t.sin << ",\"upperSin\":" << t.upperSin
+       << ",\"lowerSin\":" << t.lowerSin << ",\"upperY\":" << t.upperY
+       << ",\"lowerY\":" << t.lowerY << "}";
+  }
+  if (s.count.has_value()) {
+    const CountResult &c = s.count.value();
+    os << ",\"count\":" << c.count << ",\"estimate\":" << c.estimate
+       << ",\"heightRatio\":" << c.features.heightRatio
+       << ",\"rowWidthRatio\":" << c.features.rowWidthRatio
+       << ",\"periodRatio\":" << c.features.periodRatio << ",\"bands\":[";
+    for (size_t i = 0; i < c.bands.size(); ++i) {
+      os << (i == 0 ? "" : ",") << "[" << c.bands[i].alignment << ","
+         << c.bands[i].colorDistance << "]";
+    }
+    os << "]";
+  }
+  os << "}";
+  std::cout << "features " << os.str() << std::endl;
+}
+
+/**
  * @brief デバッグ画像を保存するか画面に出す.
  *
  * スタックが複数あるときは保存するファイル名に番号を付ける.
  * カウントに失敗したスタックは描かない.
+ * ROI は合わせ目の弧を水平に戻して描く.
+ * 合わせ目の位置は戻した画像での位置のため.
  * @param img 元画像 (BGR).
  * @param result 解析結果.
  * @param outPath 保存するパス. 空なら画面に表示する.
@@ -165,9 +218,9 @@ void showDebugViews(const cv::Mat &img, const AnalysisResult &result,
                     const std::string &outPath) {
   std::vector<cv::Mat> views;
   for (const StackResult &s : result.stacks) {
-    if (!s.count.has_value()) continue;
-    views.push_back(
-        renderDebugView(img(s.box), s.count->signal, s.count->peaks, s.colors));
+    if (!s.count.has_value() || !s.tilt.has_value()) continue;
+    views.push_back(renderDebugView(flattenStack(img(s.box), s.tilt.value()),
+                                    s.count->signal, s.count->peaks, s.colors));
   }
   if (views.empty()) return;
 
@@ -234,10 +287,12 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < result.stacks.size(); ++i) {
       const StackResult &s = result.stacks[i];
       std::vector<cv::Vec3f> labs;
-      if (opt->lab && s.count.has_value()) {
-        labs = measureChipLab(img(s.box), s.count.value());
+      if (opt->lab && s.count.has_value() && s.tilt.has_value()) {
+        labs = measureChipLab(flattenStack(img(s.box), s.tilt.value()),
+                              s.count.value());
       }
       printStack(i, s, labs);
+      if (opt->features) printFeatures(i, s);
     }
     if (opt->json) std::cout << toJson(result) << std::endl;
 

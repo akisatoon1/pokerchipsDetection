@@ -22,11 +22,34 @@ StackResult analyzeRegion(const cv::Mat &bgr, const cv::Rect &region,
   if (stack.box.empty()) return stack;
 
   cv::Mat roi = bgr(stack.box);
-  stack.count = countChips(roi);
-  if (stack.count.has_value()) {
-    stack.colors = classifyChipColors(roi, stack.count.value());
+  stack.tilt = estimateTilt(roi);
+  if (!stack.tilt.has_value()) return stack;
+  if (stack.tilt->sin >= kMaxCountableTiltSin) {
+    stack.status = StackStatus::kTiltTooLarge;
+    return stack;
   }
+
+  stack.count = countChips(bgr, stack.box, stack.tilt.value());
+  if (!stack.count.has_value()) return stack;
+
+  // 合わせ目は弧に写るので, 水平に戻してから区間ごとに色を見る.
+  // そのままだと区間の左右の端に隣のチップが入る.
+  stack.colors = classifyChipColors(flattenStack(roi, stack.tilt.value()),
+                                    stack.count.value());
+  stack.status = StackStatus::kCounted;
   return stack;
+}
+
+std::string stackStatusName(StackStatus status) {
+  switch (status) {
+    case StackStatus::kCounted:
+      return "counted";
+    case StackStatus::kTiltTooLarge:
+      return "tilt_too_large";
+    case StackStatus::kCountFailed:
+      return "count_failed";
+  }
+  return "count_failed";
 }
 
 AnalysisResult analyzeImage(YoloDetector &detector, const cv::Mat &bgr) {
@@ -53,7 +76,14 @@ std::string toJson(const AnalysisResult &result) {
     const StackResult &s = result.stacks[i];
     if (i > 0) os << ",";
     os << "{\"box\":[" << s.box.x << "," << s.box.y << "," << s.box.width << ","
-       << s.box.height << "],\"score\":" << s.score << ",\"count\":";
+       << s.box.height << "],\"score\":" << s.score << ",\"status\":\""
+       << stackStatusName(s.status) << "\",\"tilt\":";
+    if (s.tilt.has_value()) {
+      os << s.tilt->sin;
+    } else {
+      os << "null";
+    }
+    os << ",\"count\":";
     if (s.count.has_value()) {
       os << s.count->count;
     } else {

@@ -47,10 +47,11 @@ cv::Mat makeStack() {
 }
 
 CountResult stackCount() {
-  return {3,
-          {},
-          {0, kChipHeight, 2 * kChipHeight, 3 * kChipHeight},
-          static_cast<double>(kChipHeight)};
+  CountResult count{};
+  count.count = 3;
+  count.peaks = {0, kChipHeight, 2 * kChipHeight, 3 * kChipHeight};
+  count.period = kChipHeight;
+  return count;
 }
 
 // 照明の色と明るさを変えた画像. チャンネルごとに倍率を掛ける.
