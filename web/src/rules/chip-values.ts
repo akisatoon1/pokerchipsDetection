@@ -152,44 +152,6 @@ export function toChipValuesRecord(values: ChipValues): ChipValuesRecord {
   return record;
 }
 
-/**
- * 端末に保存した値から, 色ごとの点数を読む.
- *
- * 端末の値は壊れていたり古い形だったりするので, 範囲外の値や知らない色は決めていないものとして扱う.
- * @param stored 保存した JSON を読んだ値 (形は確かめていない).
- * @returns 色ごとの点数. 読めるものがなければ空.
- */
-export function readStoredChipValues(stored: unknown): ChipValues {
-  const values = new Map<ChipColorName, number>();
-  if (typeof stored !== "object" || stored === null) {
-    return values;
-  }
-  for (const color of CHIP_COLORS) {
-    const value: unknown = Reflect.get(stored, color.name);
-    if (isChipValue(value)) {
-      values.set(color.name, value);
-    }
-  }
-  return values;
-}
-
-/**
- * 色ごとの点数を, 端末に保存する形にする.
- *
- * @param values 色ごとの点数.
- * @returns 色の名前から点数への対応. JSON にして保存する.
- */
-export function toStoredChipValues(
-  values: ChipValues,
-): Partial<Record<ChipColorName, number>> {
-  return Object.fromEntries(values);
-}
-
-function isChipValue(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= MAX_POINTS
-  );
+function isChipValue(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= MAX_POINTS;
 }

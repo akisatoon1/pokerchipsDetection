@@ -488,3 +488,14 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   ふだんの流れ, migration を足したとき, 戻し方, うまくいかないときをまとめた.
 - `docs/web/running.md` の「デプロイ」と `docs/logic/usage.md` の「Web に出す」は, `deploy.md` へのリンクにした. 手順を 1 か所に置くため.
 - 最初の検出器の Release `detector-20261118-5460ef4` を作り, `web/detector.lock` に入れた.
+
+## 2026-11-18: 色ごとの点数をブラウザの設定からマッチに移す
+
+計画は [web/plans/2026-11-18-match-chip-values.md](web/plans/2026-11-18-match-chip-values.md). 仕様は [web/app.md](web/app.md) の「色ごとの点数」.
+
+- D1 に表 `match_chip_values` を足した (`web/migrations/0004_create_match_chip_values.sql`). 本番には migrate で当てる.
+- API に `PUT /api/matches/{id}/chip-values` を足した. `POST /api/matches` の本文と `GET /api/matches/{id}` の応答に `chipValues` を足した.
+- 色の欄を `web/src/client/chip-values-fields.ts` に, マッチの画面の点数の表示と変える欄を `web/src/client/pages/chip-values-section.ts` に置いた.
+- ブラウザに保存する設定を消した. 消したファイル: `web/src/client/chip-values-store.ts`, `web/src/client/pages/chip-values-page.ts`.
+  画面のパス `/chips` もなくした.
+- 作業はブランチ `feat/match-chip-values` で行った (人の指示による).
