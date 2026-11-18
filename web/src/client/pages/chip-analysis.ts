@@ -9,15 +9,13 @@ const FALLBACK_WIDTH = 320;
 export interface ChipAnalysisPanel {
   /** ボタン, 解析の様子, 結果を入れた要素. */
   container: HTMLElement;
-  /** 今の解析の結果を出し直す. 色と点数の設定を変えたときに使う. 解析していなければ何もしない. */
-  refresh(): void;
   /** 出している画像を手放す. 部品を画面から外すときに呼ぶ. */
   dispose(): void;
 }
 
 /** 部品の, 使う画面ごとに違うところ. */
 export interface ChipAnalysisOptions {
-  /** 結果の上に出すもの (持ち点など). 出し直すたびに呼ぶ. */
+  /** 結果の上に出すもの (持ち点など). 結果を出すたびに呼ぶ. */
   renderHeader(analysis: Analysis): HTMLElement;
   /** 結果の下に出すもの (かかった時間など). なければ何も出さない. */
   renderFooter?(analysis: Analysis): HTMLElement;
@@ -78,11 +76,6 @@ export function createChipAnalysisPanel(
       status,
       output,
     ]),
-    refresh: () => {
-      if (shown !== null) {
-        render(shown);
-      }
-    },
     dispose: release,
   };
 }

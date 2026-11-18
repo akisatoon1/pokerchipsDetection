@@ -1,19 +1,17 @@
-import { computeChipPoints } from "../../rules/chip-points";
-import { loadChipValues } from "../chip-values-store";
 import type { Analysis } from "../detector";
 import { element } from "../dom";
-import { renderChipPoints } from "../result-views";
 import { createChipAnalysisPanel } from "./chip-analysis";
 
 /**
  * 数えるだけの画面を出す. マッチに入らずに, 撮影した, または選んだ写真のチップを数える.
  *
- * 色と点数を決めてあれば, 持ち点も出す. 検出の結果と速さを実機で確かめるためにも使うので, かかった時間も出す.
+ * 持ち点は出さない. 色ごとの点数はマッチが持つので, マッチに入らないこの画面には点数がないため (docs/web/app.md).
+ * 検出の結果と速さを実機で確かめるためにも使うので, かかった時間も出す.
  * @param root 画面を入れる要素.
  */
 export function renderCountPage(root: HTMLElement): void {
   const panel = createChipAnalysisPanel({
-    renderHeader: renderPoints,
+    renderHeader: renderNoPointsNote,
     renderFooter: renderTimings,
   });
   root.replaceChildren(
@@ -28,16 +26,12 @@ export function renderCountPage(root: HTMLElement): void {
   );
 }
 
-// 色と点数を決めてあれば持ち点を, なければ設定画面への案内を出す.
-function renderPoints(analysis: Analysis): HTMLElement {
-  const values = loadChipValues();
-  if (values.size === 0) {
-    return element("p", {}, [
-      document.createTextNode("色と点数を決めると, 持ち点も出します. "),
-      element("a", { text: "色と点数の設定", attributes: { href: "/chips" } }),
-    ]);
-  }
-  return renderChipPoints(computeChipPoints(analysis.result, values));
+// 持ち点を出さない理由と, 持ち点を出せる場所の案内.
+function renderNoPointsNote(): HTMLElement {
+  return element("p", {
+    className: "note",
+    text: "持ち点は, マッチの画面の「チップから入力」で, マッチのチップの点数から出します.",
+  });
 }
 
 // 実機で速さを確かめるための, 画像の大きさとかかった時間.

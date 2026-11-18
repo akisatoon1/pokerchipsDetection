@@ -1,5 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import {
+  CHIP_COLOR_NAMES,
+  toChipValuesRecord,
+  validateChipValues,
+} from "../../rules/chip-values";
 import { MAX_PLAYERS } from "../../rules/limits";
 import { normalizeMatchName, normalizePlayerName } from "../../rules/names";
 import { checkCanJoin, checkCanRemovePlayer } from "../../rules/players";
@@ -10,6 +15,8 @@ import {
   deleteMatchWithEverything,
   findMatch,
   insertMatchWithLeader,
+  listChipValues,
+  replaceChipValues,
 } from "../db/matches";
 import {
   deletePlayerIfAllowed,
@@ -23,15 +30,21 @@ import { findRequestingPlayer } from "./auth";
 import { buildMatchView } from "./match-view";
 import { parseJsonBody } from "./request";
 
+// 色の名前から点数への対応. 知らない色の名前は拒否する. 点数の範囲は規則で確かめる.
+const chipValuesBody = z.partialRecord(z.enum(CHIP_COLOR_NAMES), z.number());
+
 const createMatchBody = z
   .object({
     matchName: z.string(),
     initialPoints: z.number(),
     leaderName: z.string(),
+    chipValues: chipValuesBody,
   })
   .strict();
 
 const playerNameBody = z.object({ name: z.string() }).strict();
+
+const chipValuesUpdateBody = z.object({ chipValues: chipValuesBody }).strict();
 
 // リーダーが始める前に確かめた人数. 今の人数と違えば始めない.
 const startRoundBody = z
@@ -59,6 +72,10 @@ matchesApi.post("/", async (c) => {
   if (!leaderName.ok) {
     return c.json({ error: leaderName.reason }, 400);
   }
+  const chipValues = validateChipValues(body.value.chipValues);
+  if (!chipValues.ok) {
+    return c.json({ error: chipValues.reason }, 400);
+  }
 
   const matchId = createRandomId();
   const playerId = createRandomId();
@@ -70,6 +87,7 @@ matchesApi.post("/", async (c) => {
     leaderPlayerId: playerId,
     leaderName: leaderName.value,
     leaderTokenHash: await hashToken(token),
+    chipValues: chipValues.value,
   });
   return c.json({ matchId, playerId, token }, 201);
 });
@@ -81,12 +99,15 @@ matchesApi.get("/:matchId", async (c) => {
   if (match === null) {
     return c.json({ error: "マッチが見つかりません" }, 404);
   }
-  const [players, rounds, entries] = await Promise.all([
+  const [players, rounds, entries, chipValues] = await Promise.all([
     listPlayers(c.env.DB, matchId),
     listRounds(c.env.DB, matchId),
     listEntries(c.env.DB, matchId),
+    listChipValues(c.env.DB, matchId),
   ]);
-  return c.json(buildMatchView({ match, players, rounds, entries }));
+  return c.json(
+    buildMatchView({ match, players, rounds, entries, chipValues }),
+  );
 });
 
 // マッチを削除する. リーダーだけができる. 入力中のラウンドがあっても消せ, 元に戻せない (docs/web/app.md).
@@ -189,6 +210,36 @@ matchesApi.post("/:matchId/rounds", async (c) => {
     );
   }
   return c.json({ roundId, number: outcome.number }, 201);
+});
+
+// 色ごとの点数を変える. リーダーだけが, いつでも変えられる (docs/web/app.md).
+// 入力中・確定のラウンドがあってもよい. 保存するのは持ち点だけなので, 保存済みの持ち点は変わらない.
+matchesApi.put("/:matchId/chip-values", async (c) => {
+  const matchId = c.req.param("matchId");
+  const body = await parseJsonBody(c.req.raw, chipValuesUpdateBody);
+  if (!body.ok) {
+    return c.json({ error: body.error }, 400);
+  }
+  const chipValues = validateChipValues(body.value.chipValues);
+  if (!chipValues.ok) {
+    return c.json({ error: chipValues.reason }, 400);
+  }
+  const match = await findMatch(c.env.DB, matchId);
+  if (match === null) {
+    return c.json({ error: "マッチが見つかりません" }, 404);
+  }
+  const requester = await findRequestingPlayer(c.env.DB, c.req.raw, matchId);
+  if (requester === null) {
+    return c.json({ error: "このマッチのプレイヤーだと確かめられません" }, 401);
+  }
+  if (requester.id !== match.leaderPlayerId) {
+    return c.json(
+      { error: "チップの点数を変えられるのはリーダーだけです" },
+      403,
+    );
+  }
+  await replaceChipValues(c.env.DB, matchId, chipValues.value);
+  return c.json({ chipValues: toChipValuesRecord(chipValues.value) });
 });
 
 // 名前を変える. 本人だけが, いつでも変えられる. 計算は id で行うので, 結果には影響しない.

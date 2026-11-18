@@ -30,6 +30,9 @@ async function countRows(matchId: string) {
     entries: await count(
       "SELECT COUNT(*) AS count FROM entries WHERE round_id IN (SELECT id FROM rounds WHERE match_id = ?)",
     ),
+    chipValues: await count(
+      "SELECT COUNT(*) AS count FROM match_chip_values WHERE match_id = ?",
+    ),
   };
 }
 
@@ -54,13 +57,14 @@ describe("マッチを削除する", () => {
     expect((await send(`/api/matches/${leader.matchId}`)).status).toBe(404);
   });
 
-  it("プレイヤー, ラウンド, 持ち点も DB から消える", async () => {
+  it("プレイヤー, ラウンド, 持ち点, 色ごとの点数も DB から消える", async () => {
     const { leader } = await matchWithRounds();
     expect(await countRows(leader.matchId)).toEqual({
       matches: 1,
       players: 3,
       rounds: 2,
       entries: 4,
+      chipValues: 2,
     });
     await deleteMatch(leader.matchId, leader.token);
     expect(await countRows(leader.matchId)).toEqual({
@@ -68,6 +72,7 @@ describe("マッチを削除する", () => {
       players: 0,
       rounds: 0,
       entries: 0,
+      chipValues: 0,
     });
   });
 
@@ -80,6 +85,7 @@ describe("マッチを削除する", () => {
       players: 3,
       rounds: 2,
       entries: 4,
+      chipValues: 2,
     });
   });
 
@@ -97,6 +103,7 @@ describe("マッチを削除する", () => {
       players: 3,
       rounds: 2,
       entries: 4,
+      chipValues: 2,
     });
   });
 

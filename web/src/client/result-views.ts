@@ -26,6 +26,16 @@ const FONT_FAMILY = "system-ui, sans-serif";
 const NUMBER_FORMAT = new Intl.NumberFormat("ja-JP");
 
 /**
+ * 点数を, 3 桁ごとに区切って書く.
+ *
+ * @param points 点数.
+ * @returns "1,500" のような文字.
+ */
+export function formatPoints(points: number): string {
+  return NUMBER_FORMAT.format(points);
+}
+
+/**
  * 画像に, 検出したスタックの枠と「#n: m枚」を重ねて描く.
  *
  * @param image 解析した画像. 結果の座標はこの画像のピクセル.

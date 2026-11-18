@@ -1,9 +1,23 @@
 import { MAX_POINTS } from "./limits";
 import type { RuleResult } from "./rule-result";
 
+/**
+ * core の chipColorName が返す色の名前の一覧. `unknown` (判定できなかった) は含めない.
+ *
+ * API の入口で色の名前を確かめる (zod の enum に渡す) ため, 型だけでなく値でも持つ.
+ */
+export const CHIP_COLOR_NAMES = [
+  "red",
+  "blue",
+  "yellow",
+  "black",
+  "gray",
+  "purple",
+  "green",
+] as const;
+
 /** core の chipColorName が返す色の名前. `unknown` (判定できなかった) は含めない. */
-export type ChipColorName =
-  "red" | "blue" | "yellow" | "black" | "gray" | "purple" | "green";
+export type ChipColorName = (typeof CHIP_COLOR_NAMES)[number];
 
 /** core が判定するチップの色. */
 export interface ChipColor {
@@ -34,9 +48,12 @@ export const CHIP_COLORS: readonly ChipColor[] = [
 /**
  * 色ごとの点数 (1 以上 MAX_POINTS 以下). 入っていない色は「このチップセットでは使わない色」.
  *
- * 端末に 1 つ持ち, どのマッチでも同じものを使う (docs/web/app.md).
+ * マッチごとに持ち, マッチの全員が同じものを使う (docs/web/app.md).
  */
 export type ChipValues = ReadonlyMap<ChipColorName, number>;
+
+/** 色ごとの点数を, 色の名前から点数への対応にしたもの. API で送り, 返す形. */
+export type ChipValuesRecord = Partial<Record<ChipColorName, number>>;
 
 /**
  * core の色の名前から色を探す.
@@ -76,20 +93,42 @@ export function parseChipValue(text: string): RuleResult<number | null> {
 }
 
 /**
- * 端末に保存した値から, 色ごとの点数を読む.
+ * 送られた色ごとの点数が決まりを満たすかを確かめる.
  *
- * 端末の値は壊れていたり古い形だったりするので, 範囲外の値や知らない色は決めていないものとして扱う.
- * @param stored 保存した JSON を読んだ値 (形は確かめていない).
- * @returns 色ごとの点数. 読めるものがなければ空.
+ * 1 色につき 1 以上 MAX_POINTS 以下の整数で, 少なくとも 1 色は決める (docs/web/app.md).
+ * 1 色もなければ, チップから入力できないため.
+ * @param record 色の名前から点数への対応. 色の名前と, 値が数であることは確かめてあるもの.
+ * @returns 色ごとの点数 (色の一覧の順). 決まりを満たさなければ ok: false と理由.
  */
-export function readStoredChipValues(stored: unknown): ChipValues {
-  const values = new Map<ChipColorName, number>();
-  if (typeof stored !== "object" || stored === null) {
-    return values;
+export function validateChipValues(
+  record: ChipValuesRecord,
+): RuleResult<ChipValues> {
+  const values = chipValuesFromRecord(record);
+  if (values.size === 0) {
+    return { ok: false, reason: "チップの点数を少なくとも 1 色決めてください" };
   }
+  for (const value of values.values()) {
+    if (!isChipValue(value)) {
+      return {
+        ok: false,
+        reason: `チップの点数は 1 以上 ${String(MAX_POINTS)} 以下の整数にしてください`,
+      };
+    }
+  }
+  return { ok: true, value: values };
+}
+
+/**
+ * 色の名前から点数への対応を, 色ごとの点数にする. 値の範囲は確かめない.
+ *
+ * @param record 色の名前から点数への対応.
+ * @returns 色ごとの点数. 色の一覧の順に並べる.
+ */
+export function chipValuesFromRecord(record: ChipValuesRecord): ChipValues {
+  const values = new Map<ChipColorName, number>();
   for (const color of CHIP_COLORS) {
-    const value: unknown = Reflect.get(stored, color.name);
-    if (isChipValue(value)) {
+    const value = record[color.name];
+    if (value !== undefined) {
       values.set(color.name, value);
     }
   }
@@ -97,22 +136,22 @@ export function readStoredChipValues(stored: unknown): ChipValues {
 }
 
 /**
- * 色ごとの点数を, 端末に保存する形にする.
+ * 色ごとの点数を, 色の名前から点数への対応にする. API で送り, 返すため.
  *
  * @param values 色ごとの点数.
- * @returns 色の名前から点数への対応. JSON にして保存する.
+ * @returns 色の名前から点数への対応. 色の一覧の順に並べる.
  */
-export function toStoredChipValues(
-  values: ChipValues,
-): Partial<Record<ChipColorName, number>> {
-  return Object.fromEntries(values);
+export function toChipValuesRecord(values: ChipValues): ChipValuesRecord {
+  const record: ChipValuesRecord = {};
+  for (const color of CHIP_COLORS) {
+    const value = values.get(color.name);
+    if (value !== undefined) {
+      record[color.name] = value;
+    }
+  }
+  return record;
 }
 
-function isChipValue(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= MAX_POINTS
-  );
+function isChipValue(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= MAX_POINTS;
 }

@@ -16,6 +16,7 @@ import {
   saveMembership,
   type Membership,
 } from "../membership";
+import { renderChipValuesSection } from "./chip-values-section";
 import { renderPrivateModeWarning } from "./storage-warning";
 import { formatDelta, renderRoundsSection } from "./rounds-section";
 
@@ -80,6 +81,9 @@ export async function renderMatchPage(
   }
   sections.push(
     renderRoundsSection(match, membership, () => {
+      void renderMatchPage(root, matchId);
+    }),
+    renderChipValuesSection(match, membership, () => {
       void renderMatchPage(root, matchId);
     }),
   );

@@ -1,3 +1,9 @@
+import {
+  findChipColor,
+  toChipValuesRecord,
+  type ChipColorName,
+  type ChipValues,
+} from "../../rules/chip-values";
 import { checkCanJoin } from "../../rules/players";
 import { checkCanStartRound } from "../../rules/rounds";
 import {
@@ -6,7 +12,7 @@ import {
   type RoundScore,
 } from "../../rules/scoring";
 import type { EntryRecord } from "../db/entries";
-import type { MatchRecord } from "../db/matches";
+import type { ChipValueRecord, MatchRecord } from "../db/matches";
 import type { PlayerRecord } from "../db/players";
 import type { RoundRecord } from "../db/rounds";
 
@@ -16,6 +22,7 @@ export interface MatchData {
   players: PlayerRecord[];
   rounds: RoundRecord[];
   entries: EntryRecord[];
+  chipValues: ChipValueRecord[];
 }
 
 /**
@@ -52,7 +59,7 @@ export function scoreRoundFromRecords(
  * @returns 応答の本文.
  */
 export function buildMatchView(data: MatchData) {
-  const { match, players, rounds, entries } = data;
+  const { match, players, rounds, entries, chipValues } = data;
   const playerIds = players.map((player) => player.id);
   const roundViews = rounds.map((round) => ({
     ...round,
@@ -80,10 +87,25 @@ export function buildMatchView(data: MatchData) {
     name: match.name,
     initialPoints: match.initialPoints,
     leaderPlayerId: match.leaderPlayerId,
+    chipValues: toChipValuesRecord(chipValuesFromRecords(chipValues)),
     isJoinOpen: canJoin.ok,
     canStartRound: canStartRound.ok,
     players,
     rounds: roundViews,
     totals,
   };
+}
+
+// DB の色の名前を 7 色に絞る. DB の制約で 7 色だけが入るが, 型を付けるために確かめる.
+function chipValuesFromRecords(
+  records: readonly ChipValueRecord[],
+): ChipValues {
+  const values = new Map<ChipColorName, number>();
+  for (const record of records) {
+    const color = findChipColor(record.color);
+    if (color !== null) {
+      values.set(color.name, record.points);
+    }
+  }
+  return values;
 }
