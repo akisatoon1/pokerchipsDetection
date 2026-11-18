@@ -1,0 +1,54 @@
+# 本番の D1 に, まだ当てていない migration (web/migrations/) を当てる.
+# 人が GitHub の Actions の画面から手で起動したときだけ動く. 本番の DB を変えるのは人の指示のときだけという決まりのため.
+# 理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/running.md の「デプロイ」.
+
+name: migrate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# デプロイと migration が同時に走らないようにする (deploy.yml と同じ group).
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      # 外部の action はコミットの SHA で固定する (deploy.yml と同じ版).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 依存を入れる
+        run: npm ci
+
+      - name: 当てる前の戻し先 (Time Travel の bookmark) と, 当てる migration を出す
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # 失敗したときに, この bookmark を使って当てる前に戻す (docs/web/running.md の「戻し方」).
+          npx wrangler d1 time-travel info DB
+          npx wrangler d1 migrations list DB --remote
+
+      - name: migration を当てる
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # CI では確認に答える人がいないので, wrangler は「はい」として進む.
+        run: npx wrangler d1 migrations apply DB --remote
