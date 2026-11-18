@@ -42,6 +42,11 @@ npm run format   # 整形する
 npm run dev      # 画面をビルドし, ローカルの D1 に migrations を当てて wrangler dev を起動する
 ```
 
+`npm audit` は 2 回流す. 検査を止めるのは本番の依存 (`dependencies`. Worker で動く hono と zod) の脆弱性だけにし (`--omit=dev`),
+開発の道具 (`devDependencies`. vite, vitest, eslint など) を含めた全体は表示するだけにする (`--audit-level=none`).
+開発の道具は手元と CI で自分のファイルを扱うだけで本番では動かず, 直った版が出るまで Web のコミットとデプロイが止まるのを避けるため.
+表示に開発の道具の脆弱性が出ていたら, 直った版が出たときに上げる.
+
 チップを検出するには, 先にリポジトリのルートで `scripts/build_wasm.sh` を流しておく ([running.md](../../web/running.md)).
 
 Node は `~/.local/node` に入っている. PATH が通っていないシェルでは `export PATH="$HOME/.local/node/bin:$PATH"` を先に実行する.

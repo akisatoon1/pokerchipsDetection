@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json",
     "test": "vitest run",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm audit"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm audit --omit=dev && npm audit --audit-level=none"
   },
   "dependencies": {
     "hono": "4.13.18",
