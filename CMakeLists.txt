@@ -1,4 +1,4 @@
-# Linux 用のビルド (core + CLI + テスト).
+# Linux 用のビルド (core + CLI).
 # Android は android/ の Gradle から core だけをビルドする.
 cmake_minimum_required(VERSION 3.22)
 project(pokerchip CXX)
@@ -23,9 +23,3 @@ add_subdirectory(core)
 find_package(OpenCV REQUIRED COMPONENTS imgcodecs highgui)
 add_executable(pokerchip cli/main.cpp cli/roi.cpp)
 target_link_libraries(pokerchip PRIVATE pokerchip_core opencv_imgcodecs opencv_highgui)
-
-option(POKERCHIP_BUILD_TESTS "テストをビルドする" ON)
-if(POKERCHIP_BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(tests)
-endif()

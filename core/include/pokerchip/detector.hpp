@@ -35,7 +35,6 @@ struct DetectorConfig {
    * 信頼できない検出で数えないため, 高めにしている.
    * testimages/v1/yoko/stack では 5 枚以上のスタックの最低が 0.955,
    * 3 枚のスタックは 0.69〜0.97 だった. 5 枚以上を余裕を持って通す値にした.
-   * pyscript/make_yolo_reference.py の CONF と合わせる.
    */
   float scoreThreshold = 0.9F;
 

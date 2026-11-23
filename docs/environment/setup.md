@@ -89,7 +89,7 @@ make model PT=best.pt    # = scripts/export_model.sh
 ここまでで Linux 側の準備は終わり. 確認する:
 
 ```
-make test          # 全テストが通ること (6 件)
+make test          # 全体テストが最後まで流れ, 画像ごとの結果が出ること
 make check         # clang-format と clang-tidy の指摘がないこと
 make run ARGS="--out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg"
 ```
@@ -202,8 +202,7 @@ scripts/build_wasm.sh           # core を WASM にし, モデルと一緒に we
 |---|---|
 | `OpenCV error: ... The function is not implemented` (imshow など) | OpenCV が GUI なしでビルドされている. `libgtk-3-dev` を入れて `make opencv` をやり直す. それまでは `--out` / `--rect` を使う |
 | CMake で `Could not find a configuration file for package "OpenCV" that exactly matches requested version "4.14.0"` | `make opencv` (Linux) または `make android-deps` (Android) をしていない. または別のバージョンの OpenCV を掴んでいる |
-| `make test` で検出器のテストがスキップされる | `models/chip_detector.onnx` がない. 6 を行う |
-| `make test` で検出器のテストが失敗する | モデルと基準 (`tests/data/yolo_reference.txt`) が合っていない. [usage.md](../logic/usage.md) の「モデルを更新したとき」を参照 |
+| `make test` で CLI が失敗したと出る | `models/chip_detector.onnx` がない (6 を行う). または画像が LFS のポインタのまま (`git lfs pull` をする. 2 を参照) |
 | Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
 | Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
 | `scripts/build_wasm.sh` で OpenCV が見つからない | `scripts/build_opencv_wasm.sh` をしていない. 10 を行う |

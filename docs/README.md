@@ -23,7 +23,7 @@
 
 | 分野 | 頼まれる作業の例 | 地図 |
 |---|---|---|
-| ロジック, CLI | `core/`, `cli/`, `tests/`, `wasm/` の C++. チップの検出, 色の判定, CLI, WASM の殻, テスト | [logic/README.md](logic/README.md) |
+| ロジック, CLI | `core/`, `cli/`, `wasm/` の C++ と `functional_tests/`. チップの検出, 色の判定, CLI, WASM の殻, テスト | [logic/README.md](logic/README.md) |
 | Android | `android/` の Kotlin と JNI の C++. core を実機で確かめるアプリ (撮影, 検出の結果の表示) | [android/README.md](android/README.md) |
 | Web | `web/` の点数計算アプリ (画面, API, DB, ブラウザでのチップの検出) | [web/README.md](web/README.md) |
 | 研究開発 | `research/` での色別計数の試作, 実験 | 下の「研究開発」 |

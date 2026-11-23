@@ -7,7 +7,7 @@
 
 - 日付: 2026-11-23
 - 状態: 採用 (コミット `fc3f944`)
-- 対象: `DetectorConfig::scoreThreshold` (`core/include/pokerchip/detector.hpp`). `pyscript/make_yolo_reference.py` の `CONF` も合わせる
+- 対象: `DetectorConfig::scoreThreshold` (`core/include/pokerchip/detector.hpp`). `pyscript/make_yolo_reference.py` の `CONF` も合わせる (このスクリプトは 2026-11-23 に検出器のテストと一緒に消した)
 
 ### 背景
 
@@ -67,4 +67,4 @@ YOLO の検出スコア (検出の信頼度) が 0.5 以上なら, すべてス�
 - 画像が 27 枚と少なく, 撮り方 (真横から, 同じ机) もそろっている. 違う撮り方の写真では分布が変わりうる.
 - これらの画像が YOLO の学習に使われていれば, スコアは実際より高く出ている. 学習に使ったかは, このリポジトリからは分からない.
 - スコアはモデルで変わる. モデルを更新したら, 同じ画像で分布を見直す.
-- `tests/data/yolo_reference.txt` (検出器のテストの基準) は, まだしきい値 0.5 で作ったまま. テストが古い画像のパスを指していて今は動かないため, パスを直すときに作り直す.
+- `tests/data/yolo_reference.txt` (検出器のテストの基準) は, しきい値 0.5 で作ったままだった. 2026-11-23 にテストを全体テストだけにしたとき, 検出器のテストと一緒に消した.

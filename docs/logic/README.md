@@ -1,4 +1,4 @@
-# 地図: ロジック, CLI (`core/`, `cli/`, `tests/`, `wasm/`)
+# 地図: ロジック, CLI (`core/`, `cli/`, `functional_tests/`, `wasm/`)
 
 チップの計数のロジック (C++) と, それを Linux で動かす CLI, ブラウザで動かす WASM の殻, テストの作業で読む.
 

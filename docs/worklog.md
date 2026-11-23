@@ -563,3 +563,13 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - モーションフォト (`.MP.jpg`) の 3 枚は, 写真のつもりで撮ったので, 末尾の動画と XMP のモーションフォトの印を取り除き, ふつうの写真にした.
   写真本体の画素と EXIF は変えていない. ファイル名は撮ったときのままにした.
 - `README.md` を足した (撮影の条件と正解の形式). `answers.jsonl` はまだない.
+
+## 2026-11-23: テストを全体テストだけにする
+
+- `functional_tests/evaluate.py` を足した. 正解付きのデータセット (`answers.jsonl`) の画像を CLI で解析し, 画像ごとに正解か不正解かを出す.
+- `tests/` (GoogleTest の 9 件と, 検出器のテストの基準 `tests/data/yolo_reference.txt`) と, 基準を作る `pyscript/make_yolo_reference.py` を消した.
+  画像を使うテストは, 画像の置き場所が `testimages/v1/` に変わってパスが古くなり, 動かなくなっていた.
+- `CMakeLists.txt` からテストのビルドを外した. GoogleTest は取らなくなった.
+- `make test` は ctest ではなく, `testimages/v2/yoko/single_color` で全体テストを流すようにした.
+- テストの作業ディレクトリだった `log/` を `.gitignore` から外した.
+- 設計の判断は `docs/architecture.md` の 5, 使い方は `docs/logic/usage.md` の「テスト」にある.

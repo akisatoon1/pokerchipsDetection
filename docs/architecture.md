@@ -15,7 +15,7 @@ Linux で実験・テストし, 同じロジックを Web (ブラウザ. WebAsse
 
 ```
 pokerchip/
-├── CMakeLists.txt          # Linux ビルドの入口 (core + cli + tests)
+├── CMakeLists.txt          # Linux ビルドの入口 (core + cli)
 ├── core/                   # ★共通ロジック. Linux/Android/Web で同一ソース
 │   ├── include/pokerchip/  # 公開ヘッダ
 │   │   ├── pipeline.hpp    # analyzeImage: 画像 → 検出 → 計数 → 色判定
@@ -25,14 +25,13 @@ pokerchip/
 │   │   └── visualize.hpp   # デバッグ用の可視化画像の生成
 │   └── src/
 ├── cli/                    # Linux 専用の殻 (引数, 画像読込, 画面表示, 手動ROI選択)
-├── tests/                  # GoogleTest (testimages を使う)
 ├── android/                # Android アプリ (Kotlin + Jetpack Compose + JNI). core を実機で確かめる
 │   └── app/src/main/cpp/   # JNI の殻. core を add_subdirectory してビルド
 ├── wasm/                   # WASM の殻 (embind). core を add_subdirectory し, Emscripten でビルド
 ├── web/                    # 点数計算アプリ (TypeScript). 画面から WASM の core を呼ぶ
 ├── functional_tests/       # 機能テスト (正解付きの画像での全体テスト, WASM と CLI の結果の比べ)
 ├── models/                 # ONNX モデル置き場 (git 管理外)
-├── pyscript/               # Python 側の補助 (ultralytics での推論・比較, 色の基準色の計算)
+├── pyscript/               # Python 側の補助 (色の基準色の計算)
 ├── scripts/                # 環境構築・モデル取得・WASM のビルドのスクリプト
 └── third_party/            # ソースビルドした OpenCV (Linux 用, WASM 用), emsdk (git 管理外)
 ```
@@ -91,7 +90,7 @@ AnalysisResult { stacks: [ { box, score, count, colors } ... ] }   … 左のス
 - バックエンドは `DNN_BACKEND_OPENCV` + `DNN_TARGET_CPU` に固定し, 両環境で同じ計算経路にする.
 
 従来の「C++ から `popen` で Python (ultralytics) を呼ぶ」方式は Android で使えないため廃止する.
-ultralytics との比較は `pyscript/make_yolo_reference.py` で行う (5 を参照). 旧方式で使っていた `pyscript/getroi.py` は削除した.
+旧方式で使っていた `pyscript/getroi.py` は削除した.
 
 ### 3. OpenCV は Linux/Android/Web とも 4.14.0 に揃える
 
@@ -126,14 +125,17 @@ end2end は本来 NMS 不要だが, 同じスタックを2つ (スコア 0.86 �
 (`IMG_5591.jpg`). 1つのスタックを2回数えるのはアプリとして誤りなので, どちらの形式にも
 クラスごとの NMS (IoU 0.7) をかける.
 
-### 5. 検出器の正しさは ultralytics + 同じ ONNX と比べて確かめる
+### 5. ロジックの正しさは, 正解付きの画像での全体テストだけで確かめる
 
-`tests/test_detector.cpp` は C++ 版の検出結果を `pyscript/make_yolo_reference.py` の出力
-(ultralytics で同じ ONNX を推論し, 同じ NMS をかけたもの) と比べる. 現状は全画像で一致する.
+テストは全体テスト (`functional_tests/evaluate.py`) だけにする. 正解付きのデータセットの画像を CLI で解析し,
+画像ごとに正解か不正解かと, 不正解ならスタック, 計数, 色のどの段で間違えたかを出す. 使い方は [logic/usage.md](logic/usage.md) の「テスト」にある.
 
-`best.pt` を ultralytics で直接使うと, 入力を正方形でなく長方形 (余白最小) にして推論するため,
-ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が変わる画像もある.
-基準を `best.pt` にすると前処理の差と実装の誤りを区別できないので, ONNX を基準にしている.
+- 目的は, ロジックを変えたときに今の画像での結果が崩れていないかを確かめること. それには画像を入れて最後の結果を見るのが直接的なため.
+- 正解の枚数は持たず, `colors` の要素の数から求める. 枚数を別に書くと, 色の並びと食い違うおそれがあるため.
+- 不正解があっても失敗にしない (終了コードは 0). 今のロジックにも不正解があり, 合否より画像ごとの結果を見たいため.
+- 関数ごとの単体テストは置かない. 全体テストで原因の場所が分からなくなったときや, 画像では起こらない入力 (空の画像など) を守りたくなったときに足す.
+- 以前は GoogleTest で, 小さな関数, 色判定の正答率, C++ の検出器と ultralytics の結果の一致を確かめていた.
+  画像の置き場所が変わってパスが古くなり, 画像を使うテストが動かなくなっていたので, 2026-11-23 に全体テストだけにした.
 
 ### 6. モデルはリポジトリ外から受け取る
 
@@ -202,8 +204,6 @@ ONNX (640x640 固定) と比べて矩形が数ピクセルずれ, 検出数が�
   `answers.txt` の正解の色ごとに中央値をとる.
 - 代表色を Python で計算し直さず C++ に出させるのは, 判定と同じ補正がかかった値で基準色を作るため.
   補正を 2 か所で実装すると, 細かな違い (中央値や分位点の取り方) で基準色と判定がずれる.
-- `tests/test_color.cpp` が `answers.txt` での正答率を確かめる. 基準色を同じ画像から作っているので,
-  この正答率は初見の画像での性能より高く出る.
 
 ### 10. Web でも core を WASM にして動かす
 

@@ -57,9 +57,9 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 | ファイル | 扱い | 理由 |
 |---|---|---|
-| git 管理下のすべて (コード, docs, testimages, `tests/data/`) | git で持っていく | testimages のデータセットの画像は Git LFS にある. 移行先で `git lfs pull` が要る (setup.md の 2) |
+| git 管理下のすべて (コード, docs, testimages) | git で持っていく | testimages のデータセットの画像は Git LFS にある. 移行先で `git lfs pull` が要る (setup.md の 2) |
 | `best.pt` | **scp で送る** | git 管理外. 移行先の `make model` で ONNX を作り直すのに使う |
-| `models/` (ONNX) | 持っていかない | `best.pt` から `make model` で作り直す. 作り直した ONNX でテストが通ることも確認になる |
+| `models/` (ONNX) | 持っていかない | `best.pt` から `make model` で作り直す. 作り直した ONNX で全体テストの結果が移行元と同じになることも確認になる |
 | `.venv/` (約 6GB) | 持っていかない | マシン固有. 移行先で作り直す |
 | `third_party/` (約 4.5GB) | 持っていかない | マシン固有のビルド結果とダウンロード物. 移行先で `make opencv` / `make android-deps` |
 | `build/`, `build-android/` | 持っていかない | ビルド結果 |
@@ -86,7 +86,7 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 上から順に行う. 1〜4 は移行元でも通っていたものなので, 失敗したら環境の違いを疑う.
 5 以降は移行元では確かめられていなかった項目.
 
-- [ ] 1. `make test` が全件 (6 件) 通る
+- [ ] 1. `make test` の全体テストの結果が, 移行元と同じになる
 - [ ] 2. `make check` で指摘がない
 - [ ] 3. testimages で CLI が動く. 結果は 7 で Android と比べるのに使うので保存しておく
   ```

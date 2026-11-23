@@ -12,7 +12,6 @@ TARGET = $(BUILDDIR)/pokerchip
 SRCS = $(wildcard core/src/*.cpp cli/*.cpp)
 HDRS = $(wildcard core/include/pokerchip/*.hpp cli/*.hpp)
 JNI_SRCS = $(wildcard android/app/src/main/cpp/*.cpp)
-TEST_SRCS = $(wildcard tests/*.cpp)
 
 # core と cli のみを対象にする. OpenCV などのヘッダの指摘は出さない.
 TIDYFLAGS = -p $(BUILDDIR) --header-filter='^$(CURDIR)/(core|cli)/'
@@ -28,8 +27,9 @@ build: $(BUILDDIR)/CMakeCache.txt
 run: build
 	./$(TARGET) $(ARGS)
 
+# 正解付きの画像で全体テストを流す (functional_tests/evaluate.py).
 test: build
-	ctest --test-dir $(BUILDDIR) --output-on-failure
+	python3 functional_tests/evaluate.py testimages/v2/yoko/single_color
 
 # 環境構築
 opencv:
@@ -61,10 +61,10 @@ tidy-fix: build
 	$(MAKE) format
 
 format:
-	clang-format -i $(SRCS) $(HDRS) $(TEST_SRCS) $(JNI_SRCS)
+	clang-format -i $(SRCS) $(HDRS) $(JNI_SRCS)
 
 format-check:
-	clang-format --dry-run --Werror $(SRCS) $(HDRS) $(TEST_SRCS) $(JNI_SRCS)
+	clang-format --dry-run --Werror $(SRCS) $(HDRS) $(JNI_SRCS)
 
 check: format-check tidy
 

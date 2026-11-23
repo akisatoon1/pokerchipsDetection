@@ -5,13 +5,13 @@
 
 | 場所 | 中身 |
 |---|---|
-| `core/`, `cli/`, `tests/` | チップの計数のロジック, それを Linux で動かす CLI, テスト (C++) |
+| `core/`, `cli/` | チップの計数のロジックと, それを Linux で動かす CLI (C++) |
 | `android/` | core を実機で確かめる Android アプリ (Kotlin. core は JNI で呼ぶ) |
 | `wasm/` | core を WebAssembly にする殻 (C++. Web の画面から呼ぶ) |
 | `web/` | 点数計算アプリ (TypeScript. Web とバックエンド. チップの検出は WASM の core で行う) |
 | `research/` | 研究開発の試作 (git の管理外) |
 | `testimages/` | テスト画像と正解, ラベル |
-| `pyscript/`, `scripts/`, `tools/`, `functional_tests/` | Python の補助, 環境構築とモデルの変換と WASM のビルド, 画像の変換, 機能テスト |
+| `pyscript/`, `scripts/`, `tools/`, `functional_tests/` | Python の補助, 環境構築とモデルの変換と WASM のビルド, 画像の変換, テスト (正解付きの画像での全体テストと, WASM と CLI の比べ) |
 | `docs/` | 文書. 下の「文書の地図」 |
 
 ## 作業の始め方

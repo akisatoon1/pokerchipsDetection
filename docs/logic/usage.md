@@ -10,14 +10,13 @@ Android アプリのビルドは [setup.md](../environment/setup.md) の 7〜9 �
 ## ビルド
 
 ```
-make build         # build/pokerchip (CLI) と build/tests/pokerchip_tests をビルド
+make build         # build/pokerchip (CLI) をビルド
 ```
 
 - 初回は `cmake -S . -B build` で設定してからビルドする. 2 回目以降は変更のあったところだけビルドされる.
 - ビルドの種類は既定で `Release`.
 - OpenCV は `third_party/opencv-4.14.0/` (`make opencv` でビルドしたもの) を使う.
   システムの OpenCV は使わない.
-- テストのビルドには GoogleTest を使い, 初回の設定のときにダウンロードされる.
 - やり直したいときは `make clean` で `build/` を消してから `make build`.
 
 ## CLI を実行する
@@ -126,26 +125,12 @@ adb pull /sdcard/Pictures/PokerChip/. testimages/android/
 ## テスト
 
 ```
-make test          # ビルドしてから ctest を実行する
+make test          # ビルドしてから, testimages/v2/yoko/single_color で全体テストを流す
 ```
 
-テストは 9 件 (`tests/test_pipeline.cpp`, `tests/test_detector.cpp`, `tests/test_color.cpp`).
-1 件だけ動かすときは ctest の `-R` で名前を指定する.
-
-```
-ctest --test-dir build -N                        # テストの一覧
-ctest --test-dir build -R YoloDetector --output-on-failure
-```
-
-- `models/chip_detector.onnx` がないと, 検出器のテスト (`YoloDetector.*`) と
-  複数色スタックの正答率のテスト (`ClassifyChipColors.MatchesAnswersOfMulticolorStacks`) はスキップされる.
-- 検出器のテストは「ultralytics で同じ ONNX を推論した結果」(`tests/data/yolo_reference.txt`) を基準にしている.
-- 正答率のテストは `testimages/yoko/stack/multicolor_jpg/answers.txt` と比べ, 正答率と間違えたチップを出力する.
-  正答率が 95% を下回ると失敗する.
-
-### 全体テスト
-
+テストは全体テスト (`functional_tests/evaluate.py`) だけにしている.
 正解付きのデータセットの画像を CLI で解析し, 画像ごとに正解か不正解かを出す. ロジックを変えたときに, 今の画像での結果が崩れていないかを確かめる.
+関数ごとの単体テストは置かない. 全体テストで原因の場所が分からなくなったときに足す.
 
 ```
 python3 functional_tests/evaluate.py testimages/v2/yoko/single_color
@@ -181,16 +166,15 @@ make build
 ```
 
 `answers.txt` の画像を CLI の `--lab` で解析し, 正解の色ごとに代表色の中央値をとって,
-`kReferences` の初期化子 (C++) を出力する. これを `core/src/color.cpp` に貼り付けてから `make test` で確かめる.
+`kReferences` の初期化子 (C++) を出力する. これを `core/src/color.cpp` に貼り付けてから `make test` で結果を確かめる.
 検出できなかった画像や枚数が正解と合わない画像は, チップと色の対応が取れないので使わない (標準エラー出力に出る).
 
 ### モデルを更新したとき
 
-モデルを更新したら基準を作り直し, テストが通ることを確かめてからコミットする.
+モデルを更新したら, 全体テストの結果が前より悪くなっていないかを確かめてからコミットする.
 
 ```
 make model PT=path/to/new/best.pt
-.venv/bin/python pyscript/make_yolo_reference.py models/chip_detector.onnx
 make test
 ```
 
@@ -227,7 +211,7 @@ make tidy-fix      # clang-tidy で自動修正してから整形する
 make check         # 整形の確認 (format-check) と clang-tidy の検査. コミット前に通す
 ```
 
-- 対象は `core/`, `cli/` (clang-tidy) と, それに加えて `tests/`, `android/app/src/main/cpp/` (clang-format).
+- 対象は `core/`, `cli/` (clang-tidy) と, それに加えて `android/app/src/main/cpp/` (clang-format).
 - `wasm/` と `functional_tests/` の C++ は対象に入っていない. 変えたら `clang-format -i <ファイル>` で整形する.
 - 設定はリポジトリのルートの `.clang-format` と `.clang-tidy`.
 
@@ -237,7 +221,7 @@ make check         # 整形の確認 (format-check) と clang-tidy の検査. �
 |---|---|
 | `make build` | CMake の設定とビルド |
 | `make run ARGS="..."` | CLI を実行 |
-| `make test` | テスト (ctest) |
+| `make test` | 全体テスト (`functional_tests/evaluate.py`) |
 | `make format` / `make format-check` | clang-format で整形 / 整形の確認 |
 | `make tidy` / `make tidy-fix` | clang-tidy で検査 / 自動修正 |
 | `make check` | `format-check` と `tidy` |
