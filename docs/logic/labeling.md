@@ -1,6 +1,7 @@
 # 画像のラベル付け (labelme)
 
 `testimages/v2/single_color/` の画像に, スタックの側面を囲む bounding box を付ける手順をまとめる. 道具は [labelme](https://github.com/wkentaro/labelme) を使う.
+データセットの構成 (画像, 正解, ラベルの置き場所) の決まりは [../development/testimages.md](../development/testimages.md) にある.
 
 確かめた環境: WSL2 (WSLg), Python 3.12, labelme 7.9.1.
 

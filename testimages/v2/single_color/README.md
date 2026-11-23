@@ -13,6 +13,8 @@
 
 ## 構成
 
+構成の決まりは [docs/development/testimages.md](../../../docs/development/testimages.md) にある.
+
 ```
 README.md        # この文書
 answers.jsonl    # 正解

@@ -38,6 +38,7 @@
 | [development/commit.md](development/commit.md) | (CLAUDE.md が読み込み済み) | コミットの決まり |
 | [development/code-rules.md](development/code-rules.md) | (CLAUDE.md が読み込み済み) | 言語によらないコードの書き方 |
 | [development/security.md](development/security.md) | (CLAUDE.md が読み込み済み) | セキュリティと個人情報 (上げないもの, push の前の確認, 外から取るもの) |
+| [development/testimages.md](development/testimages.md) | `testimages/` にデータセットや画像を足す・動かすとき | テスト画像の置き方 (データセットの構成, 正解とラベルの置き場所) |
 
 ## 研究開発
 

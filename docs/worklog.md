@@ -522,3 +522,9 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `labels/*.json` の `imagePath` を `../images/<ファイル名>` に, `answers.jsonl` の `file_name` を `images/<ファイル名>` に直した.
   `file_name` は `answers.jsonl` から見た相対パスにし, Hugging Face の `imagefolder` の metadata の形式に合わせた.
 - labelme の起動コマンドを `docs/logic/labeling.md` で直した. 開くディレクトリは `images/` になる.
+
+## 2026-11-23: testimages の構成の決まりを docs/development/testimages.md に書く
+
+- `docs/development/testimages.md` を足した. データセットごとに `README.md`, `answers.jsonl`, `images/`, `labels/` を置く決まりと, その理由を書いた.
+  `v1/` と `train/` は, テストと補助のスクリプトが前提にしているので古い形のまま置く.
+- `docs/README.md` の「全体」の表と, `docs/logic/labeling.md`, `testimages/v2/single_color/README.md` からリンクした.
