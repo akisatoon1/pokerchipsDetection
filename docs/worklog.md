@@ -505,3 +505,8 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `scripts/run_android.sh` と, それを呼ぶ Makefile の `android-run` を足した. USB で繋いだ端末に `./gradlew installDebug` で入れ,
   `adb shell am start` で起動する. 端末がない・複数あるときは理由を出して止める.
 - `docs/environment/setup.md` の 9 と `docs/logic/usage.md` の Makefile の表に足した.
+
+## 2026-11-23: testimages/v1/ をまた git で追跡する
+
+- `testimages/v1/` (画像 34 枚と正解の txt 2 つ) を `.gitignore` の対象から外し, また追跡するようにした.
+- 外す前に追跡していたものと, 36 ファイルとも中身が同じ (push 済みの履歴にあるもの). 位置情報 (GPS) がないことも確かめた.
