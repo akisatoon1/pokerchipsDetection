@@ -74,6 +74,11 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".tif", 
 # EXIF の GPS 情報の IFD のタグ.
 EXIF_GPS_IFD = 0x8825
 
+# Git LFS のポインタ. LFS で扱うファイルは, git の履歴にはこの形の短いテキストだけが入る.
+LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
+# ポインタの大きさの上限. これより大きい blob はポインタではないので, 中身を読まずに済ませる.
+LFS_POINTER_MAX_BYTES = 1024
+
 
 @dataclass
 class Finding:
@@ -203,8 +208,34 @@ def match_text(line: str, where: str) -> list[Finding]:
     return findings
 
 
+def lfs_pointer_size(sha: str, size: int) -> int | None:
+    """blob が LFS のポインタなら, 指している本体の大きさを返す. ポインタでなければ None を返す."""
+    if size > LFS_POINTER_MAX_BYTES:
+        return None
+    data = git_bytes("cat-file", "blob", sha)
+    if not data.startswith(LFS_POINTER_PREFIX):
+        return None
+    found = re.search(rb"^size (\d+)$", data, re.MULTILINE)
+    return int(found.group(1)) if found else None
+
+
+def blob_content(sha: str) -> bytes:
+    """blob の中身を返す. LFS のポインタなら, 手元の LFS の置き場から本体を取り出して返す.
+
+    LFS の本体も push で GitHub に上がり誰でも読めるので, ポインタではなく本体を調べる.
+    本体が手元になければ git lfs smudge が失敗し, 例外 (CalledProcessError) になる.
+    """
+    data = git_bytes("cat-file", "blob", sha)
+    if not data.startswith(LFS_POINTER_PREFIX):
+        return data
+    return subprocess.run(["git", "lfs", "smudge"], input=data, capture_output=True, check=True).stdout
+
+
 def new_blobs(rev_range: str) -> list[tuple[str, int, str]]:
-    """範囲のコミットで新しく上がるファイルの中身 (blob) の (id, 大きさ, パス) を返す."""
+    """範囲のコミットで新しく上がるファイルの中身 (blob) の (id, 大きさ, パス) を返す.
+
+    LFS のポインタは, 大きさを本体の大きさにする. 大きいファイルの検査でポインタの大きさを見て見逃さないため.
+    """
     objects = git("rev-list", "--objects", rev_range)
     batch = subprocess.run(
         ["git", "cat-file", "--batch-check=%(objecttype) %(objectname) %(objectsize) %(rest)"],
@@ -217,7 +248,8 @@ def new_blobs(rev_range: str) -> list[tuple[str, int, str]]:
     for line in batch.splitlines():
         kind, sha, size, *rest = line.split(" ", 3)
         if kind == "blob":
-            blobs.append((sha, int(size), rest[0] if rest else "?"))
+            real_size = lfs_pointer_size(sha, int(size))
+            blobs.append((sha, real_size if real_size is not None else int(size), rest[0] if rest else "?"))
     return blobs
 
 
@@ -243,7 +275,7 @@ def check_images(blobs: list[tuple[str, int, str]]) -> tuple[list[Finding], str 
     findings = []
     for sha, path in targets:
         try:
-            exif = Image.open(io.BytesIO(git_bytes("cat-file", "blob", sha))).getexif()
+            exif = Image.open(io.BytesIO(blob_content(sha))).getexif()
         except Exception as error:  # 読めない形式 (HEIC など) は人に確かめてもらう.
             findings.append(Finding("要確認", "画像の位置情報", path, f"読めなかった ({type(error).__name__})"))
             continue

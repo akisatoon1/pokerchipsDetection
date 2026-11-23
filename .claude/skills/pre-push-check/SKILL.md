@@ -46,6 +46,9 @@ python3 -I .claude/skills/pre-push-check/scan.py
 | コミットのメールアドレス | 作者とコミッターのアドレスが, git に登録したもの (`git config user.email`) と違えば NG |
 | 大きいファイル | 5 MB を超えるファイル. 50 MB を超えるものは NG (GitHub は 100 MB で拒否する) |
 | 画像の位置情報 | 新しく上がる画像の EXIF に GPS の情報があるか |
+
+Git LFS で扱うファイルは, ポインタではなく本体 (手元の LFS の置き場にあるもの) の大きさと EXIF を調べる.
+LFS の本体も push で GitHub に上がり, 誰でも読めるため.
 | 無視するはずのファイル | `.gitignore` に当たるのに追跡しているファイル |
 
 出力の `[NG]` は上げてはいけないもの, `[要確認]` は人が判断するもの.
