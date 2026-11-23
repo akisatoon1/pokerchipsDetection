@@ -528,3 +528,9 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `docs/development/testimages.md` を足した. データセットごとに `README.md`, `answers.jsonl`, `images/`, `labels/` を置く決まりと, その理由を書いた.
   `v1/` と `train/` は, テストと補助のスクリプトが前提にしているので古い形のまま置く.
 - `docs/README.md` の「全体」の表と, `docs/logic/labeling.md`, `testimages/v2/single_color/README.md` からリンクした.
+
+## 2026-11-23: testimages/v2/single_color/ を single_color_free_angle/ に改名する
+
+- 撮る角度を決めずに (横から, 斜め上から, 上からなど) 撮った単色のスタックだと名前で分かるようにした.
+  後で角度をそろえて撮ったデータセットを足したときに区別するため.
+- `docs/logic/labeling.md`, `docs/development/testimages.md` のパスを直した. これより前の作業記録は古い名前のまま残す.

@@ -8,7 +8,7 @@
 データセットは `testimages/<版>/<データセットの名前>/` に 1 つずつ置き, 中を次の形にする.
 
 ```
-testimages/v2/single_color/
+testimages/v2/single_color_free_angle/
   README.md        # 目的, 撮影の条件, 正解の形式
   answers.jsonl    # 正解. 1 行に 1 枚分
   images/          # 画像だけを置く

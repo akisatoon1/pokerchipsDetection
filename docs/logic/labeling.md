@@ -1,6 +1,6 @@
 # 画像のラベル付け (labelme)
 
-`testimages/v2/single_color/` の画像に, スタックの側面を囲む bounding box を付ける手順をまとめる. 道具は [labelme](https://github.com/wkentaro/labelme) を使う.
+`testimages/v2/single_color_free_angle/` の画像に, スタックの側面を囲む bounding box を付ける手順をまとめる. 道具は [labelme](https://github.com/wkentaro/labelme) を使う.
 データセットの構成 (画像, 正解, ラベルの置き場所) の決まりは [../development/testimages.md](../development/testimages.md) にある.
 
 確かめた環境: WSL2 (WSLg), Python 3.12, labelme 7.9.1.
@@ -23,15 +23,15 @@ python3 -m venv .venv-label
 リポジトリの根で次を実行する. labelme を閉じるまで, ターミナルは戻らない.
 
 ```sh
-.venv-label/bin/labelme testimages/v2/single_color/images \
-  --output testimages/v2/single_color/labels \
+.venv-label/bin/labelme testimages/v2/single_color_free_angle/images \
+  --output testimages/v2/single_color_free_angle/labels \
   --labels stack_side \
   --flags confirmed,unconfirmed \
   --validate-label exact \
   --no-sort-labels
 ```
 
-**`--output` は必ず付ける.** 付けないと, 自動保存で画像の隣 (`testimages/v2/single_color/images/`) に JSON ができる. `labels/` がなくても, 最初の保存のときに作られる.
+**`--output` は必ず付ける.** 付けないと, 自動保存で画像の隣 (`testimages/v2/single_color_free_angle/images/`) に JSON ができる. `labels/` がなくても, 最初の保存のときに作られる.
 
 `QT_QPA_PLATFORM=xcb` は付けない. `libxcb-cursor0` がないと異常終了する. 指定しなければ WSLg の Wayland で動く.
 
@@ -79,10 +79,10 @@ python3 -m venv .venv-label
 
 ## ラベルの置き場所と流れ
 
-ラベルは `testimages/v2/single_color/labels/` に, 画像ごとに 1 つの JSON (labelme の形式) で置く. JSON の `imagePath` は `../images/<画像のファイル名>` になる.
+ラベルは `testimages/v2/single_color_free_angle/labels/` に, 画像ごとに 1 つの JSON (labelme の形式) で置く. JSON の `imagePath` は `../images/<画像のファイル名>` になる.
 
 ```
-testimages/v2/single_color/
+testimages/v2/single_color_free_angle/
   answers.jsonl
   images/PXL_....jpg
   labels/PXL_....json
@@ -97,5 +97,5 @@ testimages/v2/single_color/
 AI が付けた箱は, 箱の `description` に `ai:` で始まる印がある. 未確定のファイルも同じ場所に並ぶ. コミットの前に, `confirmed` の付いていないファイルを次で確かめる.
 
 ```sh
-python3 -c "import glob,json; [print(p) for p in sorted(glob.glob('testimages/v2/single_color/labels/*.json')) if not json.load(open(p))['flags'].get('confirmed')]"
+python3 -c "import glob,json; [print(p) for p in sorted(glob.glob('testimages/v2/single_color_free_angle/labels/*.json')) if not json.load(open(p))['flags'].get('confirmed')]"
 ```
