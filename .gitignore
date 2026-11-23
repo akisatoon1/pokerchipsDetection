@@ -18,19 +18,6 @@ log/
 # 学習済みの重み. モデル側のリポジトリ (yoloPokerchip) から受け取る
 *.pt
 
-# データセット
-# 親ディレクトリが無視されていると中のファイルを ! で戻せないため, 1 段ずつ戻す
-testimages/*
-# v1 はテスト (tests/) が使うので, 画像ごと追跡する
-!testimages/v1/
-!testimages/v2/
-testimages/v2/*
-!testimages/v2/single_color/
-testimages/v2/single_color/*
-!testimages/v2/single_color/answers.jsonl
-!testimages/v2/single_color/labels/
-!testimages/v2/single_color/README.md
-
 # tmp
 tmp/
 
