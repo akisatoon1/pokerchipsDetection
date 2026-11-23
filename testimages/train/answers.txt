@@ -1,0 +1,99 @@
+# train の正解. AI (Claude) が目で数えた案で, 人の確認がまだ.
+# 形式は v1/random/answers.txt と同じ: <ファイル名> <枚数> <色...>
+#   色は上のチップから順. 1 枚に複数のスタックがあるときは, 左のスタックから順に複数行書く.
+#   IMG_5638.jpg と IMG_5645.jpg は YOLO がスタックを見つけないので書いていない (どちらも 1 枚).
+#
+# 数え方: スタック正面の中央の細い帯を拡大し, 合わせ目 (暗い溝) と白いブロックの段を数えた.
+#   6 枚を超えると ±1 枚の迷いが出る. 迷ったものは直前の行に「# 自信: 中」「# 自信: 低」と書いた.
+#   書いていないものは自信が高い.
+#   最初の案のあと, 拡大を 2〜3 段に分けて数え直し, 10 件を直した (多く数えすぎが 9 件, 少なすぎが 1 件).
+IMG_5636.jpg 1 yellow
+IMG_5637.jpg 1 blue
+IMG_5639.jpg 1 gray
+IMG_5640.jpg 1 red
+IMG_5641.jpg 1 black
+IMG_5642.jpg 1 purple
+IMG_5643.jpg 3 red red red
+IMG_5644.jpg 3 blue blue blue
+IMG_5646.jpg 4 green green green green
+IMG_5647.jpg 3 purple purple purple
+IMG_5648.jpg 2 gray gray
+IMG_5649.jpg 3 black black black
+IMG_5650.jpg 6 red red red red red red
+IMG_5651.jpg 9 yellow yellow yellow yellow yellow yellow yellow yellow yellow
+# 自信: 中
+IMG_5652.jpg 8 blue blue blue blue blue blue blue blue
+# 自信: 中
+IMG_5653.jpg 9 gray gray gray gray gray gray gray gray gray
+# 自信: 中. 白いブロックが上下の段でつながって見え, 段の境目が読みにくい. 最初は 8 と数えたが, 拡大して 9 に直した.
+IMG_5654.jpg 9 black black black black black black black black black
+# 自信: 中
+IMG_5655.jpg 12 green green green green green green green green green green green green
+# 自信: 中
+IMG_5656.jpg 14 purple purple purple purple purple purple purple purple purple purple purple purple purple purple
+# 自信: 中
+IMG_5658.jpg 10 red red red red red red red red red red
+# 自信: 中
+IMG_5659.jpg 16 black black black black black black black black black black black black black black black black
+# 自信: 中
+IMG_5660.jpg 13 yellow yellow yellow yellow yellow yellow yellow yellow yellow yellow yellow yellow yellow
+# 自信: 中
+IMG_5661.jpg 17 gray gray gray gray gray gray gray gray gray gray gray gray gray gray gray gray gray
+# 自信: 中
+IMG_5662.jpg 15 blue blue blue blue blue blue blue blue blue blue blue blue blue blue blue
+IMG_5663.jpg 3 yellow yellow yellow
+IMG_5663.jpg 1 green
+# 自信: 中
+IMG_5664.jpg 5 red red red red red
+IMG_5664.jpg 1 black
+# 自信: 中
+IMG_5665.jpg 6 blue blue blue blue blue blue
+IMG_5665.jpg 3 gray gray gray
+IMG_5666.jpg 3 purple purple purple
+# 自信: 中
+IMG_5666.jpg 5 green green green green green
+# 自信: 中. 最初は 8 と数えたが, 拡大して 7 に直した.
+IMG_5667.jpg 7 black black black black black black black
+# 自信: 中
+IMG_5667.jpg 8 green green green green green green green green
+IMG_5668.jpg 2 gray gray
+# 自信: 中. 最初は 12 と数えたが, 拡大して 10 に直した.
+IMG_5668.jpg 10 blue blue blue blue blue blue blue blue blue blue
+IMG_5669.jpg 2 black black
+# 自信: 中
+IMG_5669.jpg 9 yellow yellow yellow yellow yellow yellow yellow yellow yellow
+# 自信: 中
+IMG_5670.jpg 12 purple purple purple purple purple purple purple purple purple purple purple purple
+IMG_5670.jpg 1 red
+# 自信: 中
+IMG_5671.jpg 6 blue blue blue blue blue blue
+# 自信: 中
+IMG_5671.jpg 12 gray gray gray gray gray gray gray gray gray gray gray gray
+# 自信: 中
+IMG_5672.jpg 8 green green green green green green green green
+# 自信: 中
+IMG_5672.jpg 10 red red red red red red red red red red
+# 自信: 中
+IMG_5673.jpg 7 black black black black black black black
+# 自信: 中
+IMG_5673.jpg 14 purple purple purple purple purple purple purple purple purple purple purple purple purple purple
+IMG_5674.jpg 1 black
+IMG_5674.jpg 3 yellow yellow yellow
+# 自信: 中
+IMG_5674.jpg 6 blue blue blue blue blue blue
+IMG_5675.jpg 2 red red
+# 自信: 中
+IMG_5675.jpg 6 purple purple purple purple purple purple
+IMG_5675.jpg 3 green green green
+# 自信: 中
+IMG_5676.jpg 7 gray gray gray gray gray gray gray
+IMG_5676.jpg 2 black black
+IMG_5676.jpg 1 yellow
+IMG_5677.jpg 2 red yellow
+IMG_5678.jpg 6 black black black green green green
+# 自信: 中
+IMG_5679.jpg 9 blue blue blue blue gray gray gray gray gray
+# 自信: 低
+IMG_5680.jpg 18 yellow yellow yellow yellow yellow yellow yellow yellow black black purple purple purple purple purple purple purple purple
+# 自信: 低
+IMG_5681.jpg 16 green green green green green blue gray gray gray gray gray gray gray gray gray gray

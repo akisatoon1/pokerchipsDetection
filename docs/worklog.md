@@ -547,3 +547,9 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `testimages/v2/single_color_free_angle/images/` の 140 枚を LFS で入れた. 入れる前に, EXIF の GPS の欄 (緯度と経度はなく, 版と向きだけ) を,
   画素を変えずに消した.
 - `docs/environment/setup.md` の 2 に `git-lfs` と `git lfs install`, `git lfs pull` を足した. `docs/environment/migration.md` にも書いた.
+
+## 2026-11-23: testimages/train/ を追跡する
+
+- `testimages/train/` (画像 45 枚と正解の `answers.txt`) を足した. 画像は `.gitattributes` の決まりで Git LFS に入る.
+  足す前に, 45 枚とも EXIF に GPS の欄がないことと, 個人が分かるものが写っていないことを確かめた.
+- 形は `v1/` と同じ古い形 (画像を正解と同じ階層に置く). `docs/development/testimages.md` の例外の表にある.
