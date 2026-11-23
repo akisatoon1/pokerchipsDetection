@@ -30,7 +30,7 @@ pokerchip/
 │   └── app/src/main/cpp/   # JNI の殻. core を add_subdirectory してビルド
 ├── wasm/                   # WASM の殻 (embind). core を add_subdirectory し, Emscripten でビルド
 ├── web/                    # 点数計算アプリ (TypeScript). 画面から WASM の core を呼ぶ
-├── functional_tests/       # 機能テスト (WASM と CLI の結果の比べ)
+├── functional_tests/       # 機能テスト (正解付きの画像での全体テスト, WASM と CLI の結果の比べ)
 ├── models/                 # ONNX モデル置き場 (git 管理外)
 ├── pyscript/               # Python 側の補助 (ultralytics での推論・比較, 色の基準色の計算)
 ├── scripts/                # 環境構築・モデル取得・WASM のビルドのスクリプト

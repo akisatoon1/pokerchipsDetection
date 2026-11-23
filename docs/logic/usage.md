@@ -143,6 +143,34 @@ ctest --test-dir build -R YoloDetector --output-on-failure
 - 正答率のテストは `testimages/yoko/stack/multicolor_jpg/answers.txt` と比べ, 正答率と間違えたチップを出力する.
   正答率が 95% を下回ると失敗する.
 
+### 全体テスト
+
+正解付きのデータセットの画像を CLI で解析し, 画像ごとに正解か不正解かを出す. ロジックを変えたときに, 今の画像での結果が崩れていないかを確かめる.
+
+```
+python3 functional_tests/evaluate.py testimages/v2/yoko/single_color
+python3 functional_tests/evaluate.py <データセット> --cli <CLI のパス> --model <ONNX のパス>   # 既定と違う場所のものを使う
+```
+
+- データセットは `answers.jsonl` のあるディレクトリ ([../development/testimages.md](../development/testimages.md)). 画像にスタックが 1 つだけの前提で比べる.
+- CLI の既定は `build/pokerchip`, モデルの既定は `models/chip_detector.onnx`. 先に `make build` をしておく.
+- 正解の画像は `OK`, 不正解の画像は `NG` と, 最初に間違えた段を 1 つ出す. 前の段が違うと後の段は比べられないため.
+
+```
+OK  images/PXL_20261123_093717714.MP.jpg
+NG  images/PXL_20261123_093705462.jpg  スタック: 見つからない
+NG  images/PXL_20261123_094659670.jpg  色: 9 枚目 blue -> black, 20 枚目 blue -> black
+正解 30/35
+```
+
+| 段 | 不正解になるとき |
+|---|---|
+| スタック | 見つかったスタックの数が 1 ではない |
+| 計数 | 枚数が正解 (`colors` の要素の数) と違う. 数えられなかったときは「数えられない」 |
+| 色 | 色が違うチップがある. 上から何枚目かを, 違うものすべて並べる |
+
+- 不正解があっても終了コードは 0. 結果を見るための道具で, 今のロジックにも不正解があるため. CLI が失敗したときだけ 0 以外で終わる.
+
 ### 色の基準色を作り直すとき
 
 チップセットを変えたときや, 色判定の補正の処理を変えたときは, 基準色を作り直す.
