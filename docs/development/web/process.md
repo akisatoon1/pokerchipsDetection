@@ -118,9 +118,9 @@ Web アプリの作業では, 次のことをしない.
   テストを変えることは許すが, 検査そのものを外すとコミット前の関門がなくなるため.
 - 秘密情報と個人情報をコミットしない. 何を上げないかは [../security.md](../security.md) にある.
 - デプロイや, 本番の DB の変更・削除は, 人に指示されたときだけ行う. 取り返しがつかないため.
-  - main への push がデプロイになる ([deploy.md](../../web/deploy.md)). push は人だけが行うので, AI がデプロイすることはない.
+  - main への push がデプロイになる ([deploy.md](../../web/deploy.md)). AI は人に push をはっきり指示されたときだけ push するので ([../security.md](../security.md)), AI がそれ以外でデプロイすることはない.
   - 本番の D1 に migration を当てるワークフロー (migrate) を起動するのも, 人だけにする.
   - AI は, 手元から本番に触るコマンド (`wrangler deploy`, `wrangler rollback`, `--remote` を付けた `wrangler d1` など) を, 人に指示されたときだけ実行する.
-- `git push` をしない. push は人が行う.
+- 人に push をはっきり指示されたときだけ `git push` をする. 手順と条件は [../security.md](../security.md) の「push の前に確かめる」にある.
 - git の履歴を書き換えない (`git reset --hard`, `git rebase`, `git commit --amend`, `git push --force` など).
   main に直接コミットするので, 壊すと戻せないため.

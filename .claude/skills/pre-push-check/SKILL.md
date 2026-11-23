@@ -6,7 +6,8 @@ description: GitHub に push する前に, まだ push していないコミッ�
 # push の前の確認
 
 まだ push していないコミットに, GitHub に上げてはいけないものが入っていないかを調べて, 人に報告する.
-push は人が行うので, このスキルは調べて報告するところまでにする.
+このスキルは調べて報告するところまでにする. push してよいのは, 人に push をはっきり指示されていて,
+結論が「NG なし, 要確認なし」のときだけ (`docs/development/security.md` の「push の前に確かめる」).
 何を上げないかの規則は `docs/development/security.md` にある.
 
 ## 見る範囲
@@ -83,7 +84,7 @@ git log --format= --name-only --diff-filter=A <範囲> | sort -u
 
 ## 見つかったときにしないこと
 
-- **push しない.** push は人が行う.
+- **push しない.** push を指示されていても, NG か要確認があれば push せずに報告し, 人の判断を待つ.
 - **人に指示されるまで履歴を書き換えない** (`git rebase`, `git commit --amend`, `git reset`, `git filter-repo` など).
   まだ push していなくても, 消したいファイルを含むコミットを直すには履歴を書き換える必要がある.
   どのコミットをどう直すかの案を示し, 人の指示を待つ.

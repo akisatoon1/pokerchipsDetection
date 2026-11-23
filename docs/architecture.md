@@ -241,12 +241,12 @@ iPhone でも Android でも, アプリを入れずにブラウザでチップ�
 ### 11. デプロイは GitHub Actions で行い, 検出器は Release から取る
 
 点数計算アプリ (`web/`) は, Cloudflare Workers (無料プラン) の `pokerchip-score.<サブドメイン>.workers.dev` に出す.
-人が main に push すると, GitHub Actions がデプロイする. 手順は [web/deploy.md](web/deploy.md) にある.
+main に push すると (人が行うか, 人の指示で AI が行う), GitHub Actions がデプロイする. 手順は [web/deploy.md](web/deploy.md) にある.
 
 ```
 人が手元で: build_wasm.sh → compare_wasm_cli.sh → release_detector.sh ─→ GitHub Release (検出器の 3 ファイル)
                                                     └→ web/detector.lock (タグと sha256) をコミット
-人が push ─→ deploy.yml: npm ci → fetch_detector.sh (Release から取り sha256 を確かめる) → npm run check
+push ──────→ deploy.yml: npm ci → fetch_detector.sh (Release から取り sha256 を確かめる) → npm run check
                          → 本番の D1 に未適用の migration がないかを確かめる → npm run build → wrangler deploy
 人が手で起動 ─→ migrate.yml: Time Travel の bookmark を出す → wrangler d1 migrations apply --remote
 ```

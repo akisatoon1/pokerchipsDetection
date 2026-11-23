@@ -8,12 +8,12 @@
 
 | 操作 | 行う人 | どこで |
 |---|---|---|
-| main への push (これがデプロイになる) | 人だけ | 手元の `git push` |
+| main への push (これがデプロイになる) | 人. AI は人に push をはっきり指示されたときだけ | 手元の `git push` |
 | 本番の D1 に migration を当てる | 人だけ | GitHub の Actions → migrate → Run workflow |
 | 検出器の Release を作る | 人. AI は人に指示されたときだけ | 手元の `scripts/release_detector.sh` |
 | 手元から本番に触る (`wrangler rollback` など) | 人. AI は人に指示されたときだけ | 手元 (期限付きのトークンを渡す) |
 
-AI は push しないので, AI がデプロイすることはない ([../development/web/process.md](../development/web/process.md)).
+AI は人に push をはっきり指示されたときだけ push するので, AI がそれ以外でデプロイすることはない ([../development/security.md](../development/security.md)).
 
 手元の `wrangler` には Cloudflare のログイン (`wrangler login`) をしない. Cloudflare の操作は画面で行い, 本番に触るのは CI だけにする.
 手元に本番の権限を残さないため.
