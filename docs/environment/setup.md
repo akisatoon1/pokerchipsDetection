@@ -29,13 +29,17 @@ cd ~/workspace/pokerchip
 
 ```
 sudo apt update
-sudo apt install build-essential cmake git curl unzip python3-venv \
+sudo apt install build-essential cmake git git-lfs curl unzip python3-venv \
                  libgtk-3-dev clang-format clang-tidy
+git lfs install
+git lfs pull
 ```
 
 - `libgtk-3-dev` は OpenCV の画面表示 (`imshow`, 手動の ROI 選択) に必要.
   **OpenCV をビルドする (3) より前に入れておくこと.** 後から入れた場合は 3 をやり直す.
 - CMake は 3.22 以上が必要 (Ubuntu 24.04 の apt 版は 3.28).
+- `git-lfs` は `testimages/` のデータセットの画像を取るのに使う ([../development/testimages.md](../development/testimages.md)).
+  git-lfs を入れる前に clone すると, 画像の場所には中身ではなく短いテキスト (ポインタ) ができる. `git lfs pull` で本物の画像に置き換わる.
 
 以降のコマンドはすべてリポジトリのルートで実行する.
 

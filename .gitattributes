@@ -1,3 +1,4 @@
+# testimages の画像は Git LFS で扱う. ラベルと正解はテキストなので扱わない (docs/development/testimages.md)
 testimages/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 testimages/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
 testimages/**/*.png filter=lfs diff=lfs merge=lfs -text

@@ -57,7 +57,7 @@ Ubuntu の実機なら, Linux 版 (CLI・テスト) と Android 版を **同じ�
 
 | ファイル | 扱い | 理由 |
 |---|---|---|
-| git 管理下のすべて (コード, docs, testimages, `tests/data/`) | git で持っていく | |
+| git 管理下のすべて (コード, docs, testimages, `tests/data/`) | git で持っていく | testimages のデータセットの画像は Git LFS にある. 移行先で `git lfs pull` が要る (setup.md の 2) |
 | `best.pt` | **scp で送る** | git 管理外. 移行先の `make model` で ONNX を作り直すのに使う |
 | `models/` (ONNX) | 持っていかない | `best.pt` から `make model` で作り直す. 作り直した ONNX でテストが通ることも確認になる |
 | `.venv/` (約 6GB) | 持っていかない | マシン固有. 移行先で作り直す |

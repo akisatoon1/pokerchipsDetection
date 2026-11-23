@@ -534,3 +534,16 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - 撮る角度を決めずに (横から, 斜め上から, 上からなど) 撮った単色のスタックだと名前で分かるようにした.
   後で角度をそろえて撮ったデータセットを足したときに区別するため.
 - `docs/logic/labeling.md`, `docs/development/testimages.md` のパスを直した. これより前の作業記録は古い名前のまま残す.
+
+## 2026-11-23: testimages のデータセットの画像を Git LFS で管理する
+
+- `git-lfs` (Ubuntu の apt 版 3.4.1) を入れ, `.gitattributes` で `testimages/` の下の画像 (jpg, jpeg, png, HEIC) を LFS で扱うようにした.
+  画像は数百 MB あり増えていくので, ふつうの git に入れると clone と CI の checkout が重くなり続けるため. ラベルと正解は今のまま.
+- `git lfs migrate import --everything` で過去の履歴も書き換え, それまでにコミットした画像 47 個 (142.7MB. `v1/` と, 古いパスの HEIC) も LFS にした.
+  `main`, `chore/track-testimages`, タグ `detector-20261118-5460ef4` のコミットの id がすべて変わったので, force push した.
+  書き換えの前後で, コミットのメタデータと画像以外のファイルが同じで, 画像のポインタが元の画像の sha256 を指すことを確かめた.
+  それより前の clone は作り直す. 古い clone から push すると, 画像の入った古い履歴がまた上がるため.
+- タグ `detector-20261118-5460ef4` の名前の `5460ef4` は, 書き換える前のコミットの id のまま. デプロイはタグの名前で Release を取るので影響はない.
+- `testimages/v2/single_color_free_angle/images/` の 140 枚を LFS で入れた. 入れる前に, EXIF の GPS の欄 (緯度と経度はなく, 版と向きだけ) を,
+  画素を変えずに消した.
+- `docs/environment/setup.md` の 2 に `git-lfs` と `git lfs install`, `git lfs pull` を足した. `docs/environment/migration.md` にも書いた.
