@@ -114,6 +114,21 @@ std::optional<Options> parseArgs(int argc, char *argv[]) {
 }
 
 /**
+ * @brief 小数を, 小数点以下の桁数を決めて文字にする.
+ *
+ * std::cout に std::setprecision を流すと後の出力にも残るので,
+ * 別のストリームで文字にしてから書く.
+ * @param value 書く値.
+ * @param digits 小数点以下の桁数.
+ * @return value を digits 桁で丸めた文字.
+ */
+std::string formatFixed(double value, int digits) {
+  std::ostringstream os;
+  os << std::fixed << std::setprecision(digits) << value;
+  return os.str();
+}
+
+/**
  * @brief 1つのスタックの解析結果を標準出力に書く.
  * @param index スタックの番号.
  * @param s スタックの解析結果.
@@ -142,13 +157,13 @@ void printStack(size_t index, const StackResult &s,
   std::cout << std::endl;
 
   if (labs.empty()) return;
-  std::cout << "  chip lab (top -> bottom) =" << std::fixed
-            << std::setprecision(1);
+  std::cout << "  chip lab (top -> bottom) =";
   for (size_t i = 0; i < labs.size(); ++i) {
-    std::cout << (i == 0 ? " " : ", ") << "(" << labs[i][0] << ", "
-              << labs[i][1] << ", " << labs[i][2] << ")";
+    std::cout << (i == 0 ? " " : ", ") << "(" << formatFixed(labs[i][0], 1)
+              << ", " << formatFixed(labs[i][1], 1) << ", "
+              << formatFixed(labs[i][2], 1) << ")";
   }
-  std::cout << std::defaultfloat << std::endl;
+  std::cout << std::endl;
 }
 
 /**
