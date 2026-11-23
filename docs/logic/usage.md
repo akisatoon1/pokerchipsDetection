@@ -111,8 +111,8 @@ for f in testimages/yoko/stack/*/*.jpg testimages/yoko/single/*.jpg; do
 done > results.txt
 ```
 
-1 行に「画像のパス + JSON かエラー」が並ぶ. 今のモデルでは, 27 枚のうち 5 枚はスタックが検出されず
-`Error: ROI was not selected.` になる. モデルや処理を変えたときに, 前の結果と `diff` で比べるのに使う.
+1 行に「画像のパス + JSON かエラー」が並ぶ. 今のモデルと検出のしきい値 (0.9) では, `stack/` の 27 枚のうち 4 枚 (どれも 3 枚のスタック) と
+`single/` の 3 枚はスタックが検出されず `Error: ROI was not selected.` になる. モデルや処理を変えたときに, 前の結果と `diff` で比べるのに使う.
 
 ### Android で保存した画像を取り出す
 

@@ -15,7 +15,7 @@ import torchvision
 from ultralytics import YOLO
 
 # C++ 版 (core/src/detector.cpp) と同じ値.
-CONF = 0.5
+CONF = 0.9
 IOU = 0.7
 
 
