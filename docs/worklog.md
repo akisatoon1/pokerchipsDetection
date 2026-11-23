@@ -515,3 +515,10 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - `.gitignore` から `testimages/` の除外 (v1 と v2 の一部だけを戻す決まり) を消し, `testimages/` の下をすべて追跡するようにした.
   v2 に画像を足していくため. 足す画像は, コミットの前に位置情報 (GPS) がないかを確かめる.
+
+## 2026-11-23: testimages/v2/single_color/ の画像を images/ にまとめる
+
+- 画像 140 枚を `testimages/v2/single_color/images/` に移した. 最上位に画像と README, 正解, ラベルが混ざらないようにするため.
+- `labels/*.json` の `imagePath` を `../images/<ファイル名>` に, `answers.jsonl` の `file_name` を `images/<ファイル名>` に直した.
+  `file_name` は `answers.jsonl` から見た相対パスにし, Hugging Face の `imagefolder` の metadata の形式に合わせた.
+- labelme の起動コマンドを `docs/logic/labeling.md` で直した. 開くディレクトリは `images/` になる.

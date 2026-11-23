@@ -22,7 +22,7 @@ python3 -m venv .venv-label
 リポジトリの根で次を実行する. labelme を閉じるまで, ターミナルは戻らない.
 
 ```sh
-.venv-label/bin/labelme testimages/v2/single_color \
+.venv-label/bin/labelme testimages/v2/single_color/images \
   --output testimages/v2/single_color/labels \
   --labels stack_side \
   --flags confirmed,unconfirmed \
@@ -30,7 +30,7 @@ python3 -m venv .venv-label
   --no-sort-labels
 ```
 
-**`--output` は必ず付ける.** 付けないと, 自動保存で画像の隣 (`testimages/v2/single_color/`) に JSON ができる. `labels/` がなくても, 最初の保存のときに作られる.
+**`--output` は必ず付ける.** 付けないと, 自動保存で画像の隣 (`testimages/v2/single_color/images/`) に JSON ができる. `labels/` がなくても, 最初の保存のときに作られる.
 
 `QT_QPA_PLATFORM=xcb` は付けない. `libxcb-cursor0` がないと異常終了する. 指定しなければ WSLg の Wayland で動く.
 
@@ -78,13 +78,13 @@ python3 -m venv .venv-label
 
 ## ラベルの置き場所と流れ
 
-ラベルは `testimages/v2/single_color/labels/` に, 画像ごとに 1 つの JSON (labelme の形式) で置く. 画像は git で管理しないが, ラベルは管理する.
+ラベルは `testimages/v2/single_color/labels/` に, 画像ごとに 1 つの JSON (labelme の形式) で置く. JSON の `imagePath` は `../images/<画像のファイル名>` になる.
 
 ```
 testimages/v2/single_color/
-  PXL_....jpg            # git で管理しない
   answers.jsonl
-  labels/PXL_....json    # git で管理する
+  images/PXL_....jpg
+  labels/PXL_....json
 ```
 
 流れは次のとおり.
