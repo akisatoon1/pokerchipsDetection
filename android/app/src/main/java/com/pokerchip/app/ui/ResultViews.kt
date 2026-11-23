@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.pokerchip.app.AnalysisResult
 import com.pokerchip.app.StackResult
 import com.pokerchip.app.chips.ChipColor
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /** 画像に検出したスタックの枠と枚数を重ねて表示する. */
@@ -63,7 +64,7 @@ fun ResultImage(bitmap: Bitmap, result: AnalysisResult?) {
                     )
                     drawText(
                         textMeasurer = textMeasurer,
-                        text = "#${i + 1}: ${s.count ?: "?"}枚",
+                        text = "#${i + 1}: ${s.count ?: "?"}枚 (${formatScore(s.score)})",
                         topLeft = Offset(topLeft.x, (topLeft.y - 22.dp.toPx()).coerceAtLeast(0f)),
                         style = TextStyle(
                             color = Color.White,
@@ -115,6 +116,7 @@ private fun StackCheckView(bitmap: Bitmap, stack: StackResult, index: Int) {
             "スタック #${index + 1}: ${stack.count?.let { "${it}枚" } ?: "数えられませんでした"}",
             style = MaterialTheme.typography.titleMedium,
         )
+        Text("検出の信頼度: ${formatScore(stack.score)}")
         if (stack.colors.isNotEmpty()) {
             val breakdown = stack.colors.groupingBy { it }.eachCount()
                 .entries.sortedByDescending { it.value }
@@ -212,6 +214,9 @@ private val SEAM_COLOR = Color(0xFFFFA000)
 
 private val LABEL_BACKGROUND = Color(0xFF1E1E1E)
 private val LABEL_TEXT = Color(0xFFE6E6E6)
+
+/** YOLO の検出スコア (0-1) を小数 2 桁の文字にする. 端末の言語によらず小数点を "." にする. */
+private fun formatScore(score: Float): String = String.format(Locale.ROOT, "%.2f", score)
 
 /** 色名 (core の chipColorName) の見本の色. 知らない色 (unknown) は白. */
 private fun chipColor(name: String): Color =
