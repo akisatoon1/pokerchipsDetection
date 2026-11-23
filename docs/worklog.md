@@ -553,3 +553,13 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `testimages/train/` (画像 45 枚と正解の `answers.txt`) を足した. 画像は `.gitattributes` の決まりで Git LFS に入る.
   足す前に, 45 枚とも EXIF に GPS の欄がないことと, 個人が分かるものが写っていないことを確かめた.
 - 形は `v1/` と同じ古い形 (画像を正解と同じ階層に置く). `docs/development/testimages.md` の例外の表にある.
+
+## 2026-11-23: testimages/v2/yoko/single_color/ に画像を足す
+
+- Android の端末 (Pixel 8a) のカメラから, 横から撮った単色のスタックの画像 35 枚を `adb pull` で取り,
+  `testimages/v2/yoko/single_color/images/` に置いた. 画像は `.gitattributes` の決まりで Git LFS に入る.
+- 入れる前に, EXIF の GPS の欄 (緯度と経度はなく, 版と向きだけ) を, 画素とほかの EXIF を変えずに消した.
+  個人が分かるものが写っていないことを, 縮小した一覧で確かめた.
+- モーションフォト (`.MP.jpg`) の 3 枚は, 写真のつもりで撮ったので, 末尾の動画と XMP のモーションフォトの印を取り除き, ふつうの写真にした.
+  写真本体の画素と EXIF は変えていない. ファイル名は撮ったときのままにした.
+- `README.md` と `answers.jsonl` はまだない.
