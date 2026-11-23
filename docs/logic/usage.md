@@ -144,7 +144,7 @@ python3 functional_tests/evaluate.py <データセット> --cli <CLI のパス> 
 ```
 OK  images/PXL_20261123_093717714.MP.jpg
 NG  images/PXL_20261123_093705462.jpg  スタック: 見つからない
-NG  images/PXL_20261123_094659670.jpg  色: 9 枚目 blue -> black, 20 枚目 blue -> black
+NG  images/PXL_20261123_094659670.jpg  色: 9 枚目 期待:blue, 間違い:black, 20 枚目 期待:blue, 間違い:black
 正解 30/35
 ```
 

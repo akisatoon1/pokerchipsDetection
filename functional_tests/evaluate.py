@@ -12,7 +12,7 @@
 出力の例:
     OK  images/PXL_20261123_093717714.MP.jpg
     NG  images/PXL_20261123_093705462.jpg  スタック: 見つからない
-    NG  images/PXL_20261123_094112106.jpg  色: 2 枚目 black -> gray
+    NG  images/PXL_20261123_094112106.jpg  色: 2 枚目 期待:black, 間違い:gray
     正解 30/35
 """
 
@@ -43,7 +43,7 @@ def judge(answer, stacks):
         actual = "数えられない" if stack["count"] is None else stack["count"]
         return f"計数: 正解 {expected_count}, 結果 {actual}"
     wrong_chips = [
-        f"{index} 枚目 {expected} -> {actual}"
+        f"{index} 枚目 期待:{expected}, 間違い:{actual}"
         for index, (expected, actual) in enumerate(zip(answer["colors"], stack["colors"]), start=1)
         if expected != actual
     ]
