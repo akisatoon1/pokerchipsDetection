@@ -5,31 +5,31 @@
 # 使い方: scripts/run_android.sh
 #   端末が複数繋がっているときは, ANDROID_SERIAL に `adb devices` の番号を入れて 1 台を選ぶ.
 #   (ANDROID_SERIAL は adb と Gradle の installDebug の両方が見る)
-#   JAVA_HOME が空なら, Android Studio に入っている JDK を使う.
+#   JAVA_HOME が空なら Android Studio に入っている JDK を, SDK は scripts/lib/android.sh の決め方で探したものを使う.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ANDROID_DIR="$ROOT/android"
+# shellcheck source=lib/android.sh
+source "$ROOT/scripts/lib/android.sh"
 # android/app/build.gradle.kts の applicationId と, AndroidManifest.xml の起動する Activity.
 APP_ID="com.pokerchip.app"
 MAIN_ACTIVITY=".MainActivity"
-DEFAULT_JAVA_HOME="/usr/local/android-studio/jbr"
 
-# adb は PATH から探し, なければ android/local.properties の sdk.dir の下を使う.
+# adb は PATH から探し, なければ SDK の下を使う.
 # PATH を通していなくても, Android Studio が作った SDK の場所から見つけられるようにするため.
 find_adb() {
   if command -v adb > /dev/null; then
     command -v adb
     return
   fi
-  local sdk_dir
-  sdk_dir="$(sed -n 's/^sdk\.dir=//p' "$ANDROID_DIR/local.properties" 2> /dev/null || true)"
-  if [ -n "$sdk_dir" ] && [ -x "$sdk_dir/platform-tools/adb" ]; then
-    echo "$sdk_dir/platform-tools/adb"
+  local adb
+  adb="$(android_sdk_dir)/platform-tools/adb"
+  if [ -x "$adb" ]; then
+    echo "$adb"
     return
   fi
-  echo "adb が見つからない. docs/environment/setup.md の 8 の 5 で PATH を通す." >&2
+  echo "adb が見つからない. docs/environment/setup.md の「マシンに 1 回だけ入れるもの」で PATH を通す." >&2
   exit 1
 }
 
@@ -59,7 +59,10 @@ check_device() {
 
 ADB="$(find_adb)"
 check_device "$ADB"
-export JAVA_HOME="${JAVA_HOME:-$DEFAULT_JAVA_HOME}"
+JAVA_HOME="$(android_java_home)"
+# local.properties がなくても Gradle が SDK を見つけられるように, 探した場所を渡す.
+ANDROID_HOME="$(android_sdk_dir)"
+export JAVA_HOME ANDROID_HOME
 
 (cd "$ANDROID_DIR" && ./gradlew installDebug)
 "$ADB" shell am start -n "$APP_ID/$MAIN_ACTIVITY"
