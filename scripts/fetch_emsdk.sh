@@ -10,13 +10,24 @@
 
 set -euo pipefail
 
-EMSDK_VERSION="${EMSDK_VERSION:-6.0.13}"
+# 版を上げるときは, emsdk のリポジトリのその版のタグのコミット (git ls-remote --tags で見る) も一緒に変える.
+EMSDK_VERSION="6.0.13"
+EMSDK_COMMIT="35659964bc2762fffec0d257997fb61475f765b7"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 EMSDK_DIR="$ROOT/third_party/emsdk"
 
+# emsdk 自体も版のタグで取り, コミットを確かめる. 最新を取ると, 知らない変更の入った emsdk を動かすことになるため.
+# タグは差し替えられうるので, タグだけでなくコミットでも確かめる.
 if [ ! -d "$EMSDK_DIR" ]; then
-  git clone https://github.com/emscripten-core/emsdk.git "$EMSDK_DIR"
+  git clone --depth 1 --branch "$EMSDK_VERSION" https://github.com/emscripten-core/emsdk.git "$EMSDK_DIR"
+else
+  git -C "$EMSDK_DIR" fetch --depth 1 origin tag "$EMSDK_VERSION"
+  git -C "$EMSDK_DIR" checkout --quiet --detach "$EMSDK_VERSION"
+fi
+if [ "$(git -C "$EMSDK_DIR" rev-parse HEAD)" != "$EMSDK_COMMIT" ]; then
+  echo "emsdk のタグ $EMSDK_VERSION のコミットが $EMSDK_COMMIT ではありません. 使わずに止める" >&2
+  exit 1
 fi
 
 "$EMSDK_DIR/emsdk" install "$EMSDK_VERSION"

@@ -17,13 +17,9 @@ SRC_DIR="$THIRD_PARTY/src/opencv-$OPENCV_VERSION"
 BUILD_DIR="$THIRD_PARTY/build/opencv-$OPENCV_VERSION"
 INSTALL_DIR="$THIRD_PARTY/opencv-$OPENCV_VERSION"
 
-mkdir -p "$THIRD_PARTY/src" "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
 
-if [ ! -d "$SRC_DIR" ]; then
-  curl -fL "https://github.com/opencv/opencv/archive/refs/tags/$OPENCV_VERSION.tar.gz" \
-    -o "$THIRD_PARTY/src/opencv-$OPENCV_VERSION.tar.gz"
-  tar -xzf "$THIRD_PARTY/src/opencv-$OPENCV_VERSION.tar.gz" -C "$THIRD_PARTY/src"
-fi
+OPENCV_VERSION="$OPENCV_VERSION" "$ROOT/scripts/fetch_opencv_source.sh"
 
 # 必要なモジュールだけビルドする.
 # core/imgproc/dnn は共通ロジック, imgcodecs/highgui は Linux の CLI 用.

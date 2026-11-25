@@ -7,7 +7,7 @@
 # 設定は OpenCV の platforms/js/build_js.py に合わせ, core が使うモジュールだけをビルドする.
 #
 # 使い方: scripts/build_opencv_wasm.sh
-# 先に scripts/fetch_emsdk.sh (Emscripten) と scripts/build_opencv.sh (ソースの取得) を済ませておく.
+# 先に scripts/fetch_emsdk.sh (Emscripten) を済ませておく. ソースがなければ scripts/fetch_opencv_source.sh で取る.
 
 set -euo pipefail
 
@@ -19,10 +19,7 @@ SRC_DIR="$THIRD_PARTY/src/opencv-$OPENCV_VERSION"
 BUILD_DIR="$THIRD_PARTY/build/opencv-$OPENCV_VERSION-wasm"
 INSTALL_DIR="$THIRD_PARTY/opencv-$OPENCV_VERSION-wasm"
 
-if [ ! -d "$SRC_DIR" ]; then
-  echo "OpenCV のソースがありません: $SRC_DIR (scripts/build_opencv.sh で取得する)" >&2
-  exit 1
-fi
+OPENCV_VERSION="$OPENCV_VERSION" "$ROOT/scripts/fetch_opencv_source.sh"
 
 # shellcheck source=/dev/null
 source "$THIRD_PARTY/emsdk/emsdk_env.sh" >/dev/null 2>&1
