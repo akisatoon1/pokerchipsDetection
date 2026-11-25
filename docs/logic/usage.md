@@ -13,7 +13,7 @@ Android アプリの使い方は [../android/usage.md](../android/usage.md) を�
 各コマンドが実際に何を実行するか (呼ぶスクリプト, 引数の既定値, 検査の対象のファイル) は `Makefile` を見る.
 環境構築のもの (`make setup`) は [setup.md](../environment/setup.md) に,
 Android のもの (`make android-run`, `make android-native`) は [../android/usage.md](../android/usage.md) に,
-Web のもの (`make web-dev`, `make web-dev-lan`) は [../web/running.md](../web/running.md) にある.
+Web のもの (`make web-dev`) は [../web/running.md](../web/running.md) にある.
 
 | コマンド | 使うとき |
 |---|---|

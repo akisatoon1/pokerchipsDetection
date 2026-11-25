@@ -1,7 +1,7 @@
 # CMake のラッパー. よく使う操作を短く呼べるようにする.
 # ビルドの本体は CMakeLists.txt (Linux) と android/ (Android).
 
-.PHONY: all setup build run test model android-native android-run web-dev web-dev-lan tidy tidy-fix format format-check check clean
+.PHONY: all setup build run test model android-native android-run web-dev tidy tidy-fix format format-check check clean
 
 ARGS ?= testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 PT ?= best.pt
@@ -58,12 +58,9 @@ android-run:
 # Web のサーバーを手元に立てる (docs/web/running.md). 先に検出器を作り直す.
 # npm run dev は検出器を作らないので, core を変えたあとに古い検出器で動かないようにするため.
 # cmake は変わったところだけを作るので, core を変えていなければすぐ終わる.
+# スマートフォンから試すことが多いので, いつも LAN からも開けるように立てる (--ip 0.0.0.0).
+# 同じネットワークの誰からでも開けるので, 信頼できるネットワークでだけ使う.
 web-dev:
-	scripts/build_wasm.sh
-	cd web && npm run dev
-
-# web-dev と同じで, スマートフォンから LAN で開けるように立てる. 同じネットワークの誰からでも開けるので, 信頼できるネットワークでだけ使う.
-web-dev-lan:
 	scripts/build_wasm.sh
 	cd web && npm run dev -- --ip 0.0.0.0
 

@@ -646,3 +646,4 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - Makefile に `web-dev` と `web-dev-lan` を足した. `scripts/build_wasm.sh` で検出器を作り直してから, `web/` で `npm run dev` を流す
   (`web-dev-lan` は `--ip 0.0.0.0` を付ける). `npm run dev` と `make setup` は検出器を作り直さず, 手元だけ古い core の検出器で動いていたため.
 - 起動の手順を `make web-dev` にした: `docs/web/running.md`, `docs/environment/setup.md`, `docs/logic/usage.md`, `docs/development/web/typescript.md`.
+- 人の指示で `web-dev-lan` を消し, `web-dev` をいつも `--ip 0.0.0.0` で立てるようにした.

@@ -55,3 +55,11 @@
 ## 進み具合
 
 - [x] 機能 1: `make web-dev` と `make web-dev-lan`
+
+## 計画の変更
+
+### 2026-11-25
+
+- 人の指示: make web-devはlanでも開けるようにして。web-devだけでよい
+- 変更: `make web-dev-lan` を消し, `make web-dev` をいつも `npm run dev -- --ip 0.0.0.0` で立てる.
+  PC からだけ開けるように立てるときは, `scripts/build_wasm.sh` のあと `cd web && npm run dev` を流す (文書に書く).

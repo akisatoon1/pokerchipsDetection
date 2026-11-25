@@ -42,7 +42,7 @@ npm run format   # 整形する
 npm run dev      # 画面をビルドし, ローカルの D1 に migrations を当てて wrangler dev を起動する (検出器は作り直さない)
 ```
 
-手元でサーバーを立てるときは, リポジトリのルートで `make web-dev` (LAN から開くなら `make web-dev-lan`) を使う.
+手元でサーバーを立てるときは, リポジトリのルートで `make web-dev` を使う (LAN からも開ける).
 起動の前に検出器を作り直すので, core を変えたあとも古い検出器で動かない ([running.md](../../web/running.md)).
 
 `npm audit` は 2 回流す. 検査を止めるのは本番の依存 (`dependencies`. Worker で動く hono と zod) の脆弱性だけにし (`--omit=dev`),
