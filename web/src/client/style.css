@@ -257,3 +257,63 @@ dialog {
   padding: 0;
   list-style: none;
 }
+
+.result-canvas.selectable {
+  cursor: pointer;
+}
+
+.color-editor summary {
+  cursor: pointer;
+}
+
+.color-rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  /* 直したチップと, 色の分からないチップに印を付ける場所. 幅をそろえ, 印のない行とずれないようにする. */
+  border-left: 4px solid transparent;
+}
+
+.color-row.corrected {
+  border-left-color: #e08a00;
+  background: #e08a0022;
+}
+
+.color-row.needs-fix {
+  border-left-color: #c62828;
+}
+
+.color-row-number {
+  min-width: 3.5rem;
+}
+
+.color-row-status {
+  font-size: 0.875rem;
+}
+
+.color-row.corrected .color-row-status {
+  color: #b26a00;
+}
+
+.color-row.needs-fix .color-row-status {
+  color: #c62828;
+}
+
+.color-row button {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.corrected-note {
+  color: #b26a00;
+}

@@ -629,3 +629,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
   Node.js の入れ方を `docs/web/running.md` から, Android と CLI の結果の比べ方を setup.md から `docs/android/usage.md` に移した.
   `docs/environment/migration.md` (WSL からの移行の記録) を消し, 別のマシンへ移るときの要点だけを setup.md に残した.
   ルートに `README.md` を足し, セットアップの要約を書いた. 設計は `docs/architecture.md` の 12.
+
+## 2026-11-25: Web でチップの色を手で直せるようにする
+
+計画は [web/plans/2026-11-25-correct-chip-colors.md](web/plans/2026-11-25-correct-chip-colors.md). 仕様は [web/app.md](web/app.md) の「色を手で直す」.
+
+- 直した色を持つ規則を `web/src/rules/color-corrections.ts` に, テストを `web/test/rules-color-corrections.test.ts` に置いた.
+- 確認画像の下の「色を直す」の欄を `web/src/client/color-editor.ts` に置いた.
+- 作業はブランチ `feat/web-manual-chip-correction` で行った (人の指示による).

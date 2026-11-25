@@ -1,7 +1,21 @@
 import type { AnalysisResult } from "../../rules/analysis-result";
+import type { ChipColorName } from "../../rules/chip-values";
+import {
+  applyColorCorrections,
+  correctChipColor,
+  countCorrectedChips,
+  NO_CORRECTIONS,
+  revertChipColor,
+  type ChipPosition,
+  type ColorCorrections,
+} from "../../rules/color-corrections";
 import { analyzeImage, type Analysis } from "../detector";
 import { element } from "../dom";
-import { renderResultImage, renderResultSummary } from "../result-views";
+import {
+  renderResultImage,
+  renderResultSummary,
+  type ResultSummary,
+} from "../result-views";
 
 /** 表示の幅が測れないとき (画面に入る前など) に使う幅 (CSS px). */
 const FALLBACK_WIDTH = 320;
@@ -26,20 +40,30 @@ export interface ChipAnalysisOptions {
   /**
    * 写真の一覧の上に出すもの (すべての写真から求めた持ち点など).
    *
-   * 写真を足す・外すたびに, そのときのすべての写真の結果 (撮った・選んだ順) で呼ぶ. 写真が 1 枚もなければ呼ばない.
+   * 写真を足す・外す, チップの色を直すたびに呼ぶ. 写真が 1 枚もなければ呼ばない.
+   * @param photos すべての写真の, 手で直した色を当てた結果. 撮った・選んだ順.
+   * @param correctedChipCount すべての写真で, 手で色を直したチップの枚数.
    */
-  renderHeader(photos: AnalysisResult[]): HTMLElement;
+  renderHeader(
+    photos: AnalysisResult[],
+    correctedChipCount: number,
+  ): HTMLElement;
   /** 写真ごとの表示の下に出すもの (かかった時間など). なければ何も出さない. */
   renderFooter?(analysis: Analysis): HTMLElement;
 }
 
 /** 一覧の 1 枚の写真. */
 interface Photo {
-  result: AnalysisResult;
+  /** core の解析の結果 (直す前). */
+  detected: AnalysisResult;
+  /** 手で直したチップの色. 写真を外したら, いっしょに消える. */
+  corrections: ColorCorrections;
   /** 写真ごとの表示. */
   view: HTMLDetailsElement;
   /** 表示の見出し. 番号を振り直すときに書き換える. */
   title: HTMLElement;
+  /** 確認画像と「色を直す」の欄. 色を直したら映す. */
+  summary: ResultSummary;
 }
 
 /**
@@ -62,12 +86,10 @@ export function createChipAnalysisPanel(
 
   const refresh = (): void => {
     photos.forEach((photo, index) => {
-      photo.title.textContent = describePhoto(index + 1, photo.result);
+      photo.title.textContent = describePhoto(index + 1, photo);
     });
     header.replaceChildren(
-      ...(photos.length === 0
-        ? []
-        : [options.renderHeader(photos.map((photo) => photo.result))]),
+      ...(photos.length === 0 ? [] : [renderPhotosHeader(photos, options)]),
     );
     pickers.setPhotoCount(photos.length);
   };
@@ -76,12 +98,28 @@ export function createChipAnalysisPanel(
     photo.view.remove();
     refresh();
   };
+  // 持ち点は直した色から求めるので, 直すたびに見出しと持ち点を出し直す.
+  const correct = (
+    photo: Photo,
+    position: ChipPosition,
+    color: ChipColorName | null,
+  ): void => {
+    photo.corrections =
+      color === null
+        ? revertChipColor(photo.corrections, position)
+        : correctChipColor(photo.detected, photo.corrections, position, color);
+    photo.summary.update(photo.corrections);
+    refresh();
+  };
   const add = (analysis: Analysis): void => {
     const photo = renderPhoto(analysis, {
       list,
       footer: options.renderFooter?.(analysis),
       onRemove: () => {
         remove(photo);
+      },
+      onColorChange: (position, color) => {
+        correct(photo, position, color);
       },
     });
     photos.push(photo);
@@ -101,7 +139,7 @@ export function createChipAnalysisPanel(
       pickers.container,
       element("p", {
         className: "note",
-        text: "1 枚に収まらなければ, 分けて撮った写真を足せます. すべての写真のチップを合わせて数えるので, 同じチップを 2 枚の写真に写さないでください.",
+        text: "1 枚に収まらなければ, 分けて撮った写真を足せます. すべての写真のチップを合わせて数えるので, 同じチップを 2 枚の写真に写さないでください. 色が違うチップは, 確認画像の下の「色を直す」で直せます.",
       }),
       status,
       header,
@@ -179,6 +217,8 @@ interface PhotoViewOptions {
   footer: HTMLElement | undefined;
   /** 「この写真を外す」を押したとき. */
   onRemove: () => void;
+  /** チップの色を直した, または元に戻した (color が null) とき. */
+  onColorChange: (position: ChipPosition, color: ChipColorName | null) => void;
 }
 
 // 1 枚の写真の表示を, 一覧の末尾に足す. 開閉でき, 見出しに写真の番号と枚数を出す. 閉じても何枚と数えたかが分かるようにするため.
@@ -200,28 +240,61 @@ function renderPhoto(analysis: Analysis, options: PhotoViewOptions): Photo {
   // 画像の幅を枠の内側に合わせるため, 一覧に入れてから幅を測って描く.
   options.list.append(view);
   const width = body.clientWidth || FALLBACK_WIDTH;
-  body.append(
-    renderResultImage(image, result, width),
-    renderResultSummary(image, result, width),
+  const summary = renderResultSummary(
+    image,
+    result,
+    width,
+    options.onColorChange,
   );
+  body.append(renderResultImage(image, result, width), summary.container);
   if (options.footer !== undefined) {
     body.append(options.footer);
   }
   image.close();
-  return { result, view, title };
+  return {
+    detected: result,
+    corrections: NO_CORRECTIONS,
+    view,
+    title,
+    summary,
+  };
 }
 
-// 「写真 2: スタック 3 つ, 25 枚」. 数えられなかったスタックがあれば, そのことも書く.
-function describePhoto(photoNumber: number, result: AnalysisResult): string {
+// すべての写真の, 直した色を当てた結果で, 写真の一覧の上に出すものを作る.
+function renderPhotosHeader(
+  photos: readonly Photo[],
+  options: ChipAnalysisOptions,
+): HTMLElement {
+  const corrected = photos.map((photo) =>
+    applyColorCorrections(photo.detected, photo.corrections),
+  );
+  const correctedChipCount = photos.reduce(
+    (sum, photo) => sum + countCorrectedChips(photo.corrections),
+    0,
+  );
+  return options.renderHeader(corrected, correctedChipCount);
+}
+
+// 「写真 2: スタック 3 つ, 25 枚」. 数えられなかったスタックや, 色を直したチップがあれば, そのことも書く.
+// 閉じても直したことが分かるようにするため.
+function describePhoto(photoNumber: number, photo: Photo): string {
+  const result = photo.detected;
   const counted = result.stacks.reduce(
     (sum, stack) => sum + (stack.count ?? 0),
     0,
   );
   const hasUncounted = result.stacks.some((stack) => stack.count === null);
+  const correctedCount = countCorrectedChips(photo.corrections);
+  const notes = [
+    ...(hasUncounted ? ["数えられないスタックあり"] : []),
+    ...(correctedCount > 0
+      ? [`色を直したチップ ${String(correctedCount)} 枚`]
+      : []),
+  ];
   const detail =
     result.stacks.length === 0
       ? "チップの山が見つかりません"
-      : `スタック ${String(result.stacks.length)} つ, ${String(counted)} 枚${hasUncounted ? " (数えられないスタックあり)" : ""}`;
+      : `スタック ${String(result.stacks.length)} つ, ${String(counted)} 枚${notes.length > 0 ? ` (${notes.join(", ")})` : ""}`;
   return `写真 ${String(photoNumber)}: ${detail}`;
 }
 

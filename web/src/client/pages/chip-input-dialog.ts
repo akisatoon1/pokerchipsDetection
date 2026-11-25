@@ -31,10 +31,15 @@ export function openChipInputDialog(
   ]);
 
   const panel = createChipAnalysisPanel({
-    renderHeader: (photos) =>
-      renderPointsAndInsert(photos, values, (points) => {
-        onPoints(points);
-        dialog.close();
+    renderHeader: (photos, correctedChipCount) =>
+      renderPointsAndInsert({
+        photos,
+        correctedChipCount,
+        values,
+        onInsert: (points) => {
+          onPoints(points);
+          dialog.close();
+        },
       }),
   });
   dialog.append(panel.container);
@@ -50,13 +55,21 @@ export function openChipInputDialog(
   dialog.showModal();
 }
 
+/** 持ち点の表示を作るときに使うもの. */
+interface PointsHeaderContent {
+  /** すべての写真の, 手で直した色を当てた結果. */
+  photos: AnalysisResult[];
+  /** 手で色を直したチップの枚数. */
+  correctedChipCount: number;
+  values: ChipValues;
+  onInsert: (points: number) => void;
+}
+
 // すべての写真から求めた持ち点と, 「この点数を入れる」のボタン.
 // 求められないときは「この点数を入れる」を押せなくする. 黙って 0 点などを入れないため.
-function renderPointsAndInsert(
-  photos: AnalysisResult[],
-  values: ChipValues,
-  onInsert: (points: number) => void,
-): HTMLElement {
+// 色を直したチップがあれば, その枚数を出す. 検出のままの持ち点と区別できるようにするため.
+function renderPointsAndInsert(content: PointsHeaderContent): HTMLElement {
+  const { photos, correctedChipCount, values, onInsert } = content;
   const points = computeChipPoints(photos, values);
   const insert = element("button", {
     text: "この点数を入れる",
@@ -69,8 +82,15 @@ function renderPointsAndInsert(
       onInsert(total);
     });
   }
-  return element("div", {}, [
-    renderChipPoints(points),
-    element("div", { className: "chip-input-actions" }, [insert]),
-  ]);
+  const header = element("div", {}, [renderChipPoints(points)]);
+  if (correctedChipCount > 0) {
+    header.append(
+      element("p", {
+        className: "note corrected-note",
+        text: `手で直した色 ${String(correctedChipCount)} 枚を含みます.`,
+      }),
+    );
+  }
+  header.append(element("div", { className: "chip-input-actions" }, [insert]));
+  return header;
 }
