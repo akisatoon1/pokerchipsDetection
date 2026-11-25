@@ -636,4 +636,5 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - 直した色を持つ規則を `web/src/rules/color-corrections.ts` に, テストを `web/test/rules-color-corrections.test.ts` に置いた.
 - 確認画像の下の「色を直す」の欄を `web/src/client/color-editor.ts` に置いた.
+- 画像の上で直すよう計画を変え, `web/src/client/color-editor.ts` を消して, 確認画像の上に出すパレットを `web/src/client/color-picker.ts` に置いた.
 - 作業はブランチ `feat/web-manual-chip-correction` で行った (人の指示による).

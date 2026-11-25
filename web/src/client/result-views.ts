@@ -9,11 +9,16 @@ import {
   type ColorCorrections,
 } from "../rules/color-corrections";
 import { MAX_POINTS } from "../rules/limits";
-import { createColorEditor, type ColorEditor } from "./color-editor";
+import {
+  createColorPicker,
+  type BandPosition,
+  type ColorPicker,
+} from "./color-picker";
 import { element } from "./dom";
 
 // 解析の結果の表示. Android の ResultViews.kt と ChipPointsViews.kt に当たり, 同じ見た目にそろえる.
 // 大きさは CSS のピクセルで決め, canvas は端末の画素の細かさ (devicePixelRatio) で描く. 文字をぼかさないため.
+// 確認画像は, ピンチで拡大してもぼやけないよう, 元の写真の細かさで描く (上限あり).
 
 /** 確認画像でスタックの枠の外に広げる量. 枠の幅・高さに対する割合. 枠そのもののずれにも気づけるようにするため. */
 const DISPLAY_MARGIN = 0.2;
@@ -30,6 +35,23 @@ const SEAM_COLOR = "#ffa000";
 const LABEL_BACKGROUND = "#1e1e1e";
 /** 手で色を直したチップの, ラベルの列の帯の背景. 直していないチップと見分けるため. */
 const CORRECTED_BACKGROUND = "#8a5a00";
+/** 色の分からないチップ (まだ直していないもの) の, ラベルの列の帯の背景. 直すところを見つけやすくするため. */
+const UNKNOWN_BACKGROUND = "#7a1a1a";
+
+/**
+ * 確認画像の canvas の, CSS px あたりの画素の数の上限.
+ *
+ * 元の写真の細かさで描くと, 縦長のスタックでは CSS px の数倍になる. 拡大しても十分に細かい倍率で止める.
+ */
+const MAX_STACK_PIXEL_RATIO = 4;
+
+/**
+ * 確認画像の canvas 1 つの画素の数の上限.
+ *
+ * 写真ごと・スタックごとに canvas を持つので, 端末のメモリ (とくに iPhone の Safari の canvas の上限) を使いすぎないため.
+ * 1 つで約 12MB になる.
+ */
+const MAX_STACK_CANVAS_PIXELS = 3_000_000;
 const LABEL_TEXT = "#e6e6e6";
 const FONT_FAMILY = "system-ui, sans-serif";
 
@@ -193,9 +215,9 @@ function describeProblem(problem: ChipPointsProblem): string {
     case "countFailed":
       return `${describeStack(problem)} の枚数を数えられませんでした.`;
     case "unknownColor":
-      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目の色が分かりません. 「色を直す」で直せます.`;
+      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目の色が分かりません. 確認画像のそのチップを押すと直せます.`;
     case "unsetColor":
-      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目は「${problem.color.label}」ですが, この色の点数を決めていません. 色が違えば「色を直す」で直せます.`;
+      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目は「${problem.color.label}」ですが, この色の点数を決めていません. 色が違えば, 確認画像のそのチップを押すと直せます.`;
     case "tooLarge":
       return `合計 ${NUMBER_FORMAT.format(problem.total)} が, 持ち点の上限 ${NUMBER_FORMAT.format(MAX_POINTS)} を超えています.`;
   }
@@ -249,12 +271,14 @@ function renderStackCheck(
     colorsLine,
   ]);
   const { view, labels } = drawStackImage(image, stack, options.width);
+  const picker = attachColorPicker(stack, options, labels);
   if (view !== null) {
-    container.append(view);
-  }
-  const editor = renderColorEditor(stack, options, labels);
-  if (editor !== null) {
-    container.append(editor.container);
+    container.append(
+      element("div", { className: "stack-image" }, [
+        view,
+        ...(picker === null ? [] : [picker.layer]),
+      ]),
+    );
   }
   const update = (
     colors: readonly string[],
@@ -264,38 +288,51 @@ function renderStackCheck(
     colorsLine.textContent = `色: ${describeColors(colors)}`;
     labels?.draw(
       colors,
-      colors.map(
-        (_, chipIndex) =>
+      colors.map((name, chipIndex) =>
+        chipMark(
+          name,
           correctedColorAt(corrections, {
             stackIndex: options.index,
             chipIndex,
-          }) !== null,
+          }),
+        ),
       ),
     );
-    editor?.update(corrections);
+    picker?.update(corrections);
   };
   update(stack.colors, NO_CORRECTIONS);
   return { container, update };
 }
 
-// 「色を直す」の欄を作り, 確認画像のチップ (帯) を押したらその行に移るようにする. 色のあるチップがなければ null.
-function renderColorEditor(
+// 確認画像の帯を押したら, 色を直すパレットを出すようにする. 確認画像がないか, 色のあるチップがなければ null.
+function attachColorPicker(
   stack: StackResult,
   options: StackCheckOptions,
   labels: LabelColumn | null,
-): ColorEditor | null {
-  if (stack.colors.length === 0) {
+): ColorPicker | null {
+  if (labels === null || stack.colors.length === 0) {
     return null;
   }
-  const editor = createColorEditor({
+  const picker = createColorPicker({
     stackIndex: options.index,
     detectedColors: stack.colors,
+    labelColumnRatio: labels.widthRatio,
     onChange: options.onColorChange,
   });
-  labels?.enableChipSelection((chipIndex) => {
-    editor.focusChip(chipIndex);
+  labels.enableChipSelection((chipIndex, band) => {
+    picker.open(chipIndex, band);
   });
-  return editor;
+  return picker;
+}
+
+/** ラベルの列の帯の印. corrected: 手で直した. unknown: 色が分からず, まだ直していない. */
+type ChipMark = "corrected" | "unknown" | "none";
+
+function chipMark(name: string, corrected: ChipColorName | null): ChipMark {
+  if (corrected !== null) {
+    return "corrected";
+  }
+  return findChipColor(name) === null ? "unknown" : "none";
 }
 
 // 色ごとの枚数. 多い色から並べる.
@@ -313,14 +350,21 @@ function describeColors(colors: readonly string[]): string {
 /** 確認画像の canvas の, 色のラベルの列. */
 interface LabelColumn {
   /**
-   * 列を描き直す. 直したチップは帯の背景を変え, 名前の前に「✎」を付ける.
+   * 列を描き直す. 直したチップは帯の背景を橙にして名前の前に「✎」を付け, 色の分からないチップは帯の背景を赤にする.
    *
    * @param colors 直したあとの色. 上のチップから順.
-   * @param isCorrected チップごとに, 手で直したか.
+   * @param marks チップごとの印.
    */
-  draw(colors: readonly string[], isCorrected: readonly boolean[]): void;
-  /** 確認画像のチップ (帯) を押したら, 上から何枚目か (0 から) を伝えるようにする. */
-  enableChipSelection(onSelect: (chipIndex: number) => void): void;
+  draw(colors: readonly string[], marks: readonly ChipMark[]): void;
+  /**
+   * 確認画像のチップ (帯) を押したら, 上から何枚目か (0 から) と帯の位置を伝えるようにする.
+   * 押すのは, ラベルの列でも, 同じ高さの画像でもよい.
+   */
+  enableChipSelection(
+    onSelect: (chipIndex: number, band: BandPosition) => void,
+  ): void;
+  /** ラベルの列の幅. 確認画像の幅に対する割合. */
+  widthRatio: number;
 }
 
 /** 確認画像. view は表示 (canvas か, 描けなかったという文. 切り出す範囲がなければ null). */
@@ -346,7 +390,11 @@ function drawStackImage(
   );
   const scale = imageHeight / area.height;
   const imageWidth = area.width * scale;
-  const drawing = createDrawing(imageWidth + LABEL_WIDTH, imageHeight);
+  const drawing = createDrawing(
+    imageWidth + LABEL_WIDTH,
+    imageHeight,
+    stackPixelRatio(1 / scale, (imageWidth + LABEL_WIDTH) * imageHeight),
+  );
   if (drawing === null) {
     return { view: renderCannotDraw(), labels: null };
   }
@@ -374,6 +422,16 @@ function drawStackImage(
     view: canvas,
     labels: createLabelColumn(canvas, context, seamYs, layout),
   };
+}
+
+// 確認画像の canvas の, CSS px あたりの画素の数. 元の写真の細かさ (CSS px あたりの元の画素の数) で描き,
+// ピンチで拡大してもぼやけないようにする. 上限で止めるが, 端末の画素の細かさより粗くはしない.
+function stackPixelRatio(sourceRatio: number, cssPixels: number): number {
+  const limit = Math.min(
+    MAX_STACK_PIXEL_RATIO,
+    Math.sqrt(MAX_STACK_CANVAS_PIXELS / cssPixels),
+  );
+  return Math.max(window.devicePixelRatio, Math.min(sourceRatio, limit));
 }
 
 // スタックの枠を広げた範囲を, 画像の中に収める.
@@ -426,8 +484,9 @@ function createLabelColumn(
   layout: StackLayout,
 ): LabelColumn {
   return {
-    draw: (colors, isCorrected) => {
-      drawLabelColumn(context, { seamYs, layout, colors, isCorrected });
+    widthRatio: LABEL_WIDTH / (layout.labelLeft + LABEL_WIDTH),
+    draw: (colors, marks) => {
+      drawLabelColumn(context, { seamYs, layout, colors, marks });
     },
     enableChipSelection: (onSelect) => {
       canvas.classList.add("selectable");
@@ -441,8 +500,13 @@ function createLabelColumn(
           const lower = seamYs[index + 1];
           return lower !== undefined && y >= upper && y < lower;
         });
-        if (chipIndex >= 0) {
-          onSelect(chipIndex);
+        const upper = seamYs[chipIndex];
+        const lower = seamYs[chipIndex + 1];
+        if (upper !== undefined && lower !== undefined) {
+          onSelect(chipIndex, {
+            top: upper / layout.height,
+            bottom: lower / layout.height,
+          });
         }
       });
     },
@@ -454,29 +518,34 @@ interface LabelColumnContent {
   seamYs: readonly number[];
   layout: StackLayout;
   colors: readonly string[];
-  isCorrected: readonly boolean[];
+  marks: readonly ChipMark[];
 }
 
-// 右の列に, チップごとの色の見本と名前を描く. 直したチップは帯の背景を変え, 名前の前に「✎」を付ける.
+// 右の列に, チップごとの色の見本と名前を描く. 直したチップは帯の背景を橙にし, 名前の前に「✎」を付ける.
+// 色の分からないチップは帯の背景を赤にする.
 function drawLabelColumn(
   context: CanvasRenderingContext2D,
   content: LabelColumnContent,
 ): void {
-  const { seamYs, layout, colors, isCorrected } = content;
+  const { seamYs, layout, colors, marks } = content;
   const { labelLeft, height } = layout;
   context.fillStyle = LABEL_BACKGROUND;
   context.fillRect(labelLeft, 0, LABEL_WIDTH, height);
   colors.forEach((_, chip) => {
     const upper = seamYs[chip];
     const lower = seamYs[chip + 1];
+    const mark = marks[chip];
     if (
-      isCorrected[chip] === true &&
-      upper !== undefined &&
-      lower !== undefined
+      mark === undefined ||
+      mark === "none" ||
+      upper === undefined ||
+      lower === undefined
     ) {
-      context.fillStyle = CORRECTED_BACKGROUND;
-      context.fillRect(labelLeft, upper, LABEL_WIDTH, lower - upper);
+      return;
     }
+    context.fillStyle =
+      mark === "corrected" ? CORRECTED_BACKGROUND : UNKNOWN_BACKGROUND;
+    context.fillRect(labelLeft, upper, LABEL_WIDTH, lower - upper);
   });
   context.lineWidth = 1.5;
   for (const y of seamYs) {
@@ -490,7 +559,7 @@ function drawLabelColumn(
     if (upper === undefined || lower === undefined) {
       return;
     }
-    const label = `${isCorrected[chip] === true ? "✎ " : ""}${colorLabel(name)}`;
+    const label = `${marks[chip] === "corrected" ? "✎ " : ""}${colorLabel(name)}`;
     drawChipLabel(context, { name, label, upper, lower, left: labelLeft });
   });
 }
@@ -551,9 +620,12 @@ interface Drawing {
   context: CanvasRenderingContext2D;
 }
 
-// 表示の大きさ (CSS px) の canvas を, 端末の画素の細かさで作る. 描くときの座標は CSS px のまま.
-function createDrawing(width: number, height: number): Drawing | null {
-  const ratio = window.devicePixelRatio;
+// 表示の大きさ (CSS px) の canvas を, CSS px あたり ratio 個の画素で作る. 描くときの座標は CSS px のまま.
+function createDrawing(
+  width: number,
+  height: number,
+  ratio: number = window.devicePixelRatio,
+): Drawing | null {
   const canvas = element("canvas", { className: "result-canvas" });
   canvas.width = Math.round(width * ratio);
   canvas.height = Math.round(height * ratio);

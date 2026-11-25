@@ -262,55 +262,87 @@ dialog {
   cursor: pointer;
 }
 
-.color-editor summary {
-  cursor: pointer;
-}
-
-.color-rows {
-  display: grid;
-  gap: 0.25rem;
+.stack-image {
+  /* パレットと押した帯の枠を, 確認画像の上の同じ位置に重ねるため. */
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
   margin: 0.5rem 0;
-  padding: 0;
-  list-style: none;
 }
 
-.color-row {
+.stack-image .result-canvas {
+  margin: 0;
+}
+
+.color-picker {
+  position: absolute;
+  inset: 0;
+  /* 枠は押しても下の確認画像に届くようにし, パレットだけを押せるようにする. */
+  pointer-events: none;
+}
+
+.chip-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  outline: 1px solid #000;
+}
+
+.color-palette {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border: 1px solid #8888;
+  border-radius: 0.5rem;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 2px 8px #0006;
+  pointer-events: auto;
+}
+
+.color-palette-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.color-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: 0.25rem;
+}
+
+.color-choice {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  /* 直したチップと, 色の分からないチップに印を付ける場所. 幅をそろえ, 印のない行とずれないようにする. */
-  border-left: 4px solid transparent;
-}
-
-.color-row.corrected {
-  border-left-color: #e08a00;
-  background: #e08a0022;
-}
-
-.color-row.needs-fix {
-  border-left-color: #c62828;
-}
-
-.color-row-number {
-  min-width: 3.5rem;
-}
-
-.color-row-status {
+  gap: 0.25rem;
+  padding: 0.25rem;
   font-size: 0.875rem;
 }
 
-.color-row.corrected .color-row-status {
-  color: #b26a00;
+.color-choice .chip-swatch {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
 }
 
-.color-row.needs-fix .color-row-status {
-  color: #c62828;
+.color-choice[aria-pressed="true"] {
+  outline: 2px solid #e08a00;
 }
 
-.color-row button {
-  padding: 0.125rem 0.5rem;
+.color-palette-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+.color-palette-actions button {
+  padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
 }
 
