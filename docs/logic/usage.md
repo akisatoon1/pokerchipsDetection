@@ -129,6 +129,12 @@ make test          # ビルドしてから, testimages/v2/yoko/ の single_color
 ```
 
 `make test` で流すデータセットは, Makefile の `TEST_DATASETS` にある. データセットごとに `== <データセット>` の見出しと結果が出る.
+1 つだけ流すときは, `TEST_DATASETS` を渡す (コマンドラインの値が Makefile の値より優先される).
+
+```
+make test TEST_DATASETS=testimages/v2/yoko/single_color
+make test TEST_DATASETS=testimages/v2/yoko/with_far_stacks
+```
 
 テストは全体テスト (`functional_tests/evaluate.py`) だけにしている.
 正解付きのデータセットの画像を CLI で解析し, 画像ごとに正解か不正解かを出す. ロジックを変えたときに, 今の画像での結果が崩れていないかを確かめる.

@@ -29,6 +29,7 @@ run: build
 
 # 正解付きの画像で全体テストを流す (functional_tests/evaluate.py).
 # データセットごとに結果を分けて出す. どの撮り方で崩れたかが分かるようにするため.
+# 1 つだけ流すときは make test TEST_DATASETS=testimages/v2/yoko/with_far_stacks のように渡す.
 TEST_DATASETS = testimages/v2/yoko/single_color testimages/v2/yoko/with_far_stacks
 
 test: build
