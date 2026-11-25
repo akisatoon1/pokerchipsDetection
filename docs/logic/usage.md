@@ -26,7 +26,7 @@ make build         # build/pokerchip (CLI) をビルド
 make run ARGS="[オプション] <画像のパス>"     # ビルドしてから実行する
 ```
 
-`make run` で `ARGS` を省略すると `testimages/yoko/stack/singlecolor/IMG_5587.jpg` を解析する.
+`make run` で `ARGS` を省略すると `testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg` を解析する.
 
 ### オプション
 
@@ -46,13 +46,13 @@ GUI なしでビルドした OpenCV では, `--out` を付けずに実行した�
 
 ```
 # YOLO で検出し, 結果を JSON でも出し, デバッグ画像を保存する
-./build/pokerchip --json --out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg
+./build/pokerchip --json --out debug.png testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 
 # 同じ領域で繰り返し試す (上の結果の ROI をそのまま指定)
-./build/pokerchip --rect 1089,1246,916,831 --out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg
+./build/pokerchip --rect 1089,1246,916,831 --out debug.png testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 
 # 手動で ROI を選び, デバッグ画像を画面に表示する
-./build/pokerchip --roi user testimages/yoko/stack/singlecolor/IMG_5587.jpg
+./build/pokerchip --roi user testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 ```
 
 ### 出力
@@ -105,7 +105,7 @@ Saved debug view: debug.png
 ### testimages をまとめて解析する
 
 ```
-for f in testimages/yoko/stack/*/*.jpg testimages/yoko/single/*.jpg; do
+for f in testimages/v1/yoko/stack/*/*.jpg testimages/v1/yoko/single/*.jpg; do
   echo "$f $(./build/pokerchip --json --out /tmp/debug.png "$f" 2>&1 | grep -E '^\{|^Error')"
 done > results.txt
 ```

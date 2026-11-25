@@ -3,7 +3,7 @@
 
 .PHONY: all build run test opencv model android-deps android-native android-run tidy tidy-fix format format-check check clean
 
-ARGS ?= testimages/yoko/stack/singlecolor/IMG_5587.jpg
+ARGS ?= testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 PT ?= best.pt
 
 BUILDDIR = build
