@@ -27,7 +27,7 @@ images/          # 画像
 Hugging Face の `imagefolder` の metadata と同じ形式で, 1 行に 1 枚分の JSON を書く. 次は形式の例 (`colors` は略してある).
 
 ```jsonl
-{"file_name": "images/pokerchip_1795604841325.jpg", "stacks": [{"colors": ["black", "green", ...]}, {"colors": ["purple", "purple", ...]}], "labeled_by": "ai"}
+{"file_name": "images/pokerchip_1795604841325.jpg", "stacks": [{"colors": ["black", "green", ...]}, {"colors": ["purple", "purple", ...]}], "labeled_by": "human"}
 ```
 
 | 項目 | 内容 |
