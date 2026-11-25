@@ -57,6 +57,37 @@ android {
     }
 }
 
+// モデルは models/chip_detector.onnx の 1 つだけを使い, ビルドのときに assets に入れる.
+// assets に写しておく方式だと, モデルを替えたときに写し忘れて, 古いモデルのまま動くため.
+// モデルがなければ, このタスクがビルドを止める (scripts/setup.sh で用意する).
+abstract class CopyModelToAssets : DefaultTask() {
+    @get:InputFile
+    abstract val model: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val source = model.get().asFile
+        val outDir = outputDir.get().asFile
+        outDir.deleteRecursively()
+        source.copyTo(outDir.resolve(source.name))
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val copyModel = tasks.register<CopyModelToAssets>(
+            "copy${variant.name.replaceFirstChar { it.uppercase() }}ModelToAssets",
+        ) {
+            model.set(rootProject.layout.projectDirectory.file("../models/chip_detector.onnx"))
+            outputDir.set(layout.buildDirectory.dir("generated/model/${variant.name}"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(copyModel, CopyModelToAssets::outputDir)
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

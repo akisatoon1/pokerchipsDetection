@@ -89,7 +89,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
-        /** scripts/export_model.sh が assets に置くファイル名. */
+        /** assets のモデルのファイル名. ビルドのときに models/chip_detector.onnx を入れる (app/build.gradle.kts). */
         const val MODEL_ASSET = "chip_detector.onnx"
     }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# モデルリポジトリ (yoloPokerchip) で学習した重み (.pt) を ONNX に変換し,
-# models/ と Android の assets に置く.
+# モデルリポジトリ (yoloPokerchip) で学習した重み (.pt) を ONNX に変換し, models/ に置く.
+# Android のビルドは models/ のモデルを assets に入れる (android/app/build.gradle.kts).
 # export の設定を変えると core/src/detector.cpp の前提が崩れうるので,
 # 変える場合は docs/architecture.md も更新すること.
 #
@@ -18,7 +18,6 @@ PT_PATH="$(realpath "$1")"
 PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 OUT_DIR="$ROOT/models"
 OUT_NAME="chip_detector.onnx"
-ASSETS_DIR="$ROOT/android/app/src/main/assets"
 
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -48,8 +47,3 @@ cp "$WORK_DIR/model.onnx" "$OUT_DIR/$OUT_NAME"
 } > "$OUT_DIR/VERSION"
 echo "Exported: $OUT_DIR/$OUT_NAME"
 
-if [ -d "$(dirname "$ASSETS_DIR")" ]; then
-  mkdir -p "$ASSETS_DIR"
-  cp "$OUT_DIR/$OUT_NAME" "$ASSETS_DIR/$OUT_NAME"
-  echo "Copied to: $ASSETS_DIR/$OUT_NAME"
-fi
