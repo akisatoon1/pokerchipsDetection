@@ -1,7 +1,7 @@
 # CMake のラッパー. よく使う操作を短く呼べるようにする.
 # ビルドの本体は CMakeLists.txt (Linux) と android/ (Android).
 
-.PHONY: all build run test opencv model android-deps android-native android-run tidy tidy-fix format format-check check clean
+.PHONY: all setup build run test model android-native android-run tidy tidy-fix format format-check check clean
 
 ARGS ?= testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 PT ?= best.pt
@@ -38,15 +38,14 @@ test: build
 		python3 functional_tests/evaluate.py $$dataset || exit 1; \
 	done
 
-# 環境構築
-opencv:
-	scripts/build_opencv.sh
+# git clone したあとのセットアップ. 何回流してもよい (docs/environment/setup.md).
+# Android や Web を使わないなら scripts/setup.sh --skip-android --skip-web のように直に呼ぶ.
+setup:
+	scripts/setup.sh
 
+# 新しい重み (.pt) からモデルを書き出し直す.
 model:
 	scripts/export_model.sh $(PT)
-
-android-deps:
-	scripts/fetch_android_deps.sh
 
 # core + JNI が Android 向けにビルドできるかを確かめる (Android Studio 不要).
 android-native:
