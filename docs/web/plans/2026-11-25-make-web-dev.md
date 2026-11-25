@@ -54,4 +54,4 @@
 
 ## 進み具合
 
-- [ ] 機能 1: `make web-dev` と `make web-dev-lan`
+- [x] 機能 1: `make web-dev` と `make web-dev-lan`

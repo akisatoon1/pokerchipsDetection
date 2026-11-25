@@ -138,7 +138,7 @@ Android のアプリは, ビルドのときに `models/chip_detector.onnx` を a
 | OpenCV を作り直す (`libgtk-3-dev` を後から入れたときなど) | `rm -rf third_party/opencv-4.14.0 build` → `make setup` |
 | モデルを `models/model.lock` の Release から取り直す | `rm models/chip_detector.onnx` → `make setup` |
 | 新しい重みからモデルを書き出す | `make model PT=path/to/best.pt` ([../logic/usage.md](../logic/usage.md) の「モデルを更新したとき」) |
-| core やモデルを変えたあと, 検出器を作り直す | `scripts/build_wasm.sh` ([../logic/usage.md](../logic/usage.md) の「WASM」) |
+| core やモデルを変えたあと, 検出器を作り直す | `scripts/build_wasm.sh` ([../logic/usage.md](../logic/usage.md) の「WASM」). `make web-dev` は起動の前にこれを流す |
 | `web/package.json` が変わったあと, パッケージを入れ直す | `cd web && npm ci` |
 
 ## 3. 動くか確かめる
@@ -153,7 +153,7 @@ make run ARGS="--out debug.png testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg
 
 - Android: 端末を USB で繋いで `make android-run` を流し, アプリが起動すれば OK ([../android/usage.md](../android/usage.md)).
   Android Studio で開くときは, リポジトリのルートではなく **`android/` ディレクトリ** を開く.
-- Web: `cd web && npm run dev` で起動し, ブラウザで http://localhost:8787 を開く ([../web/running.md](../web/running.md)).
+- Web: `make web-dev` で起動し, ブラウザで http://localhost:8787 を開く ([../web/running.md](../web/running.md)).
 
 ## 別のマシンへ移る
 

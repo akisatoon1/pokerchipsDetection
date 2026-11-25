@@ -21,26 +21,33 @@ npm ci
 
 ## 3. 起動する
 
+リポジトリのルートで流す.
+
 ```sh
-cd web
-npm run dev
+make web-dev
 ```
 
-これは次の 3 つを順に行う.
+これは次の 4 つを順に行う.
 
-1. 画面を Vite でビルドし, `web/dist/` に出す.
-2. ローカルの D1 に, まだ当てていない migrations (`web/migrations/`) を当てる. 確認を聞かれたら `y` で進める.
-3. `wrangler dev` で API と画面を起動する.
+1. チップの検出に使う検出器を, 作業ツリーの core とモデルで作り直す (`scripts/build_wasm.sh`).
+   cmake は変わったところだけを作るので, core を変えていなければすぐ終わる.
+2. 画面を Vite でビルドし, `web/dist/` に出す.
+3. ローカルの D1 に, まだ当てていない migrations (`web/migrations/`) を当てる. 確認を聞かれたら `y` で進める.
+4. `wrangler dev` で API と画面を起動する.
+
+2 から 4 は `cd web && npm run dev` と同じ. `npm run dev` だけでは検出器を作り直さないので, core を変えたあとに古い検出器で動いてしまう.
+本番は CI が push のたびに検出器を作り直すので ([deploy.md](deploy.md)), 手元でも毎回作り直して合わせる.
+検出器はコミットしていない core の変更も入れて作るので, 試すときは作業ツリーに何が入っているかに気をつける.
 
 起動したら, ブラウザで http://localhost:8787 を開く. 止めるときは `Ctrl+C`.
 チップを数える画面は http://localhost:8787/count にある.
-8787 番のポートが使われているときは `npm run dev -- --port 8788` のように別のポートを指定する.
+8787 番のポートが使われているときは, `scripts/build_wasm.sh` のあと `cd web && npm run dev -- --port 8788` のように別のポートを指定する.
 
 ### チップの検出を使うとき
 
 画面でチップを検出するには, WASM とモデルが `web/src/client/public/detector/` に要る.
 ないと, 解析するときに「検出の仕組みを読み込めませんでした」と出る. `make setup` を流せば置かれる.
-core やモデルを変えたときは, リポジトリのルートで `scripts/build_wasm.sh` を流して作り直す.
+`make web-dev` は起動の前に作り直すので, core やモデルを変えたあとも, 起動し直せば新しい検出器で動く.
 
 ### 試し方
 
@@ -51,13 +58,12 @@ core やモデルを変えたときは, リポジトリのルートで `scripts/
 
 ## スマートフォンのブラウザから試す
 
-iPhone の Safari などから, 手元の `npm run dev` を同じ Wi-Fi (LAN) で開く.
+iPhone の Safari などから, 手元のサーバーを同じ Wi-Fi (LAN) で開く.
 
-1. 外から開けるように起動する.
+1. 外から開けるように起動する. リポジトリのルートで流す. 検出器の作り直しは `make web-dev` と同じ.
 
    ```sh
-   cd web
-   npm run dev -- --ip 0.0.0.0
+   make web-dev-lan
    ```
 
 2. PC の住所を確かめる.
@@ -68,7 +74,7 @@ iPhone の Safari などから, 手元の `npm run dev` を同じ Wi-Fi (LAN) �
 
 3. スマートフォンを PC と同じ Wi-Fi につなぎ, ブラウザで `http://<PC の住所>:8787/count` を開く.
 
-- `--ip 0.0.0.0` で起動すると, 同じネットワークの誰からでも開ける. 家などの信頼できるネットワークでだけ使う.
+- `make web-dev-lan` は `--ip 0.0.0.0` で起動するので, 同じネットワークの誰からでも開ける. 家などの信頼できるネットワークでだけ使う.
 - つながらないときは, PC のファイアウォールが 8787 番を通しているかを確かめる.
 - 解析の間は, 画面が数秒止まって見えることがある.
 
@@ -78,8 +84,8 @@ iPhone の Safari などから, 手元の `npm run dev` を同じ Wi-Fi (LAN) �
 |---|---|
 | API (`src/server/`, `src/rules/`) | 何もしなくてよい. `wrangler dev` が読み直す |
 | 画面 (`src/client/`) | 別の端末で `npm run build` を実行し, ブラウザを読み直す |
-| core, `wasm/`, モデル | リポジトリのルートで `scripts/build_wasm.sh` を実行してから `npm run build` をし, ブラウザを読み直す |
-| DB の定義 (`migrations/` に足した) | `Ctrl+C` で止めて, もう一度 `npm run dev` |
+| core, `wasm/`, モデル | `Ctrl+C` で止めて, もう一度 `make web-dev` (起動の前に検出器を作り直す). 止めずに済ませるなら, リポジトリのルートで `scripts/build_wasm.sh` を実行してから `npm run build` をし, ブラウザを読み直す |
+| DB の定義 (`migrations/` に足した) | `Ctrl+C` で止めて, もう一度 `make web-dev` |
 
 ## ローカルの DB
 

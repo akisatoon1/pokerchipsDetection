@@ -638,3 +638,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - 確認画像の下の「色を直す」の欄を `web/src/client/color-editor.ts` に置いた.
 - 画像の上で直すよう計画を変え, `web/src/client/color-editor.ts` を消して, 確認画像の上に出すパレットを `web/src/client/color-picker.ts` に置いた.
 - 作業はブランチ `feat/web-manual-chip-correction` で行った (人の指示による).
+
+## 2026-11-25: 手元の Web のサーバーを make web-dev で立てる
+
+計画は [web/plans/2026-11-25-make-web-dev.md](web/plans/2026-11-25-make-web-dev.md).
+
+- Makefile に `web-dev` と `web-dev-lan` を足した. `scripts/build_wasm.sh` で検出器を作り直してから, `web/` で `npm run dev` を流す
+  (`web-dev-lan` は `--ip 0.0.0.0` を付ける). `npm run dev` と `make setup` は検出器を作り直さず, 手元だけ古い core の検出器で動いていたため.
+- 起動の手順を `make web-dev` にした: `docs/web/running.md`, `docs/environment/setup.md`, `docs/logic/usage.md`, `docs/development/web/typescript.md`.

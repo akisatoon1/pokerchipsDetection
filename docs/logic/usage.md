@@ -12,7 +12,8 @@ Android アプリの使い方は [../android/usage.md](../android/usage.md) を�
 よく使う操作は, ルートの `Makefile` にまとめてあり `make` で呼べる. ここにはロジックの作業で使うものを, 何をしたいときに使うかだけ書く.
 各コマンドが実際に何を実行するか (呼ぶスクリプト, 引数の既定値, 検査の対象のファイル) は `Makefile` を見る.
 環境構築のもの (`make setup`) は [setup.md](../environment/setup.md) に,
-Android のもの (`make android-run`, `make android-native`) は [../android/usage.md](../android/usage.md) にある.
+Android のもの (`make android-run`, `make android-native`) は [../android/usage.md](../android/usage.md) に,
+Web のもの (`make web-dev`, `make web-dev-lan`) は [../web/running.md](../web/running.md) にある.
 
 | コマンド | 使うとき |
 |---|---|
@@ -195,6 +196,7 @@ make test
 Web の画面で動かす core (WASM) のビルドと, Linux の CLI と結果が同じかの確かめ方.
 Emscripten と WASM 用の OpenCV は `make setup` が用意する ([setup.md](../environment/setup.md)).
 `make setup` は検出器がまだないときだけ作るので, core やモデルを変えたら下の `scripts/build_wasm.sh` で作り直す.
+Web のサーバーを `make web-dev` で立てるときは, 起動の前に作り直す ([../web/running.md](../web/running.md)).
 
 ```
 scripts/build_wasm.sh                     # build-wasm/ でビルドし, .js, .wasm, モデルを web/src/client/public/detector/ に置く
