@@ -1,3 +1,4 @@
+import type { AnalysisResult } from "../../rules/analysis-result";
 import { analyzeImage, type Analysis } from "../detector";
 import { element } from "../dom";
 import { renderResultImage, renderResultSummary } from "../result-views";
@@ -5,26 +6,48 @@ import { renderResultImage, renderResultSummary } from "../result-views";
 /** 表示の幅が測れないとき (画面に入る前など) に使う幅 (CSS px). */
 const FALLBACK_WIDTH = 320;
 
+/**
+ * 一度に持てる写真の枚数の上限.
+ *
+ * 写真ごとに全体画像と確認画像の canvas を持つので, 端末のメモリを使いすぎないよう上限を置く.
+ */
+const MAX_PHOTOS = 10;
+
 /** 撮影 / 写真の選択 → 解析 → 結果の表示をまとめた部品. 数えるだけの画面と検出画面で使う. */
 export interface ChipAnalysisPanel {
   /** ボタン, 解析の様子, 結果を入れた要素. */
   container: HTMLElement;
-  /** 出している画像を手放す. 部品を画面から外すときに呼ぶ. */
+  /** 解析を止め, 結果を手放す. 部品を画面から外すときに呼ぶ. */
   dispose(): void;
 }
 
 /** 部品の, 使う画面ごとに違うところ. */
 export interface ChipAnalysisOptions {
-  /** 結果の上に出すもの (持ち点など). 結果を出すたびに呼ぶ. */
-  renderHeader(analysis: Analysis): HTMLElement;
-  /** 結果の下に出すもの (かかった時間など). なければ何も出さない. */
+  /**
+   * 写真の一覧の上に出すもの (すべての写真から求めた持ち点など).
+   *
+   * 写真を足す・外すたびに, そのときのすべての写真の結果 (撮った・選んだ順) で呼ぶ. 写真が 1 枚もなければ呼ばない.
+   */
+  renderHeader(photos: AnalysisResult[]): HTMLElement;
+  /** 写真ごとの表示の下に出すもの (かかった時間など). なければ何も出さない. */
   renderFooter?(analysis: Analysis): HTMLElement;
+}
+
+/** 一覧の 1 枚の写真. */
+interface Photo {
+  result: AnalysisResult;
+  /** 写真ごとの表示. */
+  view: HTMLDetailsElement;
+  /** 表示の見出し. 番号を振り直すときに書き換える. */
+  title: HTMLElement;
 }
 
 /**
  * 撮影するか写真を選び, チップを解析して結果を出す部品を作る.
  *
- * 結果は, 上に options.renderHeader, 次に枠と枚数を重ねた全体画像, スタックごとの確認画像, 下に options.renderFooter.
+ * 写真は何枚でも足せ (上限 MAX_PHOTOS), すべての写真のチップを合わせて扱う. チップが 1 枚の写真に収まらないとき,
+ * 分けて撮れるようにするため (docs/web/app.md). 撮影は 1 回に 1 枚, 写真の選択は 1 回に何枚でも選べる.
+ * 結果は, 上に options.renderHeader, その下に写真ごとの表示 (全体画像, スタックごとの確認画像, options.renderFooter).
  * @param options 使う画面ごとに違うところ.
  * @returns 部品.
  */
@@ -32,74 +55,201 @@ export function createChipAnalysisPanel(
   options: ChipAnalysisOptions,
 ): ChipAnalysisPanel {
   const status = element("p", { attributes: { role: "status" } });
-  const output = element("div");
-  let shown: Analysis | null = null;
+  const header = element("div");
+  const list = element("div", { className: "photo-list" });
+  const photos: Photo[] = [];
+  let isDisposed = false;
 
-  const release = (): void => {
-    // 画像は大きい (12MP で約 48MB) ので, 表示から外したらすぐ手放す.
-    shown?.image.close();
-    shown = null;
-    output.replaceChildren();
-  };
-  const render = (analysis: Analysis): void => {
-    output.replaceChildren(options.renderHeader(analysis));
-    const width = output.clientWidth || FALLBACK_WIDTH;
-    output.append(
-      renderResultImage(analysis.image, analysis.result, width),
-      renderResultSummary(analysis.image, analysis.result, width),
+  const refresh = (): void => {
+    photos.forEach((photo, index) => {
+      photo.title.textContent = describePhoto(index + 1, photo.result);
+    });
+    header.replaceChildren(
+      ...(photos.length === 0
+        ? []
+        : [options.renderHeader(photos.map((photo) => photo.result))]),
     );
-    if (options.renderFooter !== undefined) {
-      output.append(options.renderFooter(analysis));
-    }
+    pickers.setPhotoCount(photos.length);
   };
-  const pickers = renderImagePickers((file) => {
-    release();
-    setButtonsDisabled(pickers.buttons, true);
-    status.className = "";
-    status.textContent =
-      "解析中… (初めては検出の仕組みの読み込みに時間がかかります)";
-    void analyzeImage(file).then((analysis) => {
-      setButtonsDisabled(pickers.buttons, false);
-      if (!analysis.ok) {
-        status.className = "error";
-        status.textContent = analysis.reason;
-        return;
-      }
-      status.textContent = "";
-      shown = analysis.value;
-      render(analysis.value);
+  const remove = (photo: Photo): void => {
+    photos.splice(photos.indexOf(photo), 1);
+    photo.view.remove();
+    refresh();
+  };
+  const add = (analysis: Analysis): void => {
+    const photo = renderPhoto(analysis, {
+      list,
+      footer: options.renderFooter?.(analysis),
+      onRemove: () => {
+        remove(photo);
+      },
+    });
+    photos.push(photo);
+    refresh();
+  };
+  const pickers = renderImagePickers((files) => {
+    void analyzeFiles(files, {
+      roomLeft: () => MAX_PHOTOS - photos.length,
+      isDisposed: () => isDisposed,
+      onAnalyzed: add,
+      setBusy: pickers.setBusy,
+      status,
     });
   });
   return {
     container: element("div", { className: "chip-analysis" }, [
       pickers.container,
+      element("p", {
+        className: "note",
+        text: "1 枚に収まらなければ, 分けて撮った写真を足せます. すべての写真のチップを合わせて数えるので, 同じチップを 2 枚の写真に写さないでください.",
+      }),
       status,
-      output,
+      header,
+      list,
     ]),
-    dispose: release,
+    dispose: () => {
+      isDisposed = true;
+      photos.length = 0;
+      list.replaceChildren();
+    },
   };
+}
+
+/** 選んだ写真を順に解析するときに使うもの. */
+interface AnalyzeFilesContext {
+  /** あと何枚足せるか. */
+  roomLeft(): number;
+  /** 部品が画面から外されたか. 外されたら解析をやめる. */
+  isDisposed(): boolean;
+  /** 解析できた写真を受ける. 画像は受けた側が描いてから手放す. */
+  onAnalyzed(analysis: Analysis): void;
+  /** 解析の間, ボタンを押せなくする. */
+  setBusy: (isBusy: boolean) => void;
+  /** 解析の様子を出す欄. */
+  status: HTMLElement;
+}
+
+// 選んだ写真を 1 枚ずつ解析する. 解析は画面を止めてメモリも多く使うので, 同時には行わない.
+// 読めない写真は足さずに理由を出し, 残りの写真の解析は続ける.
+async function analyzeFiles(
+  files: File[],
+  context: AnalyzeFilesContext,
+): Promise<void> {
+  const { status } = context;
+  const accepted = files.slice(0, Math.max(0, context.roomLeft()));
+  const messages: string[] = [];
+  if (accepted.length < files.length) {
+    messages.push(
+      `写真は ${String(MAX_PHOTOS)} 枚までです. ${String(files.length - accepted.length)} 枚は足しませんでした.`,
+    );
+  }
+  context.setBusy(true);
+  status.className = "";
+  for (const [index, file] of accepted.entries()) {
+    const progress =
+      accepted.length > 1
+        ? ` (${String(index + 1)}/${String(accepted.length)} 枚目)`
+        : "";
+    status.textContent = `解析中${progress}… (初めては検出の仕組みの読み込みに時間がかかります)`;
+    const analysis = await analyzeImage(file);
+    if (context.isDisposed()) {
+      if (analysis.ok) {
+        analysis.value.image.close();
+      }
+      return;
+    }
+    if (analysis.ok) {
+      context.onAnalyzed(analysis.value);
+    } else {
+      const which =
+        accepted.length > 1 ? `選んだ ${String(index + 1)} 枚目: ` : "";
+      messages.push(`${which}${analysis.reason}`);
+    }
+  }
+  context.setBusy(false);
+  status.className = messages.length > 0 ? "error" : "";
+  status.textContent = messages.join(" ");
+}
+
+/** 写真ごとの表示を作るときに使うもの. */
+interface PhotoViewOptions {
+  /** 写真の一覧. 表示をこの末尾に足す. */
+  list: HTMLElement;
+  /** 表示の下に出すもの. */
+  footer: HTMLElement | undefined;
+  /** 「この写真を外す」を押したとき. */
+  onRemove: () => void;
+}
+
+// 1 枚の写真の表示を, 一覧の末尾に足す. 開閉でき, 見出しに写真の番号と枚数を出す. 閉じても何枚と数えたかが分かるようにするため.
+// 描き終えたら画像を手放す. 画像は大きい (12MP で約 48MB) ので, 複数枚を持つとメモリが足りなくなるため.
+function renderPhoto(analysis: Analysis, options: PhotoViewOptions): Photo {
+  const { image, result } = analysis;
+  const title = element("span");
+  const removeButton = element("button", {
+    text: "この写真を外す",
+    attributes: { type: "button" },
+  });
+  removeButton.addEventListener("click", options.onRemove);
+  const body = element("div", { className: "photo-body" }, [removeButton]);
+  const view = element("details", { className: "photo" }, [
+    element("summary", {}, [title]),
+    body,
+  ]);
+  view.open = true;
+  // 画像の幅を枠の内側に合わせるため, 一覧に入れてから幅を測って描く.
+  options.list.append(view);
+  const width = body.clientWidth || FALLBACK_WIDTH;
+  body.append(
+    renderResultImage(image, result, width),
+    renderResultSummary(image, result, width),
+  );
+  if (options.footer !== undefined) {
+    body.append(options.footer);
+  }
+  image.close();
+  return { result, view, title };
+}
+
+// 「写真 2: スタック 3 つ, 25 枚」. 数えられなかったスタックがあれば, そのことも書く.
+function describePhoto(photoNumber: number, result: AnalysisResult): string {
+  const counted = result.stacks.reduce(
+    (sum, stack) => sum + (stack.count ?? 0),
+    0,
+  );
+  const hasUncounted = result.stacks.some((stack) => stack.count === null);
+  const detail =
+    result.stacks.length === 0
+      ? "チップの山が見つかりません"
+      : `スタック ${String(result.stacks.length)} つ, ${String(counted)} 枚${hasUncounted ? " (数えられないスタックあり)" : ""}`;
+  return `写真 ${String(photoNumber)}: ${detail}`;
 }
 
 /** 撮影と写真の選択のボタン. */
 interface ImagePickers {
   container: HTMLElement;
-  buttons: HTMLButtonElement[];
+  /** 解析の間, ボタンを押せなくする. */
+  setBusy: (isBusy: boolean) => void;
+  /** 今の写真の枚数を伝える. ボタンの文字と, 上限に達したかを変える. */
+  setPhotoCount: (count: number) => void;
 }
 
 // 撮影と写真の選択の 2 つのボタン. ファイルの欄は隠し, ボタンから開く.
-function renderImagePickers(onPicked: (file: File) => void): ImagePickers {
-  const buttons: HTMLButtonElement[] = [];
+function renderImagePickers(onPicked: (files: File[]) => void): ImagePickers {
   const container = element("div", { className: "image-pickers" });
   // capture を付けるとカメラが開き, 付けないと写真の一覧から選べる.
-  for (const { label, capture } of [
-    { label: "撮影する", capture: true },
-    { label: "写真を選ぶ", capture: false },
-  ]) {
+  // カメラは 1 回に 1 枚しか撮れないので, 何枚も選べる (multiple) のは写真の一覧だけにする.
+  const pickers = [
+    { label: "撮影する", addLabel: "撮影して足す", isCamera: true },
+    { label: "写真を選ぶ", addLabel: "写真を選んで足す", isCamera: false },
+  ].map(({ label, addLabel, isCamera }) => {
     const input = element("input", {
       attributes: { type: "file", accept: "image/*", hidden: "" },
     });
-    if (capture) {
+    if (isCamera) {
       input.setAttribute("capture", "environment");
+    } else {
+      input.multiple = true;
     }
     const button = element("button", {
       text: label,
@@ -109,24 +259,36 @@ function renderImagePickers(onPicked: (file: File) => void): ImagePickers {
       input.click();
     });
     input.addEventListener("change", () => {
-      const file = input.files?.[0];
+      const files = [...(input.files ?? [])];
       // 同じ写真をもう一度選んでも change が起きるよう, 欄を空に戻す.
       input.value = "";
-      if (file !== undefined) {
-        onPicked(file);
+      if (files.length > 0) {
+        onPicked(files);
       }
     });
-    buttons.push(button);
     container.append(button, input);
-  }
-  return { container, buttons };
-}
+    return { button, label, addLabel };
+  });
 
-function setButtonsDisabled(
-  buttons: HTMLButtonElement[],
-  isDisabled: boolean,
-): void {
-  for (const button of buttons) {
-    button.disabled = isDisabled;
-  }
+  let isBusy = false;
+  let isFull = false;
+  const update = (): void => {
+    for (const { button } of pickers) {
+      button.disabled = isBusy || isFull;
+    }
+  };
+  return {
+    container,
+    setBusy: (busy) => {
+      isBusy = busy;
+      update();
+    },
+    setPhotoCount: (count) => {
+      isFull = count >= MAX_PHOTOS;
+      for (const { button, label, addLabel } of pickers) {
+        button.textContent = count === 0 ? label : addLabel;
+      }
+      update();
+    },
+  };
 }

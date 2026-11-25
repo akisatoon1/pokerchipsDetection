@@ -1,3 +1,4 @@
+import type { AnalysisResult } from "../../rules/analysis-result";
 import type { Analysis } from "../detector";
 import { element } from "../dom";
 import { createChipAnalysisPanel } from "./chip-analysis";
@@ -11,7 +12,7 @@ import { createChipAnalysisPanel } from "./chip-analysis";
  */
 export function renderCountPage(root: HTMLElement): void {
   const panel = createChipAnalysisPanel({
-    renderHeader: renderNoPointsNote,
+    renderHeader: renderHeader,
     renderFooter: renderTimings,
   });
   root.replaceChildren(
@@ -26,12 +27,27 @@ export function renderCountPage(root: HTMLElement): void {
   );
 }
 
-// 持ち点を出さない理由と, 持ち点を出せる場所の案内.
-function renderNoPointsNote(): HTMLElement {
-  return element("p", {
-    className: "note",
-    text: "持ち点は, マッチの画面の「チップから入力」で, マッチのチップの点数から出します.",
-  });
+// 写真が 2 枚以上なら, すべての写真の合計の枚数. 持ち点を出さない理由と, 持ち点を出せる場所の案内.
+function renderHeader(photos: AnalysisResult[]): HTMLElement {
+  const header = element("div");
+  if (photos.length > 1) {
+    const total = photos
+      .flatMap((photo) => photo.stacks)
+      .reduce((sum, stack) => sum + (stack.count ?? 0), 0);
+    header.append(
+      element("p", {
+        className: "result-total",
+        text: `${String(photos.length)} 枚の写真の合計: ${String(total)}枚`,
+      }),
+    );
+  }
+  header.append(
+    element("p", {
+      className: "note",
+      text: "持ち点は, マッチの画面の「チップから入力」で, マッチのチップの点数から出します.",
+    }),
+  );
+  return header;
 }
 
 // 実機で速さを確かめるための, 画像の大きさとかかった時間.

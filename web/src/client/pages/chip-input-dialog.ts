@@ -1,6 +1,6 @@
 import { computeChipPoints } from "../../rules/chip-points";
+import type { AnalysisResult } from "../../rules/analysis-result";
 import type { ChipValues } from "../../rules/chip-values";
-import type { Analysis } from "../detector";
 import { element } from "../dom";
 import { renderChipPoints } from "../result-views";
 import { createChipAnalysisPanel } from "./chip-analysis";
@@ -31,8 +31,8 @@ export function openChipInputDialog(
   ]);
 
   const panel = createChipAnalysisPanel({
-    renderHeader: (analysis) =>
-      renderPointsAndInsert(analysis, values, (points) => {
+    renderHeader: (photos) =>
+      renderPointsAndInsert(photos, values, (points) => {
         onPoints(points);
         dialog.close();
       }),
@@ -50,14 +50,14 @@ export function openChipInputDialog(
   dialog.showModal();
 }
 
-// 持ち点と, 「この点数を入れる」のボタン.
+// すべての写真から求めた持ち点と, 「この点数を入れる」のボタン.
 // 求められないときは「この点数を入れる」を押せなくする. 黙って 0 点などを入れないため.
 function renderPointsAndInsert(
-  analysis: Analysis,
+  photos: AnalysisResult[],
   values: ChipValues,
   onInsert: (points: number) => void,
 ): HTMLElement {
-  const points = computeChipPoints(analysis.result, values);
+  const points = computeChipPoints(photos, values);
   const insert = element("button", {
     text: "この点数を入れる",
     attributes: { type: "button" },

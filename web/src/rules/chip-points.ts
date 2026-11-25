@@ -20,20 +20,28 @@ export interface ColorSubtotal {
 }
 
 /**
- * 持ち点を求められない理由. スタックは左から, チップは上から, 1 から数える (画面にそのまま出すため).
+ * 持ち点を求められない理由. 写真は撮った・選んだ順に, スタックは左から, チップは上から, 1 から数える (画面にそのまま出すため).
  *
- * - noStack: スタックが 1 つも見つからない.
+ * - noPhoto: 写真が 1 枚もない.
+ * - noStack: スタックが 1 つも見つからない写真がある.
  * - countFailed: 枚数を数えられなかったスタックがある.
  * - unknownColor: 色を判定できなかった (`unknown`) チップがある.
  * - unsetColor: 点数を決めていない色のチップがある. 色の判定の誤りか, 設定の漏れのどちらか.
  * - tooLarge: 合計が持ち点の上限 (MAX_POINTS) を超える.
  */
 export type ChipPointsProblem =
-  | { kind: "noStack" }
-  | { kind: "countFailed"; stackNumber: number }
-  | { kind: "unknownColor"; stackNumber: number; chipNumber: number }
+  | { kind: "noPhoto" }
+  | { kind: "noStack"; photoNumber: number }
+  | { kind: "countFailed"; photoNumber: number; stackNumber: number }
+  | {
+      kind: "unknownColor";
+      photoNumber: number;
+      stackNumber: number;
+      chipNumber: number;
+    }
   | {
       kind: "unsetColor";
+      photoNumber: number;
       stackNumber: number;
       chipNumber: number;
       color: ChipColor;
@@ -51,40 +59,25 @@ export type ChipPointsResult =
   | { ok: false; problems: ChipPointsProblem[] };
 
 /**
- * 解析の結果と色ごとの点数から, 持ち点を求める. スタックが複数あれば合計する (Android の ChipPoints.kt と同じ).
+ * 写真ごとの解析の結果と色ごとの点数から, 持ち点を求める. すべての写真のすべてのスタックを合計する.
  *
- * 1 つでも数えられないチップがあれば止める. 黙って 0 点にすると, 間違いに気づけないため (docs/web/app.md).
- * @param result 解析の結果.
+ * チップが 1 枚の写真に収まらないときに, 分けて撮った写真を合わせて数えるため (docs/web/app.md).
+ * 1 つでも数えられないチップや, スタックの見つからない写真があれば止める. 黙って 0 点にすると, 間違いに気づけないため.
+ * @param photos 写真ごとの解析の結果. 撮った・選んだ順.
  * @param values 色ごとの点数.
  * @returns 持ち点と色ごとの内訳. 求められなければ, すべての理由.
  */
 export function computeChipPoints(
-  result: AnalysisResult,
+  photos: AnalysisResult[],
   values: ChipValues,
 ): ChipPointsResult {
-  if (result.stacks.length === 0) {
-    return { ok: false, problems: [{ kind: "noStack" }] };
+  if (photos.length === 0) {
+    return { ok: false, problems: [{ kind: "noPhoto" }] };
   }
-  const problems: ChipPointsProblem[] = [];
   const counts = new Map<ChipColorName, number>();
-  result.stacks.forEach((stack, stackIndex) => {
-    const stackNumber = stackIndex + 1;
-    if (stack.count === null) {
-      problems.push({ kind: "countFailed", stackNumber });
-      return;
-    }
-    stack.colors.forEach((name, chipIndex) => {
-      const chipNumber = chipIndex + 1;
-      const color = findChipColor(name);
-      if (color === null) {
-        problems.push({ kind: "unknownColor", stackNumber, chipNumber });
-      } else if (!values.has(color.name)) {
-        problems.push({ kind: "unsetColor", stackNumber, chipNumber, color });
-      } else {
-        counts.set(color.name, (counts.get(color.name) ?? 0) + 1);
-      }
-    });
-  });
+  const problems = photos.flatMap((photo, photoIndex) =>
+    countPhoto(photo, photoIndex + 1, values, counts),
+  );
   const subtotals = CHIP_COLORS.flatMap((color) => {
     const count = counts.get(color.name);
     const pointsEach = values.get(color.name);
@@ -102,4 +95,34 @@ export function computeChipPoints(
     return { ok: false, problems };
   }
   return { ok: true, total, subtotals };
+}
+
+// 1 枚の写真のチップを, 色ごとに counts に足す. 数えられないものは理由として返す.
+function countPhoto(
+  photo: AnalysisResult,
+  photoNumber: number,
+  values: ChipValues,
+  counts: Map<ChipColorName, number>,
+): ChipPointsProblem[] {
+  if (photo.stacks.length === 0) {
+    return [{ kind: "noStack", photoNumber }];
+  }
+  return photo.stacks.flatMap((stack, stackIndex) => {
+    const stackNumber = stackIndex + 1;
+    if (stack.count === null) {
+      return [{ kind: "countFailed", photoNumber, stackNumber }];
+    }
+    return stack.colors.flatMap((name, chipIndex): ChipPointsProblem[] => {
+      const position = { photoNumber, stackNumber, chipNumber: chipIndex + 1 };
+      const color = findChipColor(name);
+      if (color === null) {
+        return [{ kind: "unknownColor", ...position }];
+      }
+      if (!values.has(color.name)) {
+        return [{ kind: "unsetColor", ...position, color }];
+      }
+      counts.set(color.name, (counts.get(color.name) ?? 0) + 1);
+      return [];
+    });
+  });
 }

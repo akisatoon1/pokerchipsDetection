@@ -122,7 +122,9 @@ export function renderChipPoints(points: ChipPointsResult): HTMLElement {
           element("li", { text: describeProblem(problem) }),
         ),
       ),
-      element("p", { text: "撮り直すか, 手で入力してください." }),
+      element("p", {
+        text: "その写真を外して撮り直すか, 手で入力してください.",
+      }),
     ]);
   }
   const rows = points.subtotals.map((item) =>
@@ -144,20 +146,31 @@ export function renderChipPoints(points: ChipPointsResult): HTMLElement {
   ]);
 }
 
-// 求められない理由を, どのスタックの何枚目かが分かる文にする. 番号は確認画像の「スタック #n」と同じ.
+// 求められない理由を, どの写真のどのスタックの何枚目かが分かる文にする.
+// 番号は写真ごとの表示の「写真 n」と, 確認画像の「スタック #n」と同じ.
 function describeProblem(problem: ChipPointsProblem): string {
   switch (problem.kind) {
+    case "noPhoto":
+      return "写真がありません.";
     case "noStack":
-      return "チップの山が見つかりませんでした.";
+      return `写真 ${String(problem.photoNumber)} にチップの山が見つかりませんでした.`;
     case "countFailed":
-      return `スタック #${String(problem.stackNumber)} の枚数を数えられませんでした.`;
+      return `${describeStack(problem)} の枚数を数えられませんでした.`;
     case "unknownColor":
-      return `スタック #${String(problem.stackNumber)} の上から ${String(problem.chipNumber)} 枚目の色が分かりません.`;
+      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目の色が分かりません.`;
     case "unsetColor":
-      return `スタック #${String(problem.stackNumber)} の上から ${String(problem.chipNumber)} 枚目は「${problem.color.label}」ですが, この色の点数を決めていません.`;
+      return `${describeStack(problem)} の上から ${String(problem.chipNumber)} 枚目は「${problem.color.label}」ですが, この色の点数を決めていません.`;
     case "tooLarge":
       return `合計 ${NUMBER_FORMAT.format(problem.total)} が, 持ち点の上限 ${NUMBER_FORMAT.format(MAX_POINTS)} を超えています.`;
   }
+}
+
+// 「写真 2 のスタック #1」.
+function describeStack(position: {
+  photoNumber: number;
+  stackNumber: number;
+}): string {
+  return `写真 ${String(position.photoNumber)} のスタック #${String(position.stackNumber)}`;
 }
 
 /** 確認画像に切り出す範囲 (元画像のピクセル). */
