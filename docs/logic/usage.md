@@ -1,23 +1,36 @@
-# Linux マシンでの使い方
+# ロジック, CLI の使い方
 
-Linux マシンでのビルド, CLI の実行, テスト, コードの検査の方法.
+Linux マシンでの core と CLI のビルド, CLI の実行, テスト, WASM のビルドと比べ, コードの検査の方法.
 環境構築 (apt, OpenCV, Python, モデルの用意) が済んでいることが前提で, その手順は [setup.md](../environment/setup.md) の 1〜6 にある.
-Android アプリのビルドは [setup.md](../environment/setup.md) の 7〜9 を, WASM の用意は 10 を参照.
+WASM の用意は [setup.md](../environment/setup.md) の 10 を, Android アプリの使い方は [../android/usage.md](../android/usage.md) を参照.
 
 コマンドはすべて **リポジトリのルートで** 実行する. CLI もテストも, モデル (`models/chip_detector.onnx`) や
 テスト画像をリポジトリのルートからの相対パスで探すため.
 
+## make のコマンド
+
+よく使う操作は, ルートの `Makefile` にまとめてあり `make` で呼べる. ここにはロジックの作業で使うものを, 何をしたいときに使うかだけ書く.
+各コマンドが実際に何を実行するか (呼ぶスクリプト, 引数の既定値, 検査の対象のファイル) は `Makefile` を見る.
+環境構築のもの (`make opencv`, `make model`, `make android-deps`) は [setup.md](../environment/setup.md) に,
+Android のもの (`make android-run`, `make android-native`) は [../android/usage.md](../android/usage.md) にある.
+
+| コマンド | 使うとき |
+|---|---|
+| `make build` | CLI (`build/pokerchip`) をビルドする |
+| `make run ARGS="..."` | ビルドしてから CLI を実行する (下の「CLI を実行する」) |
+| `make test` | ロジックを変えたあと, 正解付きの画像で結果が崩れていないかを確かめる (下の「テスト」) |
+| `make format` | C++ を整形する |
+| `make tidy-fix` | clang-tidy の指摘を自動で直してから整形する |
+| `make check` | コミットの前に, 整形の確認と clang-tidy の検査を通す. 片方だけなら `make format-check`, `make tidy` |
+| `make clean` | ビルドをやり直す. `build/` を消すので, 次に `make build` する |
+
 ## ビルド
 
-```
-make build         # build/pokerchip (CLI) をビルド
-```
+`make build` で CLI (`build/pokerchip`) をビルドする.
 
-- 初回は `cmake -S . -B build` で設定してからビルドする. 2 回目以降は変更のあったところだけビルドされる.
 - ビルドの種類は既定で `Release`.
 - OpenCV は `third_party/opencv-4.14.0/` (`make opencv` でビルドしたもの) を使う.
   システムの OpenCV は使わない.
-- やり直したいときは `make clean` で `build/` を消してから `make build`.
 
 ## CLI を実行する
 
@@ -25,8 +38,6 @@ make build         # build/pokerchip (CLI) をビルド
 ./build/pokerchip [オプション] <画像のパス>
 make run ARGS="[オプション] <画像のパス>"     # ビルドしてから実行する
 ```
-
-`make run` で `ARGS` を省略すると `testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg` を解析する.
 
 ### オプション
 
@@ -113,28 +124,14 @@ done > results.txt
 1 行に「画像のパス + JSON かエラー」が並ぶ. 今のモデルと検出のしきい値 (0.9) では, `stack/` の 27 枚のうち 4 枚 (どれも 3 枚のスタック) と
 `single/` の 3 枚はスタックが検出されず `Error: ROI was not selected.` になる. モデルや処理を変えたときに, 前の結果と `diff` で比べるのに使う.
 
-### Android で保存した画像を取り出す
-
-Android アプリで「この画像を保存」を押すと, 解析した元の画像が端末の `Pictures/PokerChip/` に保存される.
-PC と端末を USB でつなぎ ([setup.md](../environment/setup.md) の 8 の 5), 次のコマンドで `testimages/android/` に取り出す.
-
-```
-adb pull /sdcard/Pictures/PokerChip/. testimages/android/
-```
-
 ## テスト
 
 ```
-make test          # ビルドしてから, testimages/v2/yoko/ の single_color と with_far_stacks で全体テストを流す
+make test                                                 # 決まったデータセットすべてで全体テストを流す
+make test TEST_DATASETS=testimages/v2/yoko/single_color   # 1 つのデータセットだけ流す
 ```
 
-`make test` で流すデータセットは, Makefile の `TEST_DATASETS` にある. データセットごとに `== <データセット>` の見出しと結果が出る.
-1 つだけ流すときは, `TEST_DATASETS` を渡す (コマンドラインの値が Makefile の値より優先される).
-
-```
-make test TEST_DATASETS=testimages/v2/yoko/single_color
-make test TEST_DATASETS=testimages/v2/yoko/with_far_stacks
-```
+流すデータセットは Makefile の `TEST_DATASETS` で決まる. データセットごとに `== <データセット>` の見出しと結果が出る.
 
 テストは全体テスト (`functional_tests/evaluate.py`) だけにしている.
 正解付きのデータセットの画像を CLI で解析し, 画像ごとに正解か不正解かを出す. ロジックを変えたときに, 今の画像での結果が崩れていないかを確かめる.
@@ -186,12 +183,9 @@ make build
 モデルを更新したら, 全体テストの結果が前より悪くなっていないかを確かめてからコミットする.
 
 ```
-make model PT=path/to/new/best.pt
+make model PT=path/to/new/best.pt   # 何ができるかは setup.md の 6
 make test
 ```
-
-`make model` は `models/chip_detector.onnx` を作り, Android の assets にもコピーし,
-`models/VERSION` に変換元の `.pt` の sha256 を記録する.
 
 モデルは git に入れない. 使うと決めたら `scripts/release_model.sh` で GitHub Release に置き,
 書き換わった `models/model.lock` をコミットする. push すると Web にも出る ([../web/deploy.md](../web/deploy.md) の「モデルを替える」).
@@ -223,29 +217,8 @@ functional_tests/compare_wasm_cli.sh testimages/v1/yoko/stack/multicolor_jpg/IMG
 
 ## コードの整形と検査
 
-```
-make format        # clang-format で整形する
-make tidy-fix      # clang-tidy で自動修正してから整形する
-make check         # 整形の確認 (format-check) と clang-tidy の検査. コミット前に通す
-```
+`make format`, `make tidy-fix`, `make check` を使う (上の「make のコマンド」). コミットの前に `make check` を通す.
 
-- 対象は `core/`, `cli/` (clang-tidy) と, それに加えて `android/app/src/main/cpp/` (clang-format).
-- `wasm/` と `functional_tests/` の C++ は対象に入っていない. 変えたら `clang-format -i <ファイル>` で整形する.
+- 対象のファイルは Makefile の `SRCS`, `HDRS`, `JNI_SRCS` で決まる.
+  `wasm/` と `functional_tests/` の C++ は入っていないので, 変えたら `clang-format -i <ファイル>` で整形する.
 - 設定はリポジトリのルートの `.clang-format` と `.clang-tidy`.
-
-## make のターゲット一覧
-
-| ターゲット | 内容 |
-|---|---|
-| `make build` | CMake の設定とビルド |
-| `make run ARGS="..."` | CLI を実行 |
-| `make test` | 全体テスト (`functional_tests/evaluate.py`) |
-| `make format` / `make format-check` | clang-format で整形 / 整形の確認 |
-| `make tidy` / `make tidy-fix` | clang-tidy で検査 / 自動修正 |
-| `make check` | `format-check` と `tidy` |
-| `make clean` | `build/` を削除 |
-| `make opencv` | OpenCV のビルド (環境構築. [setup.md](../environment/setup.md) の 3) |
-| `make model PT=...` | `.pt` を ONNX に変換 (環境構築. [setup.md](../environment/setup.md) の 6) |
-| `make android-deps` | OpenCV Android SDK と NDK の取得 ([setup.md](../environment/setup.md) の 7) |
-| `make android-native` | core + JNI を NDK でビルドできるかの確認 |
-| `make android-run` | アプリをビルドして USB で繋いだ端末に入れ, 起動する ([setup.md](../environment/setup.md) の 9) |

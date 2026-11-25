@@ -601,3 +601,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 
 - `make test` が `testimages/v2/yoko/single_color` に加えて `testimages/v2/yoko/with_far_stacks` でも全体テストを流すようにした.
   流すデータセットは Makefile の `TEST_DATASETS` にまとめ, データセットごとに見出しを付けて結果を出す.
+
+## 2026-11-25: 使い方の文書を分野ごとに分ける
+
+- `docs/logic/usage.md` にあった Android の使い方 (端末で保存した画像の `adb pull`) を, 新しく作った `docs/android/usage.md` に移した.
+  `make android-run` と `make android-native` の説明も `docs/android/usage.md` に置いた.
+- `docs/logic/usage.md` の make のターゲット一覧は, ロジックの作業で使うコマンドの「使うとき」の表にして文書の初めに置いた.
+  各コマンドが何を実行するかは Makefile を見るようにし, Makefile と同じことを文書に書かないようにした. 書いた内容が Makefile とずれないようにするため.
+- 環境構築のコマンド (`make opencv`, `make model`, `make android-deps`) は `docs/environment/setup.md` の説明だけにした.

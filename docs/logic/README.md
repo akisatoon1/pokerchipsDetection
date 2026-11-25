@@ -9,7 +9,7 @@
 ## 作業の前に読む (文脈)
 
 - [../architecture.md](../architecture.md) 処理の流れ (検出, 色の判定) と設計判断の理由. WASM の殻は「10. Web でも core を WASM にして動かす」
-- [usage.md](usage.md) ビルド, CLI の実行, テスト, 検査, WASM のビルドと CLI との比べのコマンド
+- [usage.md](usage.md) ロジックの作業で使う make のコマンド. ビルド, CLI の実行, テスト, 検査, WASM のビルドと CLI との比べ
 
 ## 要るときに読む
 
