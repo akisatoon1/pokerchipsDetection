@@ -85,11 +85,12 @@ check_linux_prerequisites() {
   require_apt_command clang-tidy clang-tidy
   require_apt_command python3 python3
   # GTK がないと, OpenCV が画面表示 (imshow, 手で ROI を選ぶ) なしでビルドされてしまうので, ビルドの前に確かめる.
-  if command -v pkg-config > /dev/null && ! pkg-config --exists gtk+-3.0; then
+  # pkg-config がなければ確かめられないので, 足りないものとして扱う. 出す apt のコマンドを 1 回で揃えるため.
+  if ! command -v pkg-config > /dev/null || ! pkg-config --exists gtk+-3.0; then
     add_missing "GTK 3 の開発用のファイルがない" "apt の libgtk-3-dev に入っている"
     APT_PACKAGES+=(libgtk-3-dev)
   fi
-  if command -v python3 > /dev/null && ! python3 -c 'import ensurepip' 2> /dev/null; then
+  if ! command -v python3 > /dev/null || ! python3 -c 'import ensurepip' 2> /dev/null; then
     add_missing "Python の venv が作れない" "apt の python3-venv に入っている"
     APT_PACKAGES+=(python3-venv)
   fi
