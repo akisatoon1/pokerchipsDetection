@@ -238,32 +238,52 @@ iPhone でも Android でも, アプリを入れずにブラウザでチップ�
 | `web/src/client/detector.ts` | WASM とモデルの読み込み, 画像 → RGBA の画素, 解析の呼び出し |
 | `web/src/rules/analysis-result.ts` | JSON → 解析の結果 (Android の `AnalysisResult.kt` に当たる) |
 
-### 11. デプロイは GitHub Actions で行い, 検出器は Release から取る
+### 11. デプロイは GitHub Actions で行い, 検出器もそこでビルドする
 
 点数計算アプリ (`web/`) は, Cloudflare Workers (無料プラン) の `pokerchip-score.<サブドメイン>.workers.dev` に出す.
 main に push すると (人が行うか, 人の指示で AI が行う), GitHub Actions がデプロイする. 手順は [web/deploy.md](web/deploy.md) にある.
+Cloudflare 側の CI (Workers Builds) は使わない.
 
 ```
-人が手元で: build_wasm.sh → compare_wasm_cli.sh → release_detector.sh ─→ GitHub Release (検出器の 3 ファイル)
-                                                    └→ web/detector.lock (タグと sha256) をコミット
-push ──────→ deploy.yml: npm ci → fetch_detector.sh (Release から取り sha256 を確かめる) → npm run check
-                         → 本番の D1 に未適用の migration がないかを確かめる → npm run build → wrangler deploy
+人が手元で (モデルを替えるときだけ):
+  export_model.sh → release_model.sh ─→ GitHub Release model-<sha256> (chip_detector.onnx だけ)
+                                    └→ models/model.lock (タグと sha256) をコミット
+push ──────→ deploy.yml: fetch_model.sh (Release から取り sha256 を確かめる)
+                         → Emscripten, WASM 用の OpenCV (キャッシュ. なければ取ってビルド)
+                         → build_wasm.sh (core + wasm + モデル → 検出器)
+                         → npm ci → npm run check → 本番の D1 に未適用の migration がないかを確かめる
+                         → npm run build → wrangler deploy
 人が手で起動 ─→ migrate.yml: Time Travel の bookmark を出す → wrangler d1 migrations apply --remote
 ```
 
-- **検出器 (WASM とモデル) は CI でビルドせず, 手元でビルドして GitHub Release に置く.**
-  - CI でビルドするには Emscripten (約 1.7 GB) と OpenCV のビルドが要り, モデルの元の重み (`.pt`) は別のリポジトリにあって git に入れていない.
-  - 正しさの確かめ (`compare_wasm_cli.sh`) は testimages と Linux の CLI を使うので, もともと手元でしかできない.
-  - core とモデルはめったに変わらない. 画面や API の変更のたびに検出器を作り直す必要はない.
-  - どの検出器を出すかは `web/detector.lock` (タグと sha256) で決まる. コミットで決まるので, 戻すのも git の履歴で済む.
-    CI は sha256 が合わなければ何も置かずに止まり, 同じタグの Release は上書きしない.
+- **検出器 (core を WASM にしたものとモデル) は, デプロイのたびに CI でビルドする.**
+  - Web は core とモデルにも依存する. 人が手元でビルドして置く形にすると, core やモデルを変えても本番に届かず,
+    Linux や Android と Web で結果が食い違ったまま気づけない. 実際に, 検出のしきい値とモデルの変更が本番に届いていなかった.
+  - 毎回ビルドするので, 本番の検出器はいつも, デプロイしたコミットの core とモデルからできている.
+    元が変わったかを調べる仕組みは作らない. 単純にするため.
+  - 重い Emscripten (約 1.7 GB) と WASM 用の OpenCV は, 版を変えない限り同じものなのでキャッシュする.
+    key は用意するスクリプトの hash にし, 版や設定を変えれば自動で作り直す.
+  - CI では検出器のテストをしない. 枚数と色の正しさは core のロジックの話で, 手元の全体テストで確かめる.
+    WASM と Linux の CLI の結果が同じか (`compare_wasm_cli.sh`) がずれうるのは, ビルドの道具 (Emscripten, OpenCV の版,
+    `wasm/` の設定) を変えたときなので, そのときだけ手元で流す. core やモデルの変更では, 同じソースとモデルを使うのでずれない.
+- **モデルは git に入れず, GitHub Release に置く.** CI で作れないのはモデルだけのため.
+  - モデルの元の重み (`.pt`) は別のリポジトリにあり, ONNX への書き出しには Python の ultralytics が要る.
+  - ONNX (約 10MB) は重いので git に入れない. git には, どの Release を使うかを書いた `models/model.lock` (タグと sha256) だけを入れる.
+    どのモデルを出すかがコミットで決まるので, 戻すのも git の履歴で済み, lock を変えた push でデプロイが動く.
+  - タグはモデルの sha256 から付ける. 同じモデルなら同じタグになり, 二重に置かない.
+  - CI は sha256 が合わなければ何も置かずに止まる.
   - Release は公開されるが, 置くのはデプロイしたサイトから誰でも取れるものと同じファイルだけ.
+  - Git LFS は使わない. 無料枠の転送量が小さく, CI が取るたびに減るため.
+- **外から取るものは版を固定し, 中身を確かめる.** emsdk は版のタグで取り, コミットの SHA を確かめる.
+  OpenCV のソースは sha256 を確かめる (配布元が出していないので, 初めて取ったときの値と比べる).
 - **本番の D1 の migration は, 人が手で起動するワークフローで当てる.** デプロイのワークフローは当てず, 未適用のものがあれば止まる.
   - 本番の DB を変えるのは人の指示のときだけという決まり ([development/web/process.md](development/web/process.md)) を保つため.
   - 当て忘れても, 新しい表を前提にしたコードが先に出て壊れることはない.
   - 当てる前に Time Travel の bookmark をログに残す. 失敗したときに戻せるようにするため (無料プランでは 7 日前まで).
   - migration は, 古いコードのまま当てても壊れない形 (表や列を足すだけ) にする. 消す・名前を変えるときは, コードを先に出してから別の migration で消す.
-- **デプロイのきっかけは, Web に関わるファイル (`web/`, `scripts/fetch_detector.sh`, `deploy.yml`) が変わった push だけにする.** C++ や文書だけのコミットで無駄にデプロイしないため.
+- **デプロイのきっかけは, 本番に出るものの元が変わった push だけにする.** 元とは `web/` と, 検出器の元
+  (`core/`, `wasm/`, `models/model.lock`, 検出器を作るスクリプト). 一覧は `deploy.yml` の `paths` にある.
+  文書, Android, テストだけのコミットで無駄にデプロイしないため. 検出器の元を足したら `paths` にも足す.
 - **検査 (`npm run check`) を通らなければデプロイしない.** `npm audit` で止めるのは本番の依存の脆弱性だけにする ([development/web/typescript.md](development/web/typescript.md)).
 - **CI の守り**: 外部の action はコミットの SHA で固定する. ワークフローの権限は `contents: read` だけにする.
   Cloudflare の API トークン (権限は Workers のデプロイと D1 の編集だけ) は, 本番に触る手順にだけ渡す.
@@ -273,11 +293,13 @@ push ──────→ deploy.yml: npm ci → fetch_detector.sh (Release か
 
 | ファイル | 役割 |
 |---|---|
-| `.github/workflows/deploy.yml` | main への push でデプロイする |
+| `.github/workflows/deploy.yml` | main への push で, 検出器をビルドしてデプロイする |
 | `.github/workflows/migrate.yml` | 手で起動して, 本番の D1 に migration を当てる |
-| `scripts/release_detector.sh` | 手元の検出器を Release に置き, `web/detector.lock` を書き換える |
-| `scripts/fetch_detector.sh` | `web/detector.lock` の Release から検出器を取り, sha256 を確かめて置く |
-| `web/detector.lock` | 出す検出器の Release のタグと, 3 ファイルの sha256 |
+| `scripts/release_model.sh` | 手元のモデルを Release に置き, `models/model.lock` を書き換える |
+| `scripts/fetch_model.sh` | `models/model.lock` の Release からモデルを取り, sha256 を確かめて置く |
+| `models/model.lock` | 使うモデルの Release のタグと, sha256 |
+| `scripts/fetch_emsdk.sh`, `scripts/fetch_opencv_source.sh`, `scripts/build_opencv_wasm.sh` | Emscripten と WASM 用の OpenCV を用意する (CI ではキャッシュする) |
+| `scripts/build_wasm.sh` | core とモデルから検出器を作り, `web/src/client/public/detector/` に置く |
 
 ## 今後の課題
 

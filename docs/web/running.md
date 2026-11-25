@@ -60,6 +60,7 @@ npm run dev
 ないと, 解析するときに「検出の仕組みを読み込めませんでした」と出る.
 リポジトリのルートで `scripts/build_wasm.sh` を流してから `npm run dev` をする.
 初めてなら Emscripten と WASM 用の OpenCV の用意も要る ([../environment/setup.md](../environment/setup.md) の 10).
+モデル (`models/chip_detector.onnx`) がなければ, `scripts/fetch_model.sh` で本番と同じものを取れる.
 
 ### 試し方
 
@@ -130,4 +131,4 @@ npm run check
 
 ## デプロイ
 
-本番 (Cloudflare) へのデプロイ, 検出器の Release の作り方, 戻し方は [deploy.md](deploy.md) にある.
+本番 (Cloudflare) へのデプロイ, モデルの替え方, 戻し方は [deploy.md](deploy.md) にある.

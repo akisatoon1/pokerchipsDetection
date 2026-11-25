@@ -18,6 +18,6 @@
 ## 要るときに読む
 
 - [running.md](running.md) 手元での起動の手順. スマートフォンのブラウザから LAN で開く手順
-- [deploy.md](deploy.md) 本番へのデプロイの手順 (最初の 1 回の Cloudflare と GitHub の設定を含む), 検出器の Release の作り方, 戻し方
+- [deploy.md](deploy.md) 本番へのデプロイの手順 (最初の 1 回の Cloudflare と GitHub の設定を含む), モデルの替え方 (GitHub Release), 戻し方
 - [../architecture.md](../architecture.md) ブラウザでのチップの検出 (「10. Web でも core を WASM にして動かす」). デプロイの仕組み (「11. デプロイ」)
 - [../logic/usage.md](../logic/usage.md) の「WASM」 WASM のビルドと, CLI と結果が同じかの確かめ方

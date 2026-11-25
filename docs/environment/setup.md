@@ -86,6 +86,13 @@ make model PT=best.pt    # = scripts/export_model.sh
 - `models/chip_detector.onnx` ができ, Android の assets (`android/app/src/main/assets/`) にもコピーされる.
 - `models/VERSION` に変換元の `.pt` の sha256 が記録される.
 
+`best.pt` がなければ, 本番で使っているモデルを GitHub Release から取ってもよい (`gh` のログインが要る).
+この場合 Android の assets にはコピーされないので, Android を動かすなら `models/chip_detector.onnx` を手で写す.
+
+```
+scripts/fetch_model.sh   # models/model.lock の Release から models/chip_detector.onnx を取り, sha256 を確かめる
+```
+
 ここまでで Linux 側の準備は終わり. 確認する:
 
 ```
@@ -186,12 +193,14 @@ Web の画面でチップを検出するために, core を WebAssembly にビ�
 6 (モデル) が済んでいることが前提.
 
 ```
-scripts/fetch_emsdk.sh          # Emscripten 6.0.13 を third_party/emsdk/ に入れる (約 1.7GB)
+scripts/fetch_emsdk.sh          # Emscripten 6.0.13 を third_party/emsdk/ に入れる (約 1.7GB). emsdk のコミットも確かめる
 scripts/build_opencv_wasm.sh    # OpenCV 4.14.0 を WASM 用にビルドし, third_party/opencv-4.14.0-wasm/ に入れる. 数分かかる
+                                # ソースがなければ scripts/fetch_opencv_source.sh で取り, sha256 を確かめる
 scripts/build_wasm.sh           # core を WASM にし, モデルと一緒に web/src/client/public/detector/ に置く
 ```
 
 - 1 と 2 は最初の 1 回だけ. 3 は core かモデルを変えたらやり直す.
+- 本番のデプロイでは, CI が同じ手順で検出器をビルドする ([architecture.md](../architecture.md) の 11). 手元のビルドは, 手元で試すためだけに使う.
 - どれも git の管理外に置く (`third_party/`, `build-wasm/`, `web/src/client/public/detector/`).
 - Linux と同じ結果になるかの確かめ方は [usage.md](../logic/usage.md) の「WASM」にある.
 - Web アプリの起動の手順は [running.md](../web/running.md) にある.

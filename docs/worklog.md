@@ -573,3 +573,18 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `make test` は ctest ではなく, `testimages/v2/yoko/single_color` で全体テストを流すようにした.
 - テストの作業ディレクトリだった `log/` を `.gitignore` から外した.
 - 設計の判断は `docs/architecture.md` の 5, 使い方は `docs/logic/usage.md` の「テスト」にある.
+
+## 2026-11-25: 検出器を CI でビルドし, モデルだけを Release から取る
+
+- デプロイの CI (`.github/workflows/deploy.yml`) が, push のたびに検出器 (core を WASM にしたものとモデル) をビルドするようにした.
+  Emscripten と WASM 用の OpenCV は `actions/cache` (v6.1.0. コミットの SHA で固定) でキャッシュする.
+  デプロイのきっかけ (`paths`) に `core/**`, `wasm/**`, `models/model.lock` と, 検出器を作るスクリプトを足した.
+- モデル (ONNX) は git に入れず, GitHub Release `model-<sha256 の先頭 12 文字>` に置く. どれを使うかは `models/model.lock` に書く.
+  `.gitignore` は `models/` のうち `models/model.lock` だけを git に入れるようにした.
+- `scripts/release_detector.sh` と `scripts/fetch_detector.sh` を, モデルだけを扱う `scripts/release_model.sh` と `scripts/fetch_model.sh` に直した.
+  `web/detector.lock` を消した. 古い検出器の Release (`detector-*`) は消さずに残した.
+- 最初のモデルの Release `model-8d4bc8cc9099` を作った (2026-11-23 に書き出したモデル).
+- `scripts/fetch_emsdk.sh` は emsdk を版のタグで取り, コミットの SHA を確かめるようにした. 前は最新を取っていた.
+- `scripts/fetch_opencv_source.sh` を足した. OpenCV のソースを取り, sha256 を確かめる. `build_opencv.sh` と `build_opencv_wasm.sh` が使う.
+- 手元に Emscripten 6.0.13 (`third_party/emsdk/`) を入れた.
+- 設計は `docs/architecture.md` の 11, 手順は `docs/web/deploy.md` の「モデルを替える」にある.

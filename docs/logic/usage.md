@@ -181,6 +181,9 @@ make test
 `make model` は `models/chip_detector.onnx` を作り, Android の assets にもコピーし,
 `models/VERSION` に変換元の `.pt` の sha256 を記録する.
 
+モデルは git に入れない. 使うと決めたら `scripts/release_model.sh` で GitHub Release に置き,
+書き換わった `models/model.lock` をコミットする. push すると Web にも出る ([../web/deploy.md](../web/deploy.md) の「モデルを替える」).
+
 ## WASM
 
 Web の画面で動かす core (WASM) のビルドと, Linux の CLI と結果が同じかの確かめ方.
@@ -197,13 +200,14 @@ functional_tests/compare_wasm_cli.sh testimages/v1/yoko/stack/multicolor_jpg/IMG
   全部の testimages (約 250 枚) では 4〜5 分かかるのに対し, 35 枚なので短く済む.
 - スタックの数, box, count, peaks, colors が一致し, score の差が 0.001 以内なら一致とする. 違う画像は, どの値が違うかを出す.
   空の画像, 大きさの合わない画素, 壊れたモデルを渡すと落ちずにエラーの文が返ること, 各ファイルが 25 MiB 以下であることも確かめる.
-- 1 枚でも違えば終了コード 1 で終わる. core を変えたら, Web に出す前に流す.
+- 1 枚でも違えば終了コード 1 で終わる. Emscripten や OpenCV の版, `wasm/` の設定を変えたら, push の前に流す.
+  CI は検出器をビルドするだけで, この比べはしないため. core やモデルの変更では, 同じソースとモデルを使うのでずれない.
 - WASM に渡す画素は, CLI と同じ `cv::imread` で読む小さな道具 (`functional_tests/decode_rgba.cpp`) で作る. ブラウザの画像の読み方の違いは含まない.
 
 ### Web に出す
 
-デプロイの CI は検出器をビルドせず, GitHub Release から取ってくる. core, `wasm/`, モデルを変えて Web に出すときは,
-手元でビルドして Release を作る. 手順は [../web/deploy.md](../web/deploy.md) の「検出器の Release を作る」にある.
+デプロイの CI が, push のたびに検出器 (core + wasm + モデル) をビルドする. core や `wasm/` の変更は, push すれば Web にも出る.
+モデルを替えるときだけ, 手で Release を作る. 手順は [../web/deploy.md](../web/deploy.md) の「モデルを替える」にある.
 
 ## コードの整形と検査
 

@@ -1,7 +1,7 @@
 # 本番へのデプロイ
 
-点数計算アプリ (`web/`) を本番 (Cloudflare Workers の無料プラン) に出す手順と, 検出器の Release の作り方, 戻し方をまとめる.
-仕組みとそう決めた理由は [../architecture.md](../architecture.md) の「11. デプロイは GitHub Actions で行い, 検出器は Release から取る」にある.
+点数計算アプリ (`web/`) を本番 (Cloudflare Workers の無料プラン) に出す手順と, モデルの替え方, 戻し方をまとめる.
+仕組みとそう決めた理由は [../architecture.md](../architecture.md) の「11. デプロイは GitHub Actions で行い, 検出器もそこでビルドする」にある.
 手元での起動は [running.md](running.md) にある.
 
 ## だれが何をするか
@@ -10,7 +10,7 @@
 |---|---|---|
 | main への push (これがデプロイになる) | 人. AI は人に push をはっきり指示されたときだけ | 手元の `git push` |
 | 本番の D1 に migration を当てる | 人だけ | GitHub の Actions → migrate → Run workflow |
-| 検出器の Release を作る | 人. AI は人に指示されたときだけ | 手元の `scripts/release_detector.sh` |
+| モデルの Release を作る (モデルを替えるときだけ) | 人. AI は人に指示されたときだけ | 手元の `scripts/release_model.sh` |
 | 手元から本番に触る (`wrangler rollback` など) | 人. AI は人に指示されたときだけ | 手元 (期限付きのトークンを渡す) |
 
 AI は人に push をはっきり指示されたときだけ push するので, AI がそれ以外でデプロイすることはない ([../development/security.md](../development/security.md)).
@@ -78,9 +78,9 @@ Cloudflare の画面の文言は英語の表示で書く. ブラウザによっ�
 
 3. Repository secrets に 2 つ並んだら, Cloudflare のトークンの画面を閉じる.
 
-### 7. 検出器の Release を作る
+### 7. モデルの Release を作る
 
-下の「検出器の Release を作る」のとおり. `web/detector.lock` ができるので, コミットする.
+下の「モデルを替える」のとおり. `models/model.lock` ができるので, コミットする.
 
 ### 8. 最初のデプロイ
 
@@ -97,65 +97,71 @@ Cloudflare の画面の文言は英語の表示で書く. ブラウザによっ�
 `npm run build && npx wrangler deploy` を流して Worker を作る. Worker を新しく作るには 5 のトークンより強い権限が要ることがあるため.
 2 回目からは CI でデプロイできる.
 
-## 検出器の Release を作る
+## モデルを替える
 
-デプロイの CI は検出器 (WASM とモデル) をビルドせず, `web/detector.lock` に書いた GitHub Release から取ってくる.
-core, `wasm/`, モデルを変えて Web に出すときだけ, 手元でビルドして Release を作る. 画面や API だけの変更では要らない.
+デプロイの CI は, 検出器 (core を WASM にしたものとモデル) を毎回ビルドする. core, `wasm/`, 画面, API の変更は,
+push すれば CI がビルドしてデプロイするので, 人がすることはない.
+
+人が手で行うのは, モデルを替えるときだけ. モデル (ONNX, 約 10MB) は重いので git に入れず, GitHub Release に置く.
+どの Release のモデルを使うかは `models/model.lock` (タグと sha256) に書き, これを git に入れる.
 
 ### 前提
 
-- Emscripten, WASM 用の OpenCV, モデル (`models/chip_detector.onnx`) を用意してある ([../environment/setup.md](../environment/setup.md) の 10).
+- 新しい重み (`.pt`) を ONNX に書き出してある (`scripts/export_model.sh <best.pt>`. [../logic/usage.md](../logic/usage.md)).
+- 手元の全体テストで試し, このモデルを使うと決めてある.
 - GitHub CLI (`gh`) が入っていて, ログインしてある. `gh auth status` で `Logged in to github.com` と出ればよい.
-- `core/` と `wasm/` の変更をコミットしてある.
 
 ### 手順
 
-リポジトリのルートで, 次をつなげて流す. ビルドか比べで失敗すると, Release は作られない.
+リポジトリのルートで流す.
 
 ```sh
-make build && scripts/build_wasm.sh && functional_tests/compare_wasm_cli.sh && scripts/release_detector.sh
+scripts/release_model.sh         # Release を作り, models/model.lock を書き換える
+scripts/fetch_model.sh           # 作った Release から取ってきて, sha256 が合うかを確かめる (CI と同じ処理)
+git add models/model.lock
+git commit -m "chore: モデルを <タグ> にする"
 ```
 
-| コマンド | すること |
-|---|---|
-| `make build` | Linux の CLI をビルドする (比べに使う) |
-| `scripts/build_wasm.sh` | 検出器をビルドし, `web/src/client/public/detector/` に 3 ファイル (`.js`, `.wasm`, モデル) を置く |
-| `functional_tests/compare_wasm_cli.sh` | testimages の全画像を WASM と CLI で解析し, 結果が同じかを確かめる (数分かかる) |
-| `scripts/release_detector.sh` | Release を作り, `web/detector.lock` を書き換える |
+push すると, 次のデプロイでそのモデルが出る.
 
-終わったら, 確かめてからコミットして push する.
+### `release_model.sh` がすること
+
+1. `models/chip_detector.onnx` の sha256 を求め, タグを `model-<sha256 の先頭 12 文字>` にする.
+2. そのタグの Release がなければ作り, モデルを上げる. 説明にはモデルの sha256 を書く.
+   あれば, 中身は同じなので置き直さない. 同じモデルを二重に置かないため.
+3. `models/model.lock` にタグと sha256 を書く.
+
+- Release は公開される. 置くのは, デプロイしたサイトから誰でも取れるモデルと同じファイルだけ.
+- 古い Release は消さない. `models/model.lock` を前のコミットに戻せば, 前のモデルでデプロイし直せるようにするため.
+
+### Emscripten や OpenCV の版, `wasm/` の設定を変えたとき
+
+CI は検出器をビルドするだけで, Linux の CLI と結果が同じかは確かめない. ビルドの道具が変わると WASM の結果がずれうるので,
+push の前に手元で比べる. core やモデルを変えただけでは, 同じソースとモデルを使うのでずれない.
 
 ```sh
-cat web/detector.lock            # tag と 3 ファイルの sha256
-scripts/fetch_detector.sh        # 作った Release から取ってきて, sha256 が合うかを確かめる (CI と同じ処理)
-git add web/detector.lock
-git commit -m "chore: 検出器の Release を <タグ> にする"
+make build && scripts/build_wasm.sh && functional_tests/compare_wasm_cli.sh
 ```
 
-push すると, 次のデプロイでその検出器が出る.
-
-### `release_detector.sh` がすること
-
-1. 検出器の 3 ファイルがそろっているか, `core/` と `wasm/` に未コミットの変更がないかを確かめる. なければ止まる.
-2. タグ `detector-<YYYYMMDD>-<HEAD の短いコミット>` の Release を作り, 3 ファイルを上げる.
-   説明には, ビルドしたコミットと 3 ファイルの sha256 を書く.
-3. `web/detector.lock` にタグと sha256 を書く.
-
-- 同じタグの Release がもうあれば, 上書きせずに止まる. 同じ日に作り直すなら, 何かをコミットして HEAD を変えてから流す.
-- Release は公開される. 置くのは, デプロイしたサイトから誰でも取れるものと同じ 3 ファイルだけ.
-- 古い Release は消さない. `web/detector.lock` を前のコミットに戻せば, 前の検出器でデプロイし直せるようにするため.
+`compare_wasm_cli.sh` は `testimages/v2/yoko/` の画像を WASM と CLI で解析し, 結果が同じかを確かめる (1 分ほど).
 
 ## ふだんの流れ
 
-`web/`, `scripts/fetch_detector.sh`, `.github/workflows/deploy.yml` のどれかを変えたコミットを push すると, デプロイされる.
-C++ や文書だけのコミットではデプロイされない.
+本番に出るものの元が変わったコミットを push すると, デプロイされる. 元とは, `web/` と, 検出器の元
+(`core/`, `wasm/`, `models/model.lock`, 検出器を作るスクリプト) のこと. 一覧は `.github/workflows/deploy.yml` の `paths` にある.
+文書, Android, テストだけのコミットではデプロイされない.
 
 deploy は次の順に進み, どこかで失敗したらデプロイしない.
 
-1. 検出器を `web/detector.lock` の Release から取り, sha256 を確かめる.
-2. `npm run check` (整形, lint, 型検査, テスト, `npm audit`).
-3. 本番の D1 に未適用の migration がないかを確かめる.
-4. 画面をビルドし, `wrangler deploy` する.
+1. モデルを `models/model.lock` の Release から取り, sha256 を確かめる.
+2. Emscripten と WASM 用の OpenCV をキャッシュから戻す. なければ取ってきてビルドする (OpenCV のビルドで時間がかかる).
+3. 検出器 (core + wasm + モデル) をビルドする.
+4. `npm run check` (整形, lint, 型検査, テスト, `npm audit`).
+5. 本番の D1 に未適用の migration がないかを確かめる.
+6. 画面をビルドし, `wrangler deploy` する.
+
+Emscripten と OpenCV のキャッシュは, 用意するスクリプト (`fetch_emsdk.sh`, `fetch_opencv_source.sh`, `build_opencv_wasm.sh`) を
+変えると作り直す. 7 日使わないと GitHub が消すので, そのあとの 1 回は遅くなる.
 
 ## migration を足したとき
 
@@ -181,7 +187,7 @@ npx wrangler rollback              # 例
 
 - **コード**: 前のコミットに戻すコミット (`git revert`) を作って push する.
   急ぐときは「手元から本番に触るとき」の形で `npx wrangler rollback` (直前の版に戻す) を流す. ただし次の push で main の内容が出る.
-- **検出器**: `web/detector.lock` を前の内容に戻すコミットを作って push する.
+- **モデル**: `models/model.lock` を前の内容に戻すコミットを作って push する. core などの検出器の元は, コードと同じく `git revert` で戻す.
 - **DB**: migrate のログに出た bookmark で, 当てる前に戻す. 無料プランで戻せるのは 7 日前まで.
   戻した時点より後に入った持ち点などは消えるので, 人が判断してから行う.
 
@@ -200,8 +206,11 @@ Cloudflare の画面の Workers & Pages → pokerchip-score → Logs で見る (
 | 出たこと | 原因と直し方 |
 |---|---|
 | deploy が「本番の D1 に未適用の migration があります」で止まる | migrate を起動してから, deploy を再実行する |
-| 「web/detector.lock がありません」 | 検出器の Release をまだ作っていない. 上の「検出器の Release を作る」 |
-| 「sha256 が web/detector.lock と合いません」 | Release のファイルが書き換わった. 新しい Release を作り直す |
+| 「models/model.lock がありません」 | モデルの Release をまだ作っていない. 上の「モデルを替える」 |
+| 「モデルの sha256 が models/model.lock と合いません」 | Release のファイルが書き換わった. `release_model.sh` で Release を作り直す |
+| 「emsdk のタグ … のコミットが … ではありません」 | emsdk のタグが差し替えられた. 何が変わったかを確かめてから, `fetch_emsdk.sh` の版とコミットを直す |
+| 「OpenCV … の tarball の sha256 が合いません」 | 取ったソースが前と違う. 何が変わったかを確かめるまで, ビルドしない |
+| 検出器のビルドが時間切れで止まる | Emscripten と OpenCV のキャッシュがなく, ビルドに時間がかかった. 失敗した実行ではキャッシュが保存されないので, `deploy.yml` の `timeout-minutes` を延ばしてから再実行する |
 | `CLOUDFLARE_API_TOKEN` がないという旨のエラー, 認証のエラー | GitHub の Secrets の名前の綴りと, トークンの権限 (Workers Scripts と D1 の Edit) を確かめる |
 | 最初のデプロイで Worker を作れない | 上の「8. 最初のデプロイ」の最後のとおり, 手元から 1 回だけデプロイする |
-| deploy が動かない | 変えたファイルが `web/` などの対象に入っているか. 文書だけの push では動かない |
+| deploy が動かない | 変えたファイルが `deploy.yml` の `paths` に入っているか. 文書だけの push では動かない |
