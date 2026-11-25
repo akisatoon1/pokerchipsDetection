@@ -31,10 +31,14 @@ PATH_RULES = [
     (r"(^|/)local\.properties$", "手元の SDK のパス (Android)", "NG"),
     (r"(^|/)\.claude/settings\.local\.json$", "手元だけの Claude Code の設定", "NG"),
     (
-        r"(^|/)(node_modules|\.wrangler|\.gradle|\.kotlin|\.cxx|\.venv|third_party|models)/",
+        r"(^|/)(node_modules|\.wrangler|\.gradle|\.kotlin|\.cxx|\.venv|third_party)/",
         "外から取るものや作り直せるもの",
         "NG",
     ),
+    # models/ の下で git に入れてよいのは, ルートの models/model.lock だけ (人が決めた唯一の例外).
+    # 中身は使うモデルの Release のタグと sha256 だけで, CI がモデルを取るのに要る (docs/architecture.md の 11).
+    # モデル本体と models/VERSION (手元の絶対パスを含む) は入れない.
+    (r"(?!^models/model\.lock$)(^|/)models/", "モデルやその記録 (models/model.lock のほか)", "NG"),
     (r"(^|/)(build|build-android|dist|captures)/", "ビルド結果", "NG"),
     (r"\.(onnx|pt|apk|aab|so|o|a|class|dex)$", "モデルやビルド結果", "NG"),
     (r"\.(sqlite|sqlite3|db)$", "DB の中身", "要確認"),

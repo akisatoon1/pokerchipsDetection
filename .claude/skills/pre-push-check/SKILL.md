@@ -41,7 +41,7 @@ python3 -I .claude/skills/pre-push-check/scan.py
 
 | 検査 | 内容 |
 |---|---|
-| 置いてはいけないファイル | `.env`, `.dev.vars`, 鍵, `local.properties`, `.claude/settings.local.json`, `node_modules/` や `build/` などのビルド結果, `*.onnx` などのモデル |
+| 置いてはいけないファイル | `.env`, `.dev.vars`, 鍵, `local.properties`, `.claude/settings.local.json`, `node_modules/` や `build/` などのビルド結果, `*.onnx` などのモデル (`models/` の下は `models/model.lock` だけが例外) |
 | 秘密情報らしい文字列 | 追加した行とコミットメッセージにある API キー, トークン, 秘密鍵, 手元の絶対パス, メールアドレス |
 | コミットのメールアドレス | 作者とコミッターのアドレスが, git に登録したもの (`git config user.email`) と違えば NG |
 | 大きいファイル | 5 MB を超えるファイル. 50 MB を超えるものは NG (GitHub は 100 MB で拒否する) |
