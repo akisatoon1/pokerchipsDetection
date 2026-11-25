@@ -588,3 +588,11 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `scripts/fetch_opencv_source.sh` を足した. OpenCV のソースを取り, sha256 を確かめる. `build_opencv.sh` と `build_opencv_wasm.sh` が使う.
 - 手元に Emscripten 6.0.13 (`third_party/emsdk/`) を入れた.
 - 設計は `docs/architecture.md` の 11, 手順は `docs/web/deploy.md` の「モデルを替える」にある.
+
+## 2026-11-25: testimages/v2/yoko/with_far_stacks/ を足す
+
+- 遠くのスタックが写った画像 7 枚を, Android の端末 (Pixel 8a) の検証用アプリの保存先 (`/sdcard/Pictures/PokerChip/`) から
+  `adb pull` で取り, `testimages/v2/yoko/with_far_stacks/images/` に置いた. 画像は `.gitattributes` の決まりで Git LFS に入る.
+- 入れる前に, 7 枚とも EXIF に GPS の欄がないことと, 個人が分かるものが写っていないことを確かめた.
+- 正解は `answers.jsonl` に, 手前のスタックごとの色 (`stacks[].colors`) で書いた. 1 枚に数えたいスタックが 2 つある画像があるため,
+  `single_color` と形式が違う. 形式はデータセットの `README.md` にある.
