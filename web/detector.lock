@@ -1,6 +1,0 @@
-# 検出器 (WASM とモデル) の GitHub Release と, ファイルの sha256.
-# scripts/release_detector.sh が書き換え, scripts/fetch_detector.sh が読む. 手で直さない.
-tag detector-20261118-5460ef4
-sha256 e1f21c7fc2229c9f532109df9f2fe95ea095ba98a66795d8a91aa842244bdf1a pokerchip-core.js
-sha256 9e8f8925c3255d8d5d1d715016b30206c25f69ab80b98f17a2cadc54081d4f69 pokerchip-core.wasm
-sha256 d11488d93289a78adc4134fa274a735e9ebe42e4ac214a5397fc6d127b1e0f66 chip_detector.onnx

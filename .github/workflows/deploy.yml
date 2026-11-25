@@ -1,4 +1,5 @@
 # main への push で, 点数計算アプリ (web/) を Cloudflare にデプロイする.
+# チップの検出器 (core を WASM にしたものとモデル) も, ここで毎回ビルドする.
 # 流れと理由は docs/architecture.md の「11. デプロイ」, 手順は docs/web/deploy.md.
 #
 # 本番の D1 の migration はここでは当てない. 未適用のものがあれば止まるので,
@@ -9,10 +10,19 @@ name: deploy
 on:
   push:
     branches: [main]
-    # Web に関わるファイルが変わったときだけ動く. C++ や文書だけのコミットでデプロイしないため.
+    # 本番に出るものの元が変わったときだけ動く. 文書や Android, テストだけのコミットでデプロイしないため.
+    # 画面と API (web/) と, 検出器の元 (core/, wasm/, モデル, 検出器を作るスクリプト) のすべてを見張る.
+    # 検出器の元を足したら, ここにも足す. 足し忘れると, その変更は本番に届かない.
     paths:
       - "web/**"
-      - "scripts/fetch_detector.sh"
+      - "core/**"
+      - "wasm/**"
+      - "models/model.lock"
+      - "scripts/fetch_model.sh"
+      - "scripts/fetch_emsdk.sh"
+      - "scripts/fetch_opencv_source.sh"
+      - "scripts/build_opencv_wasm.sh"
+      - "scripts/build_wasm.sh"
       - ".github/workflows/deploy.yml"
 
 permissions:
@@ -26,7 +36,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # Emscripten と OpenCV のキャッシュがないときは, OpenCV のビルドで時間がかかる (手元の 4 コアで約 5 分).
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: web
@@ -42,13 +53,41 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: 依存を入れる
-        run: npm ci
-
-      - name: 検出器を取ってくる
-        run: ../scripts/fetch_detector.sh
+      - name: モデルを取ってくる
+        run: ../scripts/fetch_model.sh
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Emscripten と WASM 用の OpenCV は重いが, 版を変えない限り同じものなのでキャッシュする.
+      # key は用意するスクリプトの hash. 版や設定を変えるとスクリプトが変わり, 作り直す.
+      - name: Emscripten をキャッシュから戻す
+        id: emsdk-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v6.1.0
+        with:
+          path: third_party/emsdk
+          key: emsdk-${{ hashFiles('scripts/fetch_emsdk.sh') }}
+
+      - name: Emscripten を取ってくる
+        if: steps.emsdk-cache.outputs.cache-hit != 'true'
+        run: ../scripts/fetch_emsdk.sh
+
+      - name: WASM 用の OpenCV をキャッシュから戻す
+        id: opencv-wasm-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v6.1.0
+        with:
+          path: third_party/opencv-4.14.0-wasm
+          key: opencv-wasm-${{ hashFiles('scripts/fetch_emsdk.sh', 'scripts/fetch_opencv_source.sh', 'scripts/build_opencv_wasm.sh') }}
+
+      - name: WASM 用の OpenCV をビルドする
+        if: steps.opencv-wasm-cache.outputs.cache-hit != 'true'
+        run: ../scripts/build_opencv_wasm.sh
+
+      # 検出器は毎回ビルドする. 本番の検出器が, いつもデプロイするコミットの core とモデルからできるようにするため.
+      - name: 検出器をビルドする
+        run: ../scripts/build_wasm.sh
+
+      - name: 依存を入れる
+        run: npm ci
 
       - name: 検査する
         run: npm run check
