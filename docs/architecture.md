@@ -58,6 +58,9 @@ pokerchip/
   │
   ▼
 YoloDetector::detect      … スタックの矩形を検出 (複数可). letterbox → 推論 → NMS
+  │
+  ▼
+removeFarStacks           … いちばん広い箱より十分に狭い箱を, 奥に写ったスタックとして除く
   │   各矩形を外側に丸め, 画像範囲にクランプ
   ▼
 countChips(roi)           … 縦方向の輝度変化を1次元信号にし, 合わせ目の周期とピークから枚数を求める
@@ -71,6 +74,9 @@ AnalysisResult { stacks: [ { box, score, count, colors } ... ] }   … 左のス
 
 - `analyzeImage(detector, bgr)` が上の流れ全体. CLI, JNI, WASM の殻はこれを呼ぶ.
 - 手動で ROI を選ぶ場合 (Linux の実験用) は `analyzeRegion(bgr, rect)` で検出をスキップする.
+- 奥に写ったスタックを除くのは, 撮りたいスタックの奥に写り込んだものまで数えないため.
+  チップの直径は決まっていて箱の幅は距離に反比例するので, 画像の中でいちばん広い箱との幅の比で決める.
+  しきい値 (0.75) と根拠は [logic/adr.md](logic/adr.md) の ADR-2 にある.
 - `toJson(result)` で JSON にする. Android と Web への受け渡しと, 環境間の結果比較に使う.
 
 ## 設計判断と理由

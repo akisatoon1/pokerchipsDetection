@@ -62,9 +62,13 @@ StackResult analyzeRegion(const cv::Mat &bgr, const cv::Rect &region,
 
 /**
  * @brief YOLOでスタックを検出し, 見つかったスタックそれぞれを解析する.
+ *
+ * 箱の幅がいちばん広い箱より十分に狭いスタックは,
+ * 奥に写ったものとして解析せずに除く.
+ * 撮りたいスタックの奥に写り込んだスタックまで数えないため.
  * @param detector スタックの検出器.
  * @param bgr 元画像 (BGR).
- * @return 解析結果. スタックは左から順に並ぶ.
+ * @return 解析結果. スタックは左から順に並ぶ. 奥に写ったスタックは含まない.
  * @throws std::invalid_argument 画像が空, または CV_8UC3 でない場合.
  * @throws std::runtime_error 推論の出力の形が想定と違う場合.
  */

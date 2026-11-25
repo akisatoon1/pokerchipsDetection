@@ -4,6 +4,47 @@
 #include <cmath>
 #include <sstream>
 
+namespace {
+
+/**
+ * @brief 手前のスタックとみなす, 箱の幅の下限.
+ * 画像の中でいちばん広い箱の幅に対する比.
+ *
+ * チップの直径は決まっているので, 箱の幅は距離に反比例する.
+ * いちばん広い箱を手前のスタックとし,
+ * それより十分に狭い箱は奥に写ったスタックとして数えない (issue #3).
+ * 幅の比は, 横に並べた手前のスタック同士では 0.87 以上, 奥のスタックでは 0.68
+ * 以下だった. 手前のスタックを落とさない側に寄せて 0.75 にした. 根拠は
+ * docs/logic/adr.md の ADR-2.
+ */
+const float kNearStackMinWidthRatio = 0.75F;
+
+/**
+ * @brief 奥に写ったスタックの検出を除く.
+ *
+ * 画像の端で切れたスタックは箱が狭くなるので, 手前にあっても除かれることがある.
+ * @param detections 検出したスタック.
+ * @return 幅がいちばん広い箱の kNearStackMinWidthRatio 倍以上の検出.
+ * 元の並びを保つ.
+ */
+std::vector<Detection> removeFarStacks(
+    const std::vector<Detection> &detections) {
+  float maxWidth = 0.0F;
+  for (const Detection &d : detections) {
+    maxWidth = std::max(maxWidth, d.box.width);
+  }
+
+  std::vector<Detection> nearStacks;
+  for (const Detection &d : detections) {
+    if (d.box.width >= maxWidth * kNearStackMinWidthRatio) {
+      nearStacks.push_back(d);
+    }
+  }
+  return nearStacks;
+}
+
+}  // namespace
+
 cv::Rect toPixelRect(const cv::Rect2f &box, const cv::Size &imageSize) {
   int left = static_cast<int>(std::floor(box.x));
   int top = static_cast<int>(std::floor(box.y));
@@ -30,7 +71,7 @@ StackResult analyzeRegion(const cv::Mat &bgr, const cv::Rect &region,
 }
 
 AnalysisResult analyzeImage(YoloDetector &detector, const cv::Mat &bgr) {
-  std::vector<Detection> dets = detector.detect(bgr);
+  std::vector<Detection> dets = removeFarStacks(detector.detect(bgr));
 
   // 結果の順番を画像上の位置で決めておく. 表示や比較がしやすいため.
   std::sort(
