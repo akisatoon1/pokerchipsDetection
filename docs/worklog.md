@@ -609,3 +609,23 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - `docs/logic/usage.md` の make のターゲット一覧は, ロジックの作業で使うコマンドの「使うとき」の表にして文書の初めに置いた.
   各コマンドが何を実行するかは Makefile を見るようにし, Makefile と同じことを文書に書かないようにした. 書いた内容が Makefile とずれないようにするため.
 - 環境構築のコマンド (`make opencv`, `make model`, `make android-deps`) は `docs/environment/setup.md` の説明だけにした.
+
+## 2026-11-25: clone したあとのセットアップを make setup の 1 本にする
+
+- clone し直したあと, Android の分 (OpenCV Android SDK と `android/local.properties`) を作り忘れて `make android-run` が失敗した.
+  どちらも git の管理外で, clone し直すとなくなるため.
+- `scripts/setup.sh` と `make setup` を足した. リポジトリの中に置く git の管理外のもの (テスト画像, OpenCV, `.venv/`, モデル,
+  OpenCV Android SDK, `android/local.properties`, `web/node_modules/`, Emscripten, WASM 用の OpenCV, 検出器) を順に作る.
+  もうあるものは飛ばす. マシンに入れるもの (apt, Android Studio と SDK, Node.js, gh) は入れず, あるかを確かめるだけにした.
+  `--skip-android`, `--skip-web` で一部を飛ばせる.
+- `make opencv` と `make android-deps` を消した. `make setup` に含まれるため.
+- Android の SDK と JDK の場所の決め方を `scripts/lib/android.sh` にまとめた. `make android-run` は Gradle に SDK の場所を渡すので,
+  `android/local.properties` がなくても動く.
+- `make android-native` は, `third_party/android-ndk-r30/` ではなく SDK の NDK (`build.gradle.kts` の `ndkVersion`) を使うようにし,
+  `scripts/fetch_android_deps.sh` は NDK を取らなくなった (`--no-ndk` も消した). OpenCV Android SDK の zip は sha256 を確かめる.
+- Android のモデルは, Gradle がビルドのときに `models/chip_detector.onnx` を assets に入れるようにした.
+  `android/app/src/main/assets/` に写すのをやめ, `scripts/export_model.sh` も写さなくなった.
+- 文書: `docs/environment/setup.md` を「マシンに 1 回だけ入れるもの」「clone ごとに作るもの」「動くか確かめる」に書き直した.
+  Node.js の入れ方を `docs/web/running.md` から, Android と CLI の結果の比べ方を setup.md から `docs/android/usage.md` に移した.
+  `docs/environment/migration.md` (WSL からの移行の記録) を消し, 別のマシンへ移るときの要点だけを setup.md に残した.
+  ルートに `README.md` を足し, セットアップの要約を書いた. 設計は `docs/architecture.md` の 12.

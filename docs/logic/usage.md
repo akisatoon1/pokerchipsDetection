@@ -1,8 +1,8 @@
 # ロジック, CLI の使い方
 
 Linux マシンでの core と CLI のビルド, CLI の実行, テスト, WASM のビルドと比べ, コードの検査の方法.
-環境構築 (apt, OpenCV, Python, モデルの用意) が済んでいることが前提で, その手順は [setup.md](../environment/setup.md) の 1〜6 にある.
-WASM の用意は [setup.md](../environment/setup.md) の 10 を, Android アプリの使い方は [../android/usage.md](../android/usage.md) を参照.
+セットアップ ([setup.md](../environment/setup.md). clone したあとは `make setup`) が済んでいることが前提.
+Android アプリの使い方は [../android/usage.md](../android/usage.md) を参照.
 
 コマンドはすべて **リポジトリのルートで** 実行する. CLI もテストも, モデル (`models/chip_detector.onnx`) や
 テスト画像をリポジトリのルートからの相対パスで探すため.
@@ -11,7 +11,7 @@ WASM の用意は [setup.md](../environment/setup.md) の 10 を, Android アプ
 
 よく使う操作は, ルートの `Makefile` にまとめてあり `make` で呼べる. ここにはロジックの作業で使うものを, 何をしたいときに使うかだけ書く.
 各コマンドが実際に何を実行するか (呼ぶスクリプト, 引数の既定値, 検査の対象のファイル) は `Makefile` を見る.
-環境構築のもの (`make opencv`, `make model`, `make android-deps`) は [setup.md](../environment/setup.md) に,
+環境構築のもの (`make setup`) は [setup.md](../environment/setup.md) に,
 Android のもの (`make android-run`, `make android-native`) は [../android/usage.md](../android/usage.md) にある.
 
 | コマンド | 使うとき |
@@ -29,7 +29,7 @@ Android のもの (`make android-run`, `make android-native`) は [../android/us
 `make build` で CLI (`build/pokerchip`) をビルドする.
 
 - ビルドの種類は既定で `Release`.
-- OpenCV は `third_party/opencv-4.14.0/` (`make opencv` でビルドしたもの) を使う.
+- OpenCV は `third_party/opencv-4.14.0/` (`make setup` でビルドしたもの) を使う.
   システムの OpenCV は使わない.
 
 ## CLI を実行する
@@ -183,7 +183,7 @@ make build
 モデルを更新したら, 全体テストの結果が前より悪くなっていないかを確かめてからコミットする.
 
 ```
-make model PT=path/to/new/best.pt   # 何ができるかは setup.md の 6
+make model PT=path/to/new/best.pt   # models/chip_detector.onnx を書き出し直す. Android のビルドもこれを使う
 make test
 ```
 
@@ -193,7 +193,8 @@ make test
 ## WASM
 
 Web の画面で動かす core (WASM) のビルドと, Linux の CLI と結果が同じかの確かめ方.
-Emscripten と WASM 用の OpenCV の用意 ([setup.md](../environment/setup.md) の 10) が済んでいることが前提.
+Emscripten と WASM 用の OpenCV は `make setup` が用意する ([setup.md](../environment/setup.md)).
+`make setup` は検出器がまだないときだけ作るので, core やモデルを変えたら下の `scripts/build_wasm.sh` で作り直す.
 
 ```
 scripts/build_wasm.sh                     # build-wasm/ でビルドし, .js, .wasm, モデルを web/src/client/public/detector/ に置く

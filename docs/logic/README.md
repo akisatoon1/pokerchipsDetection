@@ -15,4 +15,4 @@
 
 - [labeling.md](labeling.md) テスト画像のラベル付けの手順
 - [adr.md](adr.md) パラメータや方式をデータを見て決めた記録 (検出のしきい値, 奥のスタックを除く幅の比など). 根拠のデータは [data/](data/) にある
-- [../environment/setup.md](../environment/setup.md) OpenCV やモデル, Emscripten と WASM 用の OpenCV の用意
+- [../environment/setup.md](../environment/setup.md) セットアップ (マシンに入れるものと, clone したあとの `make setup`)

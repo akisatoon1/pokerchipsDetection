@@ -33,6 +33,7 @@
 
 | 文書 | いつ読むか | 中身 |
 |---|---|---|
+| [../README.md](../README.md) | セットアップの流れを変えたとき (直す) | リポジトリの紹介と, セットアップの要約 (GitHub で最初に見える) |
 | [architecture.md](architecture.md) | 構成や分野の関係を知りたいとき. 構成を変えるとき | 全体の設計 (C++ のロジック, Android, Web) と, そう決めた理由 |
 | [worklog.md](worklog.md) | 環境やファイル構造を変えたとき (記録を足す) | 作業記録 |
 | [development/commit.md](development/commit.md) | (CLAUDE.md が読み込み済み) | コミットの決まり |
@@ -49,7 +50,8 @@
 ## 環境
 
 - 作業の前に読む: [environment/setup.md](environment/setup.md) セットアップの手順
-- 要るときに読む: [environment/migration.md](environment/migration.md) 別のマシンへの移行, [worklog.md](worklog.md) これまでの環境の変更
+- 要るときに読む: [worklog.md](worklog.md) これまでの環境の変更
+- 手順の本体は `scripts/setup.sh` (`make setup`). 手順を変えるときは, スクリプトと setup.md の「2. clone ごとに作るもの」の表, ルートの README.md を一緒に直す
 
 ## 分野ごとの地図
 

@@ -14,5 +14,5 @@ Android アプリ (Kotlin) と, core を呼ぶ JNI の C++ の作業で読む. �
 ## 要るときに読む
 
 - [usage.md](usage.md) アプリをビルドして端末で動かす make のコマンド, 端末で保存した画像の取り出し方
-- [../environment/setup.md](../environment/setup.md) Android のビルド環境 (7〜9)
+- [../environment/setup.md](../environment/setup.md) Android のビルド環境 (Android Studio と SDK, `make setup`)
 - [../logic/usage.md](../logic/usage.md) core の動きを Linux で確かめるとき

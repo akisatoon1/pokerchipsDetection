@@ -47,10 +47,10 @@ npm run dev      # 画面をビルドし, ローカルの D1 に migrations を�
 開発の道具は手元と CI で自分のファイルを扱うだけで本番では動かず, 直った版が出るまで Web のコミットとデプロイが止まるのを避けるため.
 表示に開発の道具の脆弱性が出ていたら, 直った版が出たときに上げる.
 
-チップを検出するには, 先にリポジトリのルートで `scripts/build_wasm.sh` を流しておく ([running.md](../../web/running.md)).
+チップを検出するには, 先にリポジトリのルートで `make setup` を流しておく. core やモデルを変えたら `scripts/build_wasm.sh` で作り直す ([running.md](../../web/running.md)).
 
 Node は `~/.local/node` に入っている. PATH が通っていないシェルでは `export PATH="$HOME/.local/node/bin:$PATH"` を先に実行する.
-Node の入れ方と起動の手順は [running.md](../../web/running.md) にある.
+Node の入れ方は [../../environment/setup.md](../../environment/setup.md) に, 起動の手順は [running.md](../../web/running.md) にある.
 
 ## 書き方
 

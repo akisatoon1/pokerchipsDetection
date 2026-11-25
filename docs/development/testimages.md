@@ -69,7 +69,7 @@ git の履歴には短いポインタだけが入り, 本体は GitHub の LFS �
 - ラベルと正解を LFS にしないのは, 小さいうえ, LFS にすると差分を見る, grep で探す, push の前の検査で秘密情報を探す, ができなくなるため.
 - 2026-11-23 に過去の履歴も書き換え, それまでにコミットした画像も LFS にした. それより前に clone したものは作り直す
   (古い clone から push すると, 画像の入った古い履歴がまた上がるため).
-- 手元の用意 (`git-lfs` を入れる, `git lfs pull`) は [../environment/setup.md](../environment/setup.md) の 2 にある.
+- 手元の用意 (`git-lfs` を入れる, `git lfs pull`) は [../environment/setup.md](../environment/setup.md) にある (`git lfs pull` は `make setup` が行う).
 
 ## 画像を足すとき
 

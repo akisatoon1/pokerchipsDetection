@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(POKERCHIP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../..")
 
-# scripts/fetch_android_deps.sh で取得した OpenCV Android SDK を使う.
+# scripts/fetch_android_deps.sh (make setup から呼ぶ) で取得した OpenCV Android SDK を使う.
 # モジュールは静的リンクされるので, APK に libopencv_java4.so を入れる必要はない.
 set(OpenCV_DIR "${POKERCHIP_ROOT}/third_party/opencv-4.14.0-android-sdk/sdk/native/jni"
   CACHE PATH "OpenCV Android SDK の OpenCVConfig.cmake のあるディレクトリ")

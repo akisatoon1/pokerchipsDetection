@@ -4,30 +4,12 @@
 API, 画面, DB (D1) はすべてローカルで動く. Cloudflare のアカウントは要らない.
 本番 (Cloudflare) へのデプロイは [deploy.md](deploy.md) にある.
 
-## 1. Node.js を入れる (最初の 1 回)
+## 1. 用意する (最初の 1 回)
 
-Node 24 を使う (`web/package.json` の `engines`). 入っていれば飛ばしてよい.
+Node.js 24 を入れ ([../environment/setup.md](../environment/setup.md) の「Node.js 24」), リポジトリのルートで `make setup` を流す.
+`make setup` は, npm のパッケージ (`web/node_modules/`) と, チップの検出に使う検出器 (`web/src/client/public/detector/`) まで用意する.
 
-```sh
-node --version   # v24.x.x と出れば入っている
-```
-
-入っていなければ, 公式の tarball を `~/.local/node` に入れる. sudo は要らない.
-`<version>` は https://nodejs.org/dist/latest-v24.x/ にある最新の版 (例: `v24.22.0`) に置き換える.
-
-```sh
-cd /tmp
-curl -fsSLO https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt
-curl -fsSLO https://nodejs.org/dist/latest-v24.x/node-<version>-linux-x64.tar.xz
-grep 'node-<version>-linux-x64.tar.xz$' SHASUMS256.txt | sha256sum -c -   # OK と出ることを確かめる
-mkdir -p ~/.local/node
-tar -xJf node-<version>-linux-x64.tar.xz -C ~/.local/node --strip-components=1
-echo 'export PATH="$HOME/.local/node/bin:$PATH"' >> ~/.bashrc
-```
-
-新しい端末を開くと `node` と `npm` が使える. 今の端末で使うなら `source ~/.bashrc` を実行する.
-
-## 2. 依存を入れる (最初の 1 回と, package.json が変わったとき)
+## 2. 依存を入れ直す (package.json が変わったとき)
 
 ```sh
 cd web
@@ -57,10 +39,8 @@ npm run dev
 ### チップの検出を使うとき
 
 画面でチップを検出するには, WASM とモデルが `web/src/client/public/detector/` に要る.
-ないと, 解析するときに「検出の仕組みを読み込めませんでした」と出る.
-リポジトリのルートで `scripts/build_wasm.sh` を流してから `npm run dev` をする.
-初めてなら Emscripten と WASM 用の OpenCV の用意も要る ([../environment/setup.md](../environment/setup.md) の 10).
-モデル (`models/chip_detector.onnx`) がなければ, `scripts/fetch_model.sh` で本番と同じものを取れる.
+ないと, 解析するときに「検出の仕組みを読み込めませんでした」と出る. `make setup` を流せば置かれる.
+core やモデルを変えたときは, リポジトリのルートで `scripts/build_wasm.sh` を流して作り直す.
 
 ### 試し方
 

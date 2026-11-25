@@ -1,220 +1,177 @@
 # セットアップ手順
 
-新しいマシンでこのプロジェクトを使えるようにするまでの手順.
-Linux で実験・テストをする部分 (1〜6) と, Android アプリをビルドする部分 (7〜9), Web でチップを検出する WASM をビルドする部分 (10) がある.
-セットアップが済んだ後の Linux マシンでの使い方 (ビルド, CLI の実行, テスト) は [usage.md](../logic/usage.md),
-設計の理由は [architecture.md](../architecture.md) を参照.
+このプロジェクトを使えるようにする手順. 用意するものは 2 種類あり, 用意の仕方が違う.
 
-想定する環境は **Ubuntu 24.04** (作業記録の環境と同じ). 他のバージョンでも大きくは変わらないが,
-clang-format / clang-tidy のバージョンが違うと整形結果や指摘が変わることがある.
+| 種類 | 例 | 用意の仕方 |
+|---|---|---|
+| [1. マシンに 1 回だけ入れるもの](#1-マシンに-1-回だけ入れるもの) | apt のパッケージ, Android Studio と SDK, Node.js, gh | 手で入れる. sudo や人の操作 (SDK のライセンスへの同意など) が要り, ほかのプロジェクトにも効くため |
+| [2. clone ごとに作るもの](#2-clone-ごとに作るもの-make-setup) | `third_party/` の OpenCV, `.venv/`, モデル, `android/local.properties`, `web/node_modules/` | `make setup` が作る |
+
+2 はリポジトリの中に置く git の管理外のものなので, clone し直すとなくなる. 1 が済んだマシンでも, clone したら `make setup` を流す.
+
+セットアップが済んだ後の使い方は [../logic/usage.md](../logic/usage.md) (CLI とテスト), [../android/usage.md](../android/usage.md) (Android),
+[../web/running.md](../web/running.md) (Web) に, 設計の理由は [../architecture.md](../architecture.md) にある.
+
+想定する環境は **Ubuntu 24.04**. 他の版でも大きくは変わらないが, clang-format と clang-tidy の版が違うと, 整形の結果や指摘が変わることがある.
 
 ## 0. 必要なもの
 
 | 項目 | 目安 | 備考 |
 |---|---|---|
 | メモリ | 16GB 以上 | Android Studio とエミュレータを同時に動かすため |
-| ディスクの空き | 40GB 以上 | Android SDK とエミュレータで約 15GB, OpenCV のビルドで約 4.5GB, Python の venv で約 6GB, Emscripten で約 1.7GB |
-| sudo | 必要 | apt でのパッケージのインストール |
-| KVM | エミュレータを使う場合 | `ls /dev/kvm` で存在を確認. BIOS で CPU の仮想化を有効にする |
-| `best.pt` | 必須 | 学習済みの YOLO の重み. git 管理外なので別途受け取る (6 を参照) |
+| ディスクの空き | 40GB 以上 | Android SDK とエミュレータで約 15GB, OpenCV で約 4.5GB, Python の venv で約 6GB, Emscripten で約 1.7GB |
+| sudo | 必要 | apt でパッケージを入れるため |
+| KVM | エミュレータを使う場合 | `ls /dev/kvm` で確かめる. BIOS で CPU の仮想化を有効にする |
+| 重み (`best.pt`) | 任意 | 学習済みの YOLO の重み. git の管理外なので別に受け取る. なければモデルを GitHub Release から取る (gh が要る) |
 
-## 1. リポジトリを取得する
+## 1. マシンに 1 回だけ入れるもの
 
-```
-git clone git@github.com:akisatoon1/pokerchipsDetection.git ~/workspace/pokerchip
-cd ~/workspace/pokerchip
-```
+`make setup` は, これらがあるかを確かめ, 足りなければすべてと入れ方を出して止める. 自分では入れない.
+Android や Web を使わないなら, その部分は要らない (`scripts/setup.sh --skip-android --skip-web`).
 
-## 2. apt でパッケージを入れる
+### apt のパッケージと Git LFS
 
 ```
 sudo apt update
-sudo apt install build-essential cmake git git-lfs curl unzip python3-venv \
+sudo apt install build-essential cmake git git-lfs curl unzip pkg-config python3-venv \
                  libgtk-3-dev clang-format clang-tidy
 git lfs install
-git lfs pull
 ```
 
-- `libgtk-3-dev` は OpenCV の画面表示 (`imshow`, 手動の ROI 選択) に必要.
-  **OpenCV をビルドする (3) より前に入れておくこと.** 後から入れた場合は 3 をやり直す.
-- CMake は 3.22 以上が必要 (Ubuntu 24.04 の apt 版は 3.28).
-- `git-lfs` は `testimages/` のデータセットの画像を取るのに使う ([../development/testimages.md](../development/testimages.md)).
-  git-lfs を入れる前に clone すると, 画像の場所には中身ではなく短いテキスト (ポインタ) ができる. `git lfs pull` で本物の画像に置き換わる.
+- `libgtk-3-dev` は OpenCV の画面表示 (`imshow`, 手で ROI を選ぶ) に要る. `make setup` が OpenCV をビルドする前に入れておく.
+  後から入れたときは, 「[作り直すとき](#作り直すとき)」のとおり OpenCV を作り直す.
+- CMake は 3.22 以上が要る (Ubuntu 24.04 の apt の版は 3.28).
+- `git lfs install` は, ユーザーの git の設定に Git LFS を組み込む. `testimages/` のデータセットの画像は Git LFS にあり
+  ([../development/testimages.md](../development/testimages.md)), 組み込む前に clone すると, 画像の場所には中身ではなく短いテキスト (ポインタ) ができる.
+  `make setup` が `git lfs pull` で本物の画像に置き換える.
 
-以降のコマンドはすべてリポジトリのルートで実行する.
+### Android Studio と SDK (Android を使うとき)
 
-## 3. OpenCV 4.14.0 をビルドする
+1. Android Studio を入れる. どちらかの方法で:
+   - `sudo snap install android-studio --classic`
+   - 公式のサイト (https://developer.android.com/studio) の tar.gz を `/usr/local/android-studio` に展開し, `bin/studio.sh` を実行する
+2. 初回の起動のウィザードで, 標準の SDK を入れる (`~/Android/Sdk`). SDK のライセンスにもここで同意する.
+3. **SDK Manager** (Settings > Languages & Frameworks > Android SDK) で, `android/app/build.gradle.kts` に書いた版を入れる.
+   アプリは Android 15 (API 35) 以上が対象で, Android 17 (API 37) の SDK でビルドする.
+   - SDK Platforms: Android 17 (API 37) (`compileSdk`)
+   - SDK Tools: NDK (Side by side) `30.0.16248370` (`ndkVersion`. "Show Package Details" で版を選ぶ)
+   - SDK Tools: CMake `3.31.6` (`externalNativeBuild` の `version`)
+4. エミュレータを使う場合, KVM を使えるようにする.
+   ```
+   sudo adduser $USER kvm     # 反映には再ログインが要る
+   ```
+5. 実機を使う場合:
+   - 端末で「開発者向けオプション」を有効にし, 「USB デバッグ」をオンにする.
+   - adb は 2 の SDK の `platform-tools/` に入っている. コマンドラインで使えるように PATH を通す.
+     ```
+     echo 'export PATH="$HOME/Android/Sdk/platform-tools:$PATH"' >> ~/.bashrc
+     ```
+   - USB で繋いで `adb devices` に端末が出れば OK.
+     USB の権限は systemd (258 以降) の udev のルールが与えるので, udev のルールを別に入れなくてよい.
 
-Linux と Android で OpenCV のバージョンを揃えるため, apt の OpenCV は使わずにソースからビルドする.
-`third_party/opencv-4.14.0/` にインストールされる (git 管理外).
+JDK は Android Studio に入っているもの (`/usr/local/android-studio/jbr`) を使う. Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
+JDK や SDK が上と違う場所にあるときは, `JAVA_HOME` と `ANDROID_HOME` に入れてから `make setup` を流す.
 
-```
-make opencv        # = scripts/build_opencv.sh. 数分かかる
-```
+### Node.js 24 (Web を使うとき)
 
-ビルドのログに `GTK+: YES` (GUI: GTK3) と出ていれば画面表示が使える. `NO` なら 1 の `libgtk-3-dev` が
-入っていないので, 入れてから `make opencv` をやり直す.
+`web/package.json` の `engines` の版を使う. 公式の tarball を `~/.local/node` に入れる. sudo は要らない.
+`<version>` は https://nodejs.org/dist/latest-v24.x/ にある最新の版 (例: `v24.22.0`) に置き換える.
 
-## 4. Python の環境を作る
-
-モデルを ONNX に変換するのと, 検出結果の基準を作るのに使う.
-
-```
-python3 -m venv .venv
-.venv/bin/pip install -r pyscript/requirements.txt
-```
-
-PyTorch などを含むので, ダウンロードに時間がかかる (約 6GB).
-
-## 5. ビルドとテスト
-
-```
-make build         # build/pokerchip (CLI) とテストをビルド
-```
-
-モデルがまだないので, この時点ではモデルを使うテストはスキップされる.
-
-## 6. モデルを用意する
-
-モデルは別リポジトリ (yoloPokerchip) で学習する. 重みは git 管理されていないので,
-学習済みの `best.pt` を受け取ってリポジトリのルートに置く (`*.pt` は git 管理外).
-
-```
-make model PT=best.pt    # = scripts/export_model.sh
-```
-
-- `models/chip_detector.onnx` ができ, Android の assets (`android/app/src/main/assets/`) にもコピーされる.
-- `models/VERSION` に変換元の `.pt` の sha256 が記録される.
-
-`best.pt` がなければ, 本番で使っているモデルを GitHub Release から取ってもよい (`gh` のログインが要る).
-この場合 Android の assets にはコピーされないので, Android を動かすなら `models/chip_detector.onnx` を手で写す.
-
-```
-scripts/fetch_model.sh   # models/model.lock の Release から models/chip_detector.onnx を取り, sha256 を確かめる
+```sh
+cd /tmp
+curl -fsSLO https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt
+curl -fsSLO https://nodejs.org/dist/latest-v24.x/node-<version>-linux-x64.tar.xz
+grep 'node-<version>-linux-x64.tar.xz$' SHASUMS256.txt | sha256sum -c -   # OK と出ることを確かめる
+mkdir -p ~/.local/node
+tar -xJf node-<version>-linux-x64.tar.xz -C ~/.local/node --strip-components=1
+echo 'export PATH="$HOME/.local/node/bin:$PATH"' >> ~/.bashrc
 ```
 
-ここまでで Linux 側の準備は終わり. 確認する:
+新しい端末を開くと `node` と `npm` が使える. 今の端末で使うなら `source ~/.bashrc` を実行する.
+
+### GitHub CLI (重みがないとき)
+
+重み (`best.pt`) がないとき, `make setup` は本番と同じモデルを GitHub Release から取る. そのときに使う.
+
+```
+sudo apt install gh
+gh auth login
+```
+
+## 2. clone ごとに作るもの (`make setup`)
+
+```
+git clone git@github.com:akisatoon1/pokerchipsDetection.git
+cd pokerchipsDetection
+make setup
+```
+
+- 重みを受け取っているなら, `make setup` の前にリポジトリのルートに `best.pt` として置く. 別の場所なら `make setup PT=path/to/best.pt`.
+- 何回流してもよい. もうあるものは飛ばす. 途中で失敗しても, 直してから流し直せば続きから進む.
+- 初めての 1 回は, ダウンロードとビルドで数十分かかる.
+- Android や Web を使わないなら, `scripts/setup.sh --skip-android` や `scripts/setup.sh --skip-web` で, その部分を飛ばす.
+
+順に次を作る. 中身は `scripts/setup.sh` にあり, 各段は表のスクリプトを呼ぶ.
+
+| 段 | 作るもの | 中で行うこと |
+|---|---|---|
+| Linux | テスト画像 (`testimages/` の LFS の画像) | `git lfs pull` |
+| | `third_party/opencv-4.14.0/` | `scripts/build_opencv.sh`. Linux と Android, Web で版を揃えるため, apt の OpenCV は使わずソースからビルドする |
+| | `.venv/` | `python3 -m venv .venv` と `pip install -r pyscript/requirements.txt`. モデルの書き出しと色の基準色の計算に使う |
+| | `build/pokerchip` (CLI) | `make build` |
+| モデル | `models/chip_detector.onnx` | 重みがあれば `scripts/export_model.sh` で書き出し, なければ `scripts/fetch_model.sh` で `models/model.lock` の Release から取る |
+| Android | `third_party/opencv-4.14.0-android-sdk/` | `scripts/fetch_android_deps.sh` |
+| | `android/local.properties` | SDK の場所 (`sdk.dir`) を書く. Gradle と Android Studio が SDK を探すのに使う |
+| Web | `web/node_modules/` | `npm ci` |
+| | `third_party/emsdk/` (Emscripten 6.0.13) | `scripts/fetch_emsdk.sh` |
+| | `third_party/opencv-4.14.0-wasm/` | `scripts/build_opencv_wasm.sh` |
+| | `web/src/client/public/detector/` (検出器) | `scripts/build_wasm.sh`. core を WASM にし, モデルと一緒に置く |
+
+Android のアプリは, ビルドのときに `models/chip_detector.onnx` を assets に入れる (`android/app/build.gradle.kts`). assets に写す手順はない.
+
+### 作り直すとき
+
+`make setup` は, もうあるものを作り直さない. 作り直すには, そのものを消してから `make setup` を流す.
+
+| したいこと | すること |
+|---|---|
+| OpenCV を作り直す (`libgtk-3-dev` を後から入れたときなど) | `rm -rf third_party/opencv-4.14.0 build` → `make setup` |
+| モデルを `models/model.lock` の Release から取り直す | `rm models/chip_detector.onnx` → `make setup` |
+| 新しい重みからモデルを書き出す | `make model PT=path/to/best.pt` ([../logic/usage.md](../logic/usage.md) の「モデルを更新したとき」) |
+| core やモデルを変えたあと, 検出器を作り直す | `scripts/build_wasm.sh` ([../logic/usage.md](../logic/usage.md) の「WASM」) |
+| `web/package.json` が変わったあと, パッケージを入れ直す | `cd web && npm ci` |
+
+## 3. 動くか確かめる
 
 ```
 make test          # 全体テストが最後まで流れ, 画像ごとの結果が出ること
 make check         # clang-format と clang-tidy の指摘がないこと
-make run ARGS="--out debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg"
+make run ARGS="--out debug.png testimages/v1/yoko/stack/singlecolor/IMG_5587.jpg"
 ```
 
-最後のコマンドで `chip count by peaks  = 4` と黄色 4 枚が出て, `debug.png` が保存されれば OK.
+最後のコマンドで, スタックの枚数 (`chip count by peaks`) と色が出て, `debug.png` が保存されれば OK.
 
-ビルド, CLI のオプションや出力の見方, テスト, モデルを更新したときの手順などは [usage.md](../logic/usage.md) を参照.
+- Android: 端末を USB で繋いで `make android-run` を流し, アプリが起動すれば OK ([../android/usage.md](../android/usage.md)).
+  Android Studio で開くときは, リポジトリのルートではなく **`android/` ディレクトリ** を開く.
+- Web: `cd web && npm run dev` で起動し, ブラウザで http://localhost:8787 を開く ([../web/running.md](../web/running.md)).
 
-## 7. Android 用の外部ファイルを取得する
+## 別のマシンへ移る
 
-```
-make android-deps    # = scripts/fetch_android_deps.sh
-```
-
-- OpenCV Android SDK 4.14.0 を `third_party/opencv-4.14.0-android-sdk/` に取得する.
-  アプリのビルド (`android/app/src/main/cpp/CMakeLists.txt`) がここを参照するので **必須**.
-- NDK r30 を `third_party/android-ndk-r30/` に取得する. これは `make android-native`
-  (Android Studio なしでの確認) 用. 不要なら `scripts/fetch_android_deps.sh --no-ndk`.
-
-## 8. Android Studio を入れる
-
-1. Android Studio をインストールする. どちらかの方法で:
-   - `sudo snap install android-studio --classic`
-   - 公式サイト (https://developer.android.com/studio) の tar.gz を展開し, `bin/studio.sh` を実行
-2. 初回起動のウィザードで標準の SDK を入れる.
-3. **SDK Manager** (Settings > Languages & Frameworks > Android SDK) で以下を入れる.
-   バージョンは `android/app/build.gradle.kts` の指定と合わせる.
-   アプリは Android 15 (API 35) 以上が対象で, Android 17 (API 37) の SDK でビルドする.
-   - SDK Platforms: Android 17 (API 37)
-   - SDK Tools: NDK (Side by side) `30.0.16248370` ("Show Package Details" で版を選ぶ)
-   - SDK Tools: CMake `3.31.6`
-
-   NDK と CMake は, SDK のライセンスに同意済み (`~/Android/Sdk/licenses/` がある) なら,
-   初回の Gradle のビルドで自動で入る.
-4. エミュレータを使う場合, KVM を使えるようにする.
-   ```
-   sudo adduser $USER kvm     # 反映には再ログインが必要
-   ```
-5. 実機を使う場合:
-   - 端末で「開発者向けオプション」を有効にし, 「USB デバッグ」をオンにする.
-   - adb は 2 の標準 SDK に含まれる `platform-tools/` に入っている. コマンドラインで使えるように PATH を通す.
-     ```
-     echo 'export PATH="$HOME/Android/Sdk/platform-tools:$PATH"' >> ~/.bashrc   # SDK の場所は入れ方で変わる
-     ```
-   - USB で繋いで `adb devices` に端末が出れば OK.
-     USB の権限は systemd (258 以降) の udev ルールが与えるので, udev のルールを別に入れなくてよい.
-
-## 9. アプリをビルドして動かす
-
-1. 6 (モデル) と 7 (OpenCV Android SDK) が済んでいることを確認する.
-   - `android/app/src/main/assets/chip_detector.onnx` がある
-   - `third_party/opencv-4.14.0-android-sdk/` がある
-2. Android Studio で **`android/` ディレクトリ** を開く (リポジトリのルートではない).
-   Gradle の同期が走り, `android/local.properties` (SDK の場所) が自動で作られる.
-3. 実機かエミュレータ (Android 15 以上, x86_64 のシステムイメージ) を選んで Run.
-
-Android Studio を開かずに, 繋いだ実機に入れて起動するには, リポジトリのルートで次を実行する.
-「Run」と同じく, ビルド, インストール, 起動までを行う (`scripts/run_android.sh`).
-
-```
-make android-run
-```
-
-- `JAVA_HOME` が空なら `/usr/local/android-studio/jbr` を使う. 違う場所なら `JAVA_HOME` を入れてから実行する.
-- `adb` は PATH から探し, なければ `android/local.properties` の `sdk.dir` の下を使う.
-- 端末が複数繋がっているときは, `ANDROID_SERIAL=<adb devices の番号> make android-run` で 1 台を選ぶ.
-
-コマンドラインでビルドだけする場合:
-
-```
-cd android
-export JAVA_HOME=/usr/local/android-studio/jbr   # Android Studio に入っている JDK. 場所は入れ方で変わる
-./gradlew assembleDebug          # app/build/outputs/apk/debug/app-debug.apk ができる
-./gradlew installDebug           # 繋いだ端末にインストール
-```
-
-Android Studio を使わない場合は `android/local.properties` に `sdk.dir=/path/to/Android/Sdk` を書く.
-Gradle 9 と AGP 9 を使うので, JDK 17 以上が要る.
-
-### Linux と同じ結果になるかの確認
-
-アプリで testimages の画像を読み込み, Linux の CLI と比べる.
-
-```
-./build/pokerchip --json --out /tmp/debug.png testimages/yoko/stack/singlecolor/IMG_5587.jpg
-```
-
-画像は `adb push testimages/yoko/stack/singlecolor/IMG_5587.jpg /sdcard/Pictures/` で端末に送り,
-アプリの「ギャラリー」から選ぶ. 枠の位置・枚数・色が JSON と一致すれば OK.
-
-## 10. Web でチップを検出する用意 (WASM)
-
-Web の画面でチップを検出するために, core を WebAssembly にビルドする. 設計は [architecture.md](../architecture.md) の 10 にある.
-6 (モデル) が済んでいることが前提.
-
-```
-scripts/fetch_emsdk.sh          # Emscripten 6.0.13 を third_party/emsdk/ に入れる (約 1.7GB). emsdk のコミットも確かめる
-scripts/build_opencv_wasm.sh    # OpenCV 4.14.0 を WASM 用にビルドし, third_party/opencv-4.14.0-wasm/ に入れる. 数分かかる
-                                # ソースがなければ scripts/fetch_opencv_source.sh で取り, sha256 を確かめる
-scripts/build_wasm.sh           # core を WASM にし, モデルと一緒に web/src/client/public/detector/ に置く
-```
-
-- 1 と 2 は最初の 1 回だけ. 3 は core かモデルを変えたらやり直す.
-- 本番のデプロイでは, CI が同じ手順で検出器をビルドする ([architecture.md](../architecture.md) の 11). 手元のビルドは, 手元で試すためだけに使う.
-- どれも git の管理外に置く (`third_party/`, `build-wasm/`, `web/src/client/public/detector/`).
-- Linux と同じ結果になるかの確かめ方は [usage.md](../logic/usage.md) の「WASM」にある.
-- Web アプリの起動の手順は [running.md](../web/running.md) にある.
+- 持っていくのは重み (`best.pt`) だけ. コードと画像は git (GitHub) で持っていき, それ以外は移った先の `make setup` で作り直す.
+  `third_party/` や `.venv/` は, マシンに依るビルドの結果とダウンロードしたものなので持っていかない.
+- 移る前に, 作業中の変更をすべてコミットして push する.
+- 移った先で `make test` の結果が, 移る前と同じになることを確かめる. 作り直したモデルが同じかの確かめにもなる.
 
 ## トラブルシューティング
 
 | 症状 | 原因と対処 |
 |---|---|
-| `OpenCV error: ... The function is not implemented` (imshow など) | OpenCV が GUI なしでビルドされている. `libgtk-3-dev` を入れて `make opencv` をやり直す. それまでは `--out` / `--rect` を使う |
-| CMake で `Could not find a configuration file for package "OpenCV" that exactly matches requested version "4.14.0"` | `make opencv` (Linux) または `make android-deps` (Android) をしていない. または別のバージョンの OpenCV を掴んでいる |
-| `make test` で CLI が失敗したと出る | `models/chip_detector.onnx` がない (6 を行う). または画像が LFS のポインタのまま (`git lfs pull` をする. 2 を参照) |
-| Gradle で `SDK location not found` | `android/local.properties` に `sdk.dir` がない. Android Studio で開けば自動で作られる |
-| Gradle で NDK や CMake が見つからない | 8-3 のバージョンの NDK / CMake を SDK Manager で入れる |
-| `scripts/build_wasm.sh` で OpenCV が見つからない | `scripts/build_opencv_wasm.sh` をしていない. 10 を行う |
-| アプリで解析すると `chip_detector.onnx` が開けないというエラーになる | assets にモデルがない. `make model PT=...` をやり直す (`android/app/src/main/` がある状態で実行すると assets にもコピーされる) |
+| `OpenCV error: ... The function is not implemented` (imshow など) | OpenCV が GUI なしでビルドされている. `libgtk-3-dev` を入れ, 「[作り直すとき](#作り直すとき)」のとおり OpenCV を作り直す. それまでは `--out` / `--rect` を使う |
+| CMake で `Could not find a configuration file for package "OpenCV" that exactly matches requested version "4.14.0"` | `make setup` をしていない (clone し直したときも要る). または別の版の OpenCV を掴んでいる |
+| `make test` で CLI が失敗したと出る | モデルがない, または画像が LFS のポインタのまま. `make setup` を流す |
+| Gradle で `SDK location not found` | `android/local.properties` がない. `make setup` を流す |
+| Gradle で `copyDebugModelToAssets` の `models/chip_detector.onnx ... doesn't exist` | モデルがない. `make setup` を流す |
+| Gradle で NDK や CMake が見つからない | 「[Android Studio と SDK](#android-studio-と-sdk-android-を使うとき)」の 3 の版を SDK Manager で入れる |
+| `scripts/build_wasm.sh` で OpenCV が見つからない | `make setup` をしていない. `--skip-web` で流していたなら, 付けずに流す |
 | `adb devices` で端末が `no permissions` になる | udev のルールが ADB の端末を知らない (systemd が 258 より古い OS など). `sudo apt install android-sdk-platform-tools-common` でルールを入れ, 端末を挿し直す |
-| エミュレータが起動しない / 非常に遅い | KVM が使えていない. `ls -l /dev/kvm` と `groups` に `kvm` があるかを確認 |
+| エミュレータが起動しない / 非常に遅い | KVM が使えていない. `ls -l /dev/kvm` と `groups` に `kvm` があるかを確かめる |

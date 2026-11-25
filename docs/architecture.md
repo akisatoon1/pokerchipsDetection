@@ -32,8 +32,8 @@ pokerchip/
 ├── functional_tests/       # 機能テスト (正解付きの画像での全体テスト, WASM と CLI の結果の比べ)
 ├── models/                 # ONNX モデル置き場 (git 管理外)
 ├── pyscript/               # Python 側の補助 (色の基準色の計算)
-├── scripts/                # 環境構築・モデル取得・WASM のビルドのスクリプト
-└── third_party/            # ソースビルドした OpenCV (Linux 用, WASM 用), emsdk (git 管理外)
+├── scripts/                # セットアップ (setup.sh)・モデル取得・WASM のビルドのスクリプト
+└── third_party/            # ソースビルドした OpenCV (Linux 用, WASM 用), OpenCV Android SDK, emsdk (git 管理外. make setup が作る)
 ```
 
 ### 依存の向き
@@ -154,7 +154,8 @@ end2end は本来 NMS 不要だが, 同じスタックを2つ (スコア 0.86 �
 - 入力サイズ (640) は今は固定値として core (`DetectorConfig`) に持つ. クラスは `stack` のみ.
   クラスが増えたり入力サイズが変わったりしたら, メタ情報ファイルを導入する.
 - `models/VERSION` に変換元の `.pt` の sha256 を記録し, どの重みから作ったかを追えるようにする.
-- Android では `android/app/src/main/assets/` にコピーして APK に同梱する.
+- Android では, Gradle がビルドのときに `models/chip_detector.onnx` を assets に入れて APK に同梱する (`android/app/build.gradle.kts`).
+  assets に写しておくと, モデルを替えたときに写し忘れて, 古いモデルのまま動くため. モデルは `models/` の 1 か所にだけ置く.
 - Web では `scripts/build_wasm.sh` が `web/src/client/public/detector/` にコピーし, Static Assets で配る.
 
 ### 7. ビルドは CMake に統一する
@@ -165,6 +166,7 @@ end2end は本来 NMS 不要だが, 同じスタックを2つ (スコア 0.86 �
   1か所だけ書く. どちらの環境でも違うバージョンを掴むと configure の時点で失敗する.
 - Android の OpenCV は SDK の静的ライブラリをリンクする. APK に `libopencv_java4.so` を入れずに済む.
 - Android Studio なしでも `make android-native` で core + JNI を NDK でクロスコンパイルできる.
+  NDK は Gradle と同じ SDK の NDK (`build.gradle.kts` の `ndkVersion`) を使い, 別には取らない. 版が 1 か所で決まり, NDK を 2 つ持たずに済むため.
 - WASM も `wasm/CMakeLists.txt` から core を `add_subdirectory` し, `emcmake cmake` でビルドする (`scripts/build_wasm.sh`).
 - 既存の `make run` / `make tidy` / `make format` は Makefile から CMake を呼ぶ形で残す.
 
@@ -308,6 +310,20 @@ push ──────→ deploy.yml: fetch_model.sh (Release から取り sha2
 | `models/model.lock` | 使うモデルの Release のタグと, sha256 |
 | `scripts/fetch_emsdk.sh`, `scripts/fetch_opencv_source.sh`, `scripts/build_opencv_wasm.sh` | Emscripten と WASM 用の OpenCV を用意する (CI ではキャッシュする) |
 | `scripts/build_wasm.sh` | core とモデルから検出器を作り, `web/src/client/public/detector/` に置く |
+
+### 12. セットアップは make setup の 1 本にし, マシンに入れるものは確かめるだけにする
+
+- 用意するものを, マシンに 1 回だけ入れるもの (apt のパッケージ, Android Studio と SDK, Node.js, gh) と,
+  clone ごとに作るもの (`third_party/`, `.venv/`, モデル, `android/local.properties`, `web/node_modules/`, 検出器) に分ける.
+  - clone ごとのものは git の管理外にあり, clone し直すとなくなる. 以前は手順を 1 つずつ手で流していて, clone し直したあとに
+    Android の分 (OpenCV Android SDK と `local.properties`) を作り忘れ, `make android-run` が失敗したことがある.
+    そこで `scripts/setup.sh` (`make setup`) が順にすべて作る. もうあるものは飛ばすので, 何回流してもよい.
+  - マシンに入れるものは, スクリプトでは入れない. sudo や人の操作 (SDK のライセンスへの同意, KVM のグループと再ログイン) が要り,
+    ほかのプロジェクトにも効くため. あるかを確かめ, 足りなければすべてと入れ方を出して止める.
+- 版は 1 か所にだけ書き, スクリプトはそこから読む. OpenCV は `core/CMakeLists.txt`, SDK と NDK と CMake は `android/app/build.gradle.kts`,
+  Node は `web/package.json` の `engines`. Android の SDK と JDK の場所の決め方は `scripts/lib/android.sh` にまとめる.
+- `setup.sh` は各段の既存のスクリプト (`build_opencv.sh`, `fetch_android_deps.sh`, `build_wasm.sh` など) を呼ぶだけにし, 手順を二重に書かない.
+  個々のスクリプトは, デプロイの CI からもそのまま使う.
 
 ## 今後の課題
 
