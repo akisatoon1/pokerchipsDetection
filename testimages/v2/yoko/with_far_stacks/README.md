@@ -23,23 +23,6 @@ images/          # 画像
 
 ## 正解 (answers.jsonl)
 
-画像ごとの正解を `answers.jsonl` に書く.
-Hugging Face の `imagefolder` の metadata と同じ形式で, 1 行に 1 枚分の JSON を書く. 次は形式の例 (`colors` は略してある).
-
-```jsonl
-{"file_name": "images/pokerchip_1795604841325.jpg", "stacks": [{"colors": ["black", "green", ...]}, {"colors": ["purple", "purple", ...]}], "labeled_by": "human"}
-```
-
-| 項目 | 内容 |
-|---|---|
-| `file_name` | 画像のパス. `answers.jsonl` から見た相対パス (`images/<ファイル名>`) |
-| `stacks` | 手前の, 数えたいスタック. 画像の左から順に並べる. 奥のスタックは入れない |
-| `stacks[].colors` | チップの色. 上のチップから順に書く. 名前は CLI の `--json` (`toJson`) と同じ (`red` `blue` `yellow` `black` `gray` `purple` `green`) |
-| `labeled_by` | 正解を付けたもの. `human` は人, `ai` は生成 AI |
-
-[../single_color/README.md](../single_color/README.md) の形式 (画像の直下に `colors`) と違い, スタックを配列にしている.
-1 枚に数えたいスタックが 2 つある画像があるため.
-スタックの並びを左からにするのは, CLI の `--json` の `stacks` と, 箱の x 座標で並べ替えて突き合わせられるようにするため.
-画像の向きは EXIF の向きを当てたあと (人が見る向き) で考える.
-
-枚数の項目を置かない理由は single_color と同じ (`colors` の要素の数で決まる).
+形式は [docs/development/testimages.md](../../../../docs/development/testimages.md) の「正解の形式」にある (v2 のすべてのデータセットで同じ).
+手前の, 数えたいスタックだけを `stacks` に入れる. 奥に写ったスタックは入れない.
+1 枚に数えたいスタックが 2 つある画像では, `stacks` の要素は 2 つになる.

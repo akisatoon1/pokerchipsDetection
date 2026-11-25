@@ -17,8 +17,8 @@ testimages/v2/single_color_free_angle/
 
 | 置くもの | 決まり |
 |---|---|
-| `README.md` | データセットの目的, 撮影の条件 (スタックの数, 色の数, 枚数の範囲など), `answers.jsonl` の項目を書く |
-| `answers.jsonl` | 1 行に 1 枚分の JSON を書く. `file_name` は `answers.jsonl` から見た画像の相対パス (`images/<ファイル名>`) にする. ほかの項目はデータセットの README に書く |
+| `README.md` | データセットの目的, 撮影の条件 (スタックの数, 色の数, 枚数の範囲など), どのスタックを正解に入れるかを書く. 正解の形式は書かず, この文書へリンクする |
+| `answers.jsonl` | 1 行に 1 枚分の JSON を書く. 形式は下の「正解の形式」. どのデータセットでも同じ形式にする |
 | `images/` | 画像だけを置く. ファイル名は撮ったときのままにする |
 | `labels/` | 画像ごとに 1 つの labelme の JSON を, 画像と同じ名前 (拡張子だけ `.json`) で置く. `imagePath` は `../images/<ファイル名>` になる |
 
@@ -29,6 +29,33 @@ testimages/v2/single_color_free_angle/
   1 ファイルなら, 開くだけで全体を見渡せ, 集計もすぐできる.
 - **`file_name` を `images/` 付きのパスにする**: Hugging Face の `imagefolder` の metadata と同じ形にするため.
   値だけで画像の場所が分かる.
+
+## 正解の形式 (answers.jsonl)
+
+`v2/` 以降のすべてのデータセットで, 次の形式にそろえる. Hugging Face の `imagefolder` の metadata と同じく, 1 行に 1 枚分の JSON を書く.
+
+```jsonl
+{"file_name": "images/PXL_20261123_093705462.jpg", "stacks": [{"colors": ["black", "black", "black", "black", "black"]}], "labeled_by": "human"}
+{"file_name": "images/pokerchip_1795604841325.jpg", "stacks": [{"colors": ["black", "green", ...]}, {"colors": ["purple", "purple", ...]}], "labeled_by": "human"}
+```
+
+| 項目 | 内容 |
+|---|---|
+| `file_name` | 画像のパス. `answers.jsonl` から見た相対パス (`images/<ファイル名>`) |
+| `stacks` | 数えるべきスタック. 並びは問わない |
+| `stacks[].colors` | チップの色. 上のチップから順に書く. 名前は CLI の `--json` (`toJson`) と同じ (`red` `blue` `yellow` `black` `gray` `purple` `green`) |
+| `labeled_by` | 正解を付けたもの. `human` は人, `ai` は生成 AI |
+
+どのスタックを数えるべきとするか (奥に写ったスタックを入れないなど) は, データセットの README に書く.
+
+### そう決めた理由
+
+- **スタックの配列にする**: スタックが 1 つの画像も複数の画像も, 同じ形式で書けるため.
+  全体テスト (`functional_tests/evaluate.py`) が 1 つの読み方ですべてのデータセットを比べられる.
+- **並びを問わない**: スタックに位置の項目はなく, どのスタックが画像のどこにあるかは正解から分からないため.
+  全体テストは, 正解のスタックと見つかったスタックを, いちばん合う組み合わせで突き合わせる.
+- **枚数の項目を置かない**: 枚数は `colors` の要素の数で決まり, 別に書くと 2 つが食い違うおそれがあるため.
+- **単色でも色を枚数ぶん並べる**: 複数色のスタックと同じ形式で書くため.
 
 ## 画像は Git LFS で管理する
 

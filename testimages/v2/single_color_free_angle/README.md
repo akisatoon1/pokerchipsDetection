@@ -25,19 +25,5 @@ labels/          # スタックの側面の箱 (labelme の JSON). 付け方は 
 
 ## 正解 (answers.jsonl)
 
-画像ごとの正解を `answers.jsonl` に書いている.
-Hugging Face の `imagefolder` の metadata と同じ形式で, 1 行に 1 枚分の JSON を書く.
-
-```jsonl
-{"file_name": "images/PXL_20261028_124800145.jpg", "count": 5, "colors": ["gray", "gray", "gray", "gray", "gray"], "labeled_by": "human"}
-```
-
-| 項目 | 内容 |
-|---|---|
-| `file_name` | 画像のパス. `answers.jsonl` から見た相対パス (`images/<ファイル名>`) |
-| `count` | スタックの枚数 |
-| `colors` | チップの色. 上のチップから順に書く. 名前は CLI の `--json` (`toJson`) と同じ (`red` `blue` `yellow` `black` `gray` `purple` `green`) |
-| `labeled_by` | 正解を付けたもの. `human` は人, `ai` は生成 AI |
-
-`colors` の要素の数は `count` と同じになる.
-複数色のスタックも同じ形式で書けるように, 単色でも色を枚数ぶん並べている.
+形式は [docs/development/testimages.md](../../../docs/development/testimages.md) の「正解の形式」にある (v2 のすべてのデータセットで同じ).
+画像にスタックは 1 つなので, `stacks` の要素は 1 つ.
