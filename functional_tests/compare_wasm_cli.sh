@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# testimages のすべての画像を WASM の core と Linux の CLI で解析し, 結果が一致するかを確かめる.
+# testimages/v2/yoko/ の画像を WASM の core と Linux の CLI で解析し, 結果が一致するかを確かめる.
+# 比べに使うのは testimages/v2/yoko/ だけにする (人の決まり. docs/logic/usage.md の「WASM」).
 # 判定の基準 (box, count, peaks, colors が一致し, score の差が 0.001 以内) は compare_wasm_cli.mjs にある.
 #
 # 使い方: functional_tests/compare_wasm_cli.sh [画像...]
-# 画像を省略すると testimages の下の jpg と png をすべて使う.
+# 画像を省略すると testimages/v2/yoko/ の下の jpg と png をすべて使う.
 # 先に make build (CLI) と scripts/build_wasm.sh (WASM) を済ませておく.
 
 set -euo pipefail
@@ -26,7 +27,7 @@ c++ -std=c++17 -O2 -Wall -Wextra \
 if [ "$#" -gt 0 ]; then
   images=("$@")
 else
-  mapfile -t images < <(find testimages -type f \( -iname '*.jpg' -o -iname '*.png' \) | sort)
+  mapfile -t images < <(find testimages/v2/yoko -type f \( -iname '*.jpg' -o -iname '*.png' \) | sort)
 fi
 
 node functional_tests/compare_wasm_cli.mjs \

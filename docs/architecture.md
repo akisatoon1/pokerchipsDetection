@@ -227,7 +227,7 @@ iPhone でも Android でも, アプリを入れずにブラウザでチップ�
 - WASM (約 5 MiB) とモデル (約 9.4 MiB) は Workers の Static Assets で配る. 1 ファイルの上限 (25 MiB) に収まる.
   初めて解析するときに読み込み, ページを開いている間は検出器を使い回す.
 - 解析は画面のスレッドで行うので, 解析の間 (数秒) は画面が止まる.
-- 正しさは `functional_tests/compare_wasm_cli.sh` で確かめる. testimages の全画像を Node の WASM と CLI で解析し,
+- 正しさは `functional_tests/compare_wasm_cli.sh` で確かめる. `testimages/v2/yoko/` の画像を Node の WASM と CLI で解析し,
   box, count, peaks, colors が一致し, score の差が 0.001 以内であることを見る. WASM に渡す画素は CLI と同じ `cv::imread` で作る.
 
 | ファイル | 役割 |

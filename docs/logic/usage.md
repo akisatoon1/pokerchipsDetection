@@ -188,11 +188,13 @@ Emscripten と WASM 用の OpenCV の用意 ([setup.md](../environment/setup.md)
 
 ```
 scripts/build_wasm.sh                     # build-wasm/ でビルドし, .js, .wasm, モデルを web/src/client/public/detector/ に置く
-functional_tests/compare_wasm_cli.sh      # testimages の全画像を WASM と CLI で解析して比べる
+functional_tests/compare_wasm_cli.sh      # testimages/v2/yoko/ の画像を WASM と CLI で解析して比べる
 functional_tests/compare_wasm_cli.sh testimages/v1/yoko/stack/multicolor_jpg/IMG_5720.jpg   # 画像を選んで比べる
 ```
 
 - 比べる前に `make build` と `scripts/build_wasm.sh` をしておく. WASM は Node で動かす.
+- 比べに使う画像は `testimages/v2/yoko/` だけにする (人が決めた決まり). 画像を省略すると, ここの画像をすべて使う.
+  全部の testimages (約 250 枚) では 4〜5 分かかるのに対し, 35 枚なので短く済む.
 - スタックの数, box, count, peaks, colors が一致し, score の差が 0.001 以内なら一致とする. 違う画像は, どの値が違うかを出す.
   空の画像, 大きさの合わない画素, 壊れたモデルを渡すと落ちずにエラーの文が返ること, 各ファイルが 25 MiB 以下であることも確かめる.
 - 1 枚でも違えば終了コード 1 で終わる. core を変えたら, Web に出す前に流す.
