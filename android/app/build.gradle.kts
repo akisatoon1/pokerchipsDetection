@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.pokerchip.app"
     compileSdk = 37
-    // scripts/fetch_android_deps.sh と同じ NDK (r30). r28 以降は 16KB ページ整列が既定.
+    // NDK r30. r28 以降は 16KB ページ整列が既定. make android-native もこの版を使う (scripts/lib/android.sh).
     ndkVersion = "30.0.16248370"
 
     defaultConfig {
