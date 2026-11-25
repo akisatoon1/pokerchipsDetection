@@ -1,0 +1,4 @@
+# チップの検出のモデル (ONNX) の GitHub Release と, ファイルの sha256.
+# scripts/release_model.sh が書き換え, scripts/fetch_model.sh が読む. 手で直さない.
+tag model-8d4bc8cc9099
+sha256 8d4bc8cc9099afea3879e90dff2910eb251c5af17bb9dd4570bf55d1556785f9 chip_detector.onnx

@@ -25,8 +25,11 @@ research/
 # scripts/build_opencv.sh, scripts/fetch_android_deps.sh, scripts/fetch_emsdk.sh, scripts/build_opencv_wasm.sh で作り直せる
 third_party/
 
-# scripts/export_model.sh で作る ONNX モデル (Android の assets へのコピーも含む)
-models/
+# scripts/export_model.sh で作る, または scripts/fetch_model.sh で取る ONNX モデル (Android の assets へのコピーも含む).
+# モデルは重いので git に入れず, GitHub Release に置く. git に入れるのは, どの Release を使うかを書いた models/model.lock だけ.
+# models/VERSION は手元の絶対パスを含むので入れない.
+models/*
+!models/model.lock
 *.onnx
 
 # scripts/build_wasm.sh が Web で配る場所に置く WASM とモデル
