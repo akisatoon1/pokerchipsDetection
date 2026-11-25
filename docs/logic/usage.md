@@ -125,8 +125,10 @@ adb pull /sdcard/Pictures/PokerChip/. testimages/android/
 ## テスト
 
 ```
-make test          # ビルドしてから, testimages/v2/yoko/single_color で全体テストを流す
+make test          # ビルドしてから, testimages/v2/yoko/ の single_color と with_far_stacks で全体テストを流す
 ```
+
+`make test` で流すデータセットは, Makefile の `TEST_DATASETS` にある. データセットごとに `== <データセット>` の見出しと結果が出る.
 
 テストは全体テスト (`functional_tests/evaluate.py`) だけにしている.
 正解付きのデータセットの画像を CLI で解析し, 画像ごとに正解か不正解かを出す. ロジックを変えたときに, 今の画像での結果が崩れていないかを確かめる.

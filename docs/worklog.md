@@ -596,3 +596,8 @@ Linux はソースビルド (`scripts/build_opencv.sh`, 数分).
 - 入れる前に, 7 枚とも EXIF に GPS の欄がないことと, 個人が分かるものが写っていないことを確かめた.
 - 正解は `answers.jsonl` に, 手前のスタックごとの色 (`stacks[].colors`) で書いた. 1 枚に数えたいスタックが 2 つある画像があるため,
   `single_color` と形式が違う. 形式はデータセットの `README.md` にある.
+
+## 2026-11-25: make test に with_far_stacks を足す
+
+- `make test` が `testimages/v2/yoko/single_color` に加えて `testimages/v2/yoko/with_far_stacks` でも全体テストを流すようにした.
+  流すデータセットは Makefile の `TEST_DATASETS` にまとめ, データセットごとに見出しを付けて結果を出す.

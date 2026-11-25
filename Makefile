@@ -28,8 +28,14 @@ run: build
 	./$(TARGET) $(ARGS)
 
 # 正解付きの画像で全体テストを流す (functional_tests/evaluate.py).
+# データセットごとに結果を分けて出す. どの撮り方で崩れたかが分かるようにするため.
+TEST_DATASETS = testimages/v2/yoko/single_color testimages/v2/yoko/with_far_stacks
+
 test: build
-	python3 functional_tests/evaluate.py testimages/v2/yoko/single_color
+	@for dataset in $(TEST_DATASETS); do \
+		echo "== $$dataset"; \
+		python3 functional_tests/evaluate.py $$dataset || exit 1; \
+	done
 
 # 環境構築
 opencv:
